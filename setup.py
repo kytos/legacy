@@ -5,8 +5,6 @@ descriptions.
 """
 import sys
 
-from glob import glob
-from pip.req import parse_requirements
 from subprocess import call
 from setuptools import setup, find_packages, Command
 
@@ -66,18 +64,15 @@ class FastLinter(Linter):
         self.extra_msg = 'This a faster version of "lint", without pylint. ' \
                          'Run the slower "lint" after solving these issues:'
 
-# parse_requirements() returns generator of pip.req.InstallRequirement objects
-requirements = parse_requirements('requirements.txt', session=False)
-
 setup(name='kyco-core-napps',
-      version='1.1.0a0',
+      version='1.1.0a4',
       description='Core Napps developed by Kytos Team',
       url='http://github.com/kytos/kyco-core-napps',
       author='Kytos Team',
       author_email='of-ng-dev@ncc.unesp.br',
       license='MIT',
-      install_requires=[str(ir.req) for ir in requirements],
-      data_files=[('/var/lib/kytos/napps/kytos/ofcore/', glob("kytos/ofcore/*", recursive=True)),],
+      install_requires=['python-openflow ~= 1.1.0-a2'],
+      data_files=[('/var/lib/kytos/napps/kytos/ofcore/', ["kytos/ofcore/__init__.py", "kytos/ofcore/main.py"]),],
       cmdclass={
           'lint': Linter,
           'quick_lint': FastLinter
