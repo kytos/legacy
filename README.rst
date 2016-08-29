@@ -1,7 +1,7 @@
 Kytos - kyco-core-napps
 =======================
 
-|Openflow| |Tag| |Release| |Tests| |License|
+|Tag| |Release| |License|
 
 *Kyco* is the main component of Kytos Project. Kytos Controller (Kyco)
 uses *python-openflow* library to parse low level OpenFlow messages.
@@ -50,13 +50,9 @@ License
 This software is under *MIT-License*. For more information please read
 ``LICENSE`` file.
 
-.. |Openflow| image:: https://img.shields.io/badge/Openflow-1.0.0-brightgreen.svg
-   :target: https://www.opennetworking.org/images/stories/downloads/sdn-resources/onf-specifications/openflow/openflow-spec-v1.0.0.pdf
-.. |Tag| image:: https://img.shields.io/github/tag/kytos/kyco.svg
-   :target: https://github.com/kytos/kyco/tags
-.. |Release| image:: https://img.shields.io/github/release/kytos/kyco.svg
-   :target: https://github.com/kytos/kyco/releases
-.. |Tests| image:: https://travis-ci.org/kytos/kyco.svg?branch=develop
-   :target: https://github.com/kytos/kyco
-.. |License| image:: https://img.shields.io/github/license/kytos/kyco.svg
-   :target: https://github.com/kytos/kyco/blob/master/LICENSE
+.. |Tag| image:: https://img.shields.io/github/tag/kytos/kyco-core-napps.svg
+   :target: https://github.com/kytos/kyco-core-napps/tags
+.. |Release| image:: https://img.shields.io/github/release/kytos/kyco-core-napps.svg
+   :target: https://github.com/kytos/kyco-core-napps/releases
+.. |License| image:: https://img.shields.io/github/license/kytos/kyco-core-napps.svg
+   :target: https://github.com/kytos/kyco-core-napps/blob/master/LICENSE
