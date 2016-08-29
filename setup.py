@@ -77,7 +77,7 @@ setup(name='kyco-core-napps',
       author_email='of-ng-dev@ncc.unesp.br',
       license='MIT',
       install_requires=[str(ir.req) for ir in requirements],
-      data_files=[('/opt/kytos/napps/kytos/ofcore/', glob("kytos/ofcore/*", recursive=True)),],
+      data_files=[('/var/lib/kytos/napps/kytos/ofcore/', glob("kytos/ofcore/*", recursive=True)),],
       cmdclass={
           'lint': Linter,
           'quick_lint': FastLinter
