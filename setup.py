@@ -3,10 +3,16 @@
 Run "python3 setup --help-commands" to list all available commands and their
 descriptions.
 """
+import os
 import sys
 
 from subprocess import call
 from setuptools import setup, find_packages, Command
+
+if 'VIRTUAL_ENV' in os.environ:
+    BASE_ENV = os.environ['VIRTUAL_ENV']
+else:
+    BASE_ENV = '/'
 
 
 class Doctest(Command):
@@ -64,6 +70,7 @@ class FastLinter(Linter):
         self.extra_msg = 'This a faster version of "lint", without pylint. ' \
                          'Run the slower "lint" after solving these issues:'
 
+
 setup(name='kyco-core-napps',
       version='1.1.0a4',
       description='Core Napps developed by Kytos Team',
@@ -72,7 +79,8 @@ setup(name='kyco-core-napps',
       author_email='of-ng-dev@ncc.unesp.br',
       license='MIT',
       install_requires=['python-openflow ~= 1.1.0-a2'],
-      data_files=[('/var/lib/kytos/napps/kytos/ofcore/', ["kytos/ofcore/__init__.py", "kytos/ofcore/main.py"]),],
+      data_files=[(os.path.join(BASE_ENV, 'var/lib/kytos/napps/kytos/ofcore/'),
+                   ["kytos/ofcore/__init__.py", "kytos/ofcore/main.py"])],
       cmdclass={
           'lint': Linter,
           'quick_lint': FastLinter
