@@ -72,7 +72,7 @@ class FastLinter(Linter):
 
 
 setup(name='kyco-core-napps',
-      version='1.1.0a4',
+      version='1.1.0a4.dev1',
       description='Core Napps developed by Kytos Team',
       url='http://github.com/kytos/kyco-core-napps',
       author='Kytos Team',
