@@ -4,21 +4,16 @@ import logging
 from random import randint
 
 from pyof.v0x01.common.flow_match import Match
-# from pyof.v0x01.common.flow_match import FlowWildCards
 from pyof.v0x01.common.header import Type
 from pyof.v0x01.common.utils import new_message_from_header
 from pyof.v0x01.controller2switch.barrier_request import BarrierRequest
 from pyof.v0x01.controller2switch.common import ConfigFlags
-from pyof.v0x01.controller2switch.flow_mod import FlowMod
-from pyof.v0x01.controller2switch.flow_mod import FlowModCommand
-# from pyof.v0x01.controller2switch.flow_mod import FlowModFlags
+from pyof.v0x01.controller2switch.flow_mod import FlowMod, FlowModCommand
 from pyof.v0x01.controller2switch.set_config import SetConfig
 from pyof.v0x01.symmetric.echo_reply import EchoReply
 
 from kyco.core import events
-from kyco.utils import KycoCoreNApp
-from kyco.utils import listen_to
-
+from kyco.utils import KycoCoreNApp, listen_to
 
 log = logging.getLogger('KycoNApp')
 

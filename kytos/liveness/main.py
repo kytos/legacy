@@ -5,7 +5,7 @@ import time
 from pyof.v0x01.symmetric.echo_request import EchoRequest
 
 from kyco.constants import POOLING_TIME
-from kyco.core.events import KycoMessageOutEchoRequest, KycoMessageInEchoReply
+from kyco.core.events import KycoMessageInEchoReply, KycoMessageOutEchoRequest
 from kyco.utils import KycoCoreNApp, listen_to, now
 
 log = logging.getLogger('Kyco')
