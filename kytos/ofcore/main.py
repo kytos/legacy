@@ -20,7 +20,7 @@ from kyco.utils import KycoCoreNApp
 from kyco.utils import listen_to
 
 
-log = logging.getLogger('kytos[A]')
+log = logging.getLogger('KycoNApp')
 
 
 class Main(KycoCoreNApp):
