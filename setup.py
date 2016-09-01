@@ -7,9 +7,9 @@ import os
 import sys
 
 from subprocess import call
-from setuptools import setup, find_packages, Command
+from setuptools import setup, Command
 
-if 'VIRTUAL_ENV' in os.environ:
+if 'VIRTUAL_ENV' in os.environ and 'TRAVIS' not in os.environ:
     BASE_ENV = os.environ['VIRTUAL_ENV']
 else:
     BASE_ENV = '/'
@@ -72,13 +72,13 @@ class FastLinter(Linter):
 
 
 setup(name='kyco-core-napps',
-      version='1.1.0a4.dev1',
+      version='1.1.0a5.dev0',
       description='Core Napps developed by Kytos Team',
       url='http://github.com/kytos/kyco-core-napps',
       author='Kytos Team',
       author_email='of-ng-dev@ncc.unesp.br',
       license='MIT',
-      install_requires=['python-openflow ~= 1.1.0-a2'],
+      install_requires=['python-openflow >= 1.1.0-a2'],
       data_files=[(os.path.join(BASE_ENV, 'var/lib/kytos/napps/kytos/ofcore/'),
                    ["kytos/ofcore/__init__.py", "kytos/ofcore/main.py"])],
       cmdclass={
