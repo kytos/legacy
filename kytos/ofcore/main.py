@@ -3,6 +3,14 @@
 import logging
 from random import randint
 
+from pyof.v0x01.controller2switch import flow_mod
+from pyof.v0x01.controller2switch.common import ListOfActions
+from pyof.v0x01.common import header as of_header
+from pyof.v0x01.common import action
+from pyof.v0x01.common import flow_match
+from pyof.v0x01.common import phy_port
+
+
 from pyof.v0x01.common.flow_match import Match
 from pyof.v0x01.common.header import Type
 from pyof.v0x01.common.utils import new_message_from_header
@@ -120,6 +128,8 @@ class Main(KycoCoreNApp):
             new_event = KycoMessageInFeaturesReply(content=content)
         elif message.header.message_type == Type.OFPT_ECHO_REQUEST:
             new_event = KycoMessageInEchoRequest(content=content)
+        elif message.header.message_type == Type.OFPT_PACKET_IN:
+            new_event = KycoPacketIn(content=content)
         else:
             new_event = KycoMessageIn(content=content)
 
