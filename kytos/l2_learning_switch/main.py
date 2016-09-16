@@ -51,13 +51,13 @@ class Main(KycoCoreNApp):
         pass
 
 
-    @listen_to('KycoMessageInPacketIn')
+    @listen_to('KycoPacketIn')
     def handle_message_in_packet_event(self, event):
         """Handle PacketIn Event by installing flows allowing communication
         between switch ports.
 
         Args:
-            event (KycoMessageInPacketIn): Received Event
+            event (KycoPacketIn): Received Event
         """
         log.debug("PacketIn Received")
 
