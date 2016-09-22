@@ -31,10 +31,6 @@ class Main(KycoCoreNApp):
 
     def execute(self):
         """Implement a loop to check switches liveness"""
-        msg = "dpid: %s\n    "
-        msg += "- Connected: %s\n    "
-        msg += "- Waiting For EchoReply: %s\n    "
-        msg += "- LastSeen: %s s ago"
         while not self.stop_signal:
             if len(self.switches) > 0:
                 for switch in self.switches.values():
