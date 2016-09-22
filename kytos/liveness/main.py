@@ -67,7 +67,7 @@ class Main(KycoCoreNApp):
                 and switch.sent_xid == echo_reply.header.xid):
             switch.update_lastseen()
 
-    @listen_to('KycoMessageIn*')
+    @listen_to('KycoMessageIn.*')
     def update_switch_lastseen(self, event):
         """Updates lastseen of a switch on the arrival of any OF message"""
         if (event.dpid is not None
