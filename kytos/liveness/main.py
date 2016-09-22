@@ -70,7 +70,7 @@ class Main(KycoCoreNApp):
     @listen_to('KycoMessageIn.*')
     def update_switch_lastseen(self, event):
         """Updates lastseen of a switch on the arrival of any OF message"""
-        if (event.dpid is not None
+        if (event.dpid in self.controller.switches
                 and not isinstance(event, KycoMessageInEchoReply)):
             # Avoid updating liveness before the end of the handshake,
             # when the switch is not yet linked to the connection (socket)
