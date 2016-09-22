@@ -2,9 +2,6 @@
 
 import logging
 
-from pyof.v0x01.common.header import Header
-from pyof.v0x01.common import constants
-
 from pyof.v0x01.common.action import ActionOutput
 from pyof.v0x01.common.phy_port import Port
 
@@ -13,16 +10,15 @@ from pyof.v0x01.common.flow_match import FlowWildCards
 
 from pyof.foundation.basic_types import HWAddress
 
-from pyof.v0x01.controller2switch.common import ListOfActions
 from pyof.v0x01.controller2switch.flow_mod import FlowMod
 from pyof.v0x01.controller2switch.flow_mod import FlowModCommand
 from pyof.v0x01.controller2switch.flow_mod import FlowModFlags
 
 from pyof.v0x01.controller2switch.packet_out import PacketOut
 
+from kyco.constants import FLOOD_TIMEOUT
 from kyco.core import events
-from kyco.utils import KycoCoreNApp
-from kyco.utils import listen_to
+from kyco.utils import KycoCoreNApp, listen_to, now
 
 
 log = logging.getLogger('KycoNApp')
@@ -41,7 +37,6 @@ class Main(KycoCoreNApp):
         Users shouldn't call this method directly."""
         # TODO: App information goes to app_name.json
         self.name = 'kytos.l2_learning_switch'
-        self.mac2port = {}
 
     def execute(self):
         """Method to be runned once on app 'start' or in a loop.
@@ -60,8 +55,6 @@ class Main(KycoCoreNApp):
         """
         log.debug("PacketIn Received")
 
-        log.warning(event.dpid)
-        log.warning(event.connection_id)
         packet_in = event.content['message']
 
         ethernet_frame = packet_in.data
@@ -75,23 +68,33 @@ class Main(KycoCoreNApp):
         in_port = packet_in.in_port.value
 
         # Updating mac_src and in_port
-        self.mac2port[mac_src.value] = (event.dpid, in_port)
+        switch = self.controller.switches[event.dpid]
+        if mac_src.value in switch.mac2port:
+            switch.mac2port[mac_src.value].add(in_port)
+        else:
+            switch.mac2port[mac_src.value] = set([in_port])
 
-        if mac_dst.is_broadcast():
-            packet_out = PacketOut(xid=packet_in.header.xid)
-            packet_out.buffer_id = packet_in.buffer_id
-            packet_out.in_port = packet_in.in_port
-            # TODO: update actions_len on packet_out dynamically during pack()
-            packet_out.actions_len = 8  # Only 1 ActionOutput (amount of bytes)
+        if mac_dst.is_broadcast() or mac_dst.value not in switch.mac2port:
+            eth_type = ethernet_frame.value[12:14]
+            flood_hash = hash(ethernet_frame.value)
+            if (flood_hash not in switch.flood_table or
+                    (now() - switch.flood_table[flood_hash]).microseconds > FLOOD_TIMEOUT):
+                packet_out = PacketOut(xid=packet_in.header.xid)
+                packet_out.buffer_id = packet_in.buffer_id
+                packet_out.in_port = packet_in.in_port
+                # TODO: update actions_len on packet_out dynamically during
+                #:      pack()
+                packet_out.actions_len = 8  # Only 1 ActionOutput (bytes)
 
-            output_action = ActionOutput()
-            output_action.port = Port.OFPP_FLOOD
-            output_action.max_length = 0
+                output_action = ActionOutput()
+                output_action.port = Port.OFPP_FLOOD
+                output_action.max_length = 0
 
-            packet_out.actions.append(output_action)
-            content = {'message': packet_out}
-            event_out = events.KycoPacketOut(event.dpid, content)
-            self.controller.buffers.msg_out.put(event_out)
+                packet_out.actions.append(output_action)
+                content = {'message': packet_out}
+                event_out = events.KycoPacketOut(event.dpid, content)
+                self.controller.buffers.msg_out.put(event_out)
+                switch.flood_table[flood_hash] = now()
         else:
             # Install a Flow with destination on the dst of this packet.
             flow_mod = FlowMod(xid=packet_in.header.xid)
@@ -110,7 +113,7 @@ class Main(KycoCoreNApp):
             flow_mod.flags = FlowModFlags.OFPFF_CHECK_OVERLAP  # 0 pox
 
             output_action = ActionOutput()
-            output_action.port = self.mac2port[mac_dst.value][1]
+            output_action.port = list(switch.mac2port[mac_dst.value])[0]
             output_action.max_length = 0
             flow_mod.actions.append(output_action)
 
