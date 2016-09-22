@@ -16,9 +16,10 @@ from pyof.v0x01.controller2switch.flow_mod import FlowModFlags
 
 from pyof.v0x01.controller2switch.packet_out import PacketOut
 
+# TODO: This timeout should be setup on a config file from this napp
 from kyco.constants import FLOOD_TIMEOUT
 from kyco.core import events
-from kyco.utils import KycoCoreNApp, listen_to, now
+from kyco.utils import KycoCoreNApp, listen_to
 
 
 log = logging.getLogger('KycoNApp')
@@ -74,7 +75,6 @@ class Main(KycoCoreNApp):
         else:
             switch.mac2port[mac_src.value] = set([in_port])
 
-        flood_hash = hash(ethernet_frame.value)
         eth_type = int.from_bytes(ethernet_frame.value[12:14], 'big')
 
         msg = '----------------------------------------------------------\n'
@@ -123,8 +123,7 @@ class Main(KycoCoreNApp):
             content = {'message': flow_mod}
             event_out = events.KycoMessageOutFlowMod(event.dpid, content)
             self.controller.buffers.msg_out.put(event_out)
-        elif (flood_hash not in switch.flood_table or
-                (now() - switch.flood_table[flood_hash]).microseconds > FLOOD_TIMEOUT):
+        else:
             # Flood the packet if we haven't done it yet
             packet_out = PacketOut(xid=packet_in.header.xid)
             packet_out.buffer_id = packet_in.buffer_id
@@ -147,12 +146,6 @@ class Main(KycoCoreNApp):
             content = {'message': packet_out}
             event_out = events.KycoPacketOut(event.dpid, content)
             self.controller.buffers.msg_out.put(event_out)
-            switch.flood_table[flood_hash] = now()
-        else:
-            msg2 = '\n\n====================================================\n'
-            msg2 += msg
-            log.debug(msg2)
-
 
     def shutdown(self):
         pass
