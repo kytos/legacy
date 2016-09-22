@@ -74,36 +74,32 @@ class Main(KycoCoreNApp):
         else:
             switch.mac2port[mac_src.value] = set([in_port])
 
-        if mac_dst.is_broadcast() or mac_dst.value not in switch.mac2port:
-            eth_type = ethernet_frame.value[12:14]
-            flood_hash = hash(ethernet_frame.value)
-            if (flood_hash not in switch.flood_table or
-                    (now() - switch.flood_table[flood_hash]).microseconds > FLOOD_TIMEOUT):
-                packet_out = PacketOut(xid=packet_in.header.xid)
-                packet_out.buffer_id = packet_in.buffer_id
-                packet_out.in_port = packet_in.in_port
-                # TODO: update actions_len on packet_out dynamically during
-                #:      pack()
-                packet_out.actions_len = 8  # Only 1 ActionOutput (bytes)
+        flood_hash = hash(ethernet_frame.value)
+        eth_type = int.from_bytes(ethernet_frame.value[12:14], 'big')
 
-                output_action = ActionOutput()
-                output_action.port = Port.OFPP_FLOOD
-                output_action.max_length = 0
+        msg = '----------------------------------------------------------\n'
+        msg += '    dpid({}) | '.format(switch.dpid)
+        msg += 'port({}) | '.format(switch.connection_id[1])
+        msg += 'src({}) | '.format(mac_src.value)
+        msg += 'dst({})\n'.format(mac_dst.value)
+        msg += '    switch_mac2port: {}\n'.format(switch.mac2port)
+        msg += '    switch_flood_table: {}\n'.format(switch.flood_table)
+        msg += '=======================================================\n\n'
 
-                packet_out.actions.append(output_action)
-                content = {'message': packet_out}
-                event_out = events.KycoPacketOut(event.dpid, content)
-                self.controller.buffers.msg_out.put(event_out)
-                switch.flood_table[flood_hash] = now()
-        else:
+        if mac_dst.value in switch.mac2port:
+            # If we know the destination, just forward it.
             # Install a Flow with destination on the dst of this packet.
             flow_mod = FlowMod(xid=packet_in.header.xid)
             flow_mod.command = FlowModCommand.OFPFC_ADD
             flow_mod.match = Match()
             # As the default value for wildcards is OFPFW_ALL,
             # we will decrement the bit of OFPFW_DL_DST.
+            flow_mod.match.wildcards -= FlowWildCards.OFPFW_DL_SRC
             flow_mod.match.wildcards -= FlowWildCards.OFPFW_DL_DST
+            flow_mod.match.wildcards -= FlowWildCards.OFPFW_DL_TYPE
+            flow_mod.match.dl_src = mac_src.value
             flow_mod.match.dl_dst = mac_dst.value
+            flow_mod.match.dl_type = eth_type
             flow_mod.cookie = 0
             flow_mod.idle_timeout = 100
             flow_mod.hard_timeout = 200
@@ -117,12 +113,46 @@ class Main(KycoCoreNApp):
             output_action.max_length = 0
             flow_mod.actions.append(output_action)
 
-            log.debug("Action: %s", output_action.pack())
+            msg2 = '\n\n====================================================\n'
+            msg2 += ' ************* FORWARDING ************* '
+            msg2 += '    Dest: {} | out_port: {}\n'.format(mac_dst.value,
+                                                           output_action.port)
+            msg2 += msg
+            log.debug(msg2)
 
             content = {'message': flow_mod}
             event_out = events.KycoMessageOutFlowMod(event.dpid, content)
             self.controller.buffers.msg_out.put(event_out)
+        elif (flood_hash not in switch.flood_table or
+                (now() - switch.flood_table[flood_hash]).microseconds > FLOOD_TIMEOUT):
+            # Flood the packet if we haven't done it yet
+            packet_out = PacketOut(xid=packet_in.header.xid)
+            packet_out.buffer_id = packet_in.buffer_id
+            packet_out.in_port = packet_in.in_port
+            # TODO: update actions_len on packet_out dynamically during pack()
+            packet_out.actions_len = 8  # Only 1 ActionOutput (bytes)
+
+            output_action = ActionOutput()
+            output_action.port = Port.OFPP_FLOOD
+            output_action.max_length = 0
+
+            msg2 = '\n\n====================================================\n'
+            msg2 += ' $$$$$$$$$$$$$ FLOODING $$$$$$$$$$$$$ '
+            msg2 += '    Dest: {} | out_port: {}\n'.format(mac_dst.value,
+                                                           output_action.port)
+            msg2 += msg
+            log.debug(msg2)
+
+            packet_out.actions.append(output_action)
+            content = {'message': packet_out}
+            event_out = events.KycoPacketOut(event.dpid, content)
+            self.controller.buffers.msg_out.put(event_out)
+            switch.flood_table[flood_hash] = now()
+        else:
+            msg2 = '\n\n====================================================\n'
+            msg2 += msg
+            log.debug(msg2)
+
 
     def shutdown(self):
         pass
-
