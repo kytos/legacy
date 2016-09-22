@@ -33,7 +33,7 @@ from kyco.core.events import (KycoMessageIn, KycoMessageInEchoRequest,
 from kyco.core.switch import KycoSwitch
 from kyco.utils import KycoCoreNApp, listen_to
 
-log = logging.getLogger('KycoNApp')
+log = logging.getLogger('Kyco')
 
 
 class Main(KycoCoreNApp):
