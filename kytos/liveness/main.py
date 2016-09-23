@@ -5,7 +5,7 @@ import time
 from pyof.v0x01.symmetric.echo_request import EchoRequest
 
 from kyco.constants import POOLING_TIME
-from kyco.core.events import KycoMessageOutEchoRequest, KycoMessageInEchoReply
+from kyco.core.events import KycoMessageInEchoReply, KycoMessageOutEchoRequest
 from kyco.utils import KycoCoreNApp, listen_to, now
 
 log = logging.getLogger('Kyco')
@@ -38,11 +38,11 @@ class Main(KycoCoreNApp):
         while not self.stop_signal:
             if len(self.switches) > 0:
                 for switch in self.switches.values():
-                    log.debug(msg, switch.dpid, switch.is_connected(),
-                              switch.waiting_for_reply, switch.lastseen)
                     if (switch.is_connected() and
                             not switch.waiting_for_reply and
                             (now() - switch.lastseen).seconds > POOLING_TIME):
+                        log.debug(msg, switch.dpid, switch.is_connected(),
+                                  switch.waiting_for_reply, switch.lastseen)
                         message_out = EchoRequest()
                         switch.sent_xid = message_out.header.xid
                         switch.waiting_for_reply = True
