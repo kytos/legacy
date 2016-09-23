@@ -72,13 +72,13 @@ class FastLinter(Linter):
 
 
 setup(name='kyco-core-napps',
-      version='1.1.0a5.dev0',
+      version='1.1.0a5.dev1',
       description='Core Napps developed by Kytos Team',
       url='http://github.com/kytos/kyco-core-napps',
       author='Kytos Team',
       author_email='of-ng-dev@ncc.unesp.br',
       license='MIT',
-      install_requires=['python-openflow >= 1.1.0-a2'],
+      install_requires=['python-openflow >= 1.1.0a2.post2'],
       data_files=[(os.path.join(BASE_ENV, 'var/lib/kytos/napps/kytos/ofcore/'),
                    ["kytos/ofcore/__init__.py", "kytos/ofcore/main.py"])],
       cmdclass={
