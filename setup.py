@@ -59,7 +59,7 @@ class Linter(Command):
 
 
 class FastLinter(Linter):
-    """Same as Linter, but without the slow pylint"""
+    """Same as Linter, but without the slow pylint."""
 
     description = 'Same as "lint", but much faster (no pylama_pylint).'
 
