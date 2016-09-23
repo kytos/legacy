@@ -37,8 +37,6 @@ class Main(KycoCoreNApp):
                     if (switch.is_connected() and
                             not switch.waiting_for_reply and
                             (now() - switch.lastseen).seconds > POOLING_TIME):
-                        log.debug(msg, switch.dpid, switch.is_connected(),
-                                  switch.waiting_for_reply, switch.lastseen)
                         message_out = EchoRequest()
                         switch.sent_xid = message_out.header.xid
                         switch.waiting_for_reply = True
