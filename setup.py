@@ -71,6 +71,17 @@ class FastLinter(Linter):
                          'Run the slower "lint" after solving these issues:'
 
 
+def retrieve_apps(kytos_napps_path):
+    apps = []
+    for napp_name in os.listdir("./kytos"):
+        app_files = []
+        app_path = os.path.join("./kytos", napp_name)
+        for file_name in os.listdir(app_path):
+            app_files.append(os.path.join(app_path, file_name))
+        apps.append((os.path.join(kytos_napps_path, napp_name), app_files))
+    return apps
+
+
 setup(name='kyco-core-napps',
       version='1.1.0a5.dev1',
       description='Core Napps developed by Kytos Team',
@@ -79,8 +90,8 @@ setup(name='kyco-core-napps',
       author_email='of-ng-dev@ncc.unesp.br',
       license='MIT',
       install_requires=['python-openflow >= 1.1.0a2.post2'],
-      data_files=[(os.path.join(BASE_ENV, 'var/lib/kytos/napps/kytos/ofcore/'),
-                   ["kytos/ofcore/__init__.py", "kytos/ofcore/main.py"])],
+      data_files=retrieve_apps(os.path.join(BASE_ENV,
+                                            'var/lib/kytos/napps/kytos/')),
       cmdclass={
           'lint': Linter,
           'quick_lint': FastLinter
