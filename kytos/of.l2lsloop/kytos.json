@@ -3,7 +3,7 @@
   "long_description": "",
   "description": "A L2 learning switch application for openflow switches. That supports topologies with loops.",
   "version": "0.1.1",
-  "author": "Kytos",
+  "author": "kytos",
   "ofversion": "1.0",
   "dependencies": "None",
   "license": "MIT",

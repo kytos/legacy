@@ -1,9 +1,9 @@
 {
-  "name": "ofcore",
+  "name": "of.core",
   "long_description": "",
   "description": "OpenFlow Core of Kytos Controller, responsible for main OpenFlow operations.",
   "version": "0.1.1",
-  "author": "Kytos",
+  "author": "kytos",
   "ofversion": "1.0",
   "dependencies": "None",
   "license": "MIT",
