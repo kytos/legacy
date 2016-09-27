@@ -36,7 +36,7 @@ class Main(KycoCoreNApp):
         The setup method is automatically called by the run method.
         Users shouldn't call this method directly."""
         # TODO: App information goes to app_name.json
-        self.name = 'kytos.l2_learning_switch'
+        self.name = 'kytos.l2_learning_switch_with_loop'
 
     def execute(self):
         """Method to be runned once on app 'start' or in a loop.
