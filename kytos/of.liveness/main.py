@@ -31,18 +31,12 @@ class Main(KycoCoreNApp):
 
     def execute(self):
         """Implement a loop to check switches liveness"""
-        msg = "dpid: %s\n    "
-        msg += "- Connected: %s\n    "
-        msg += "- Waiting For EchoReply: %s\n    "
-        msg += "- LastSeen: %s s ago"
         while not self.stop_signal:
             if len(self.switches) > 0:
                 for switch in self.switches.values():
                     if (switch.is_connected() and
                             not switch.waiting_for_reply and
                             (now() - switch.lastseen).seconds > POOLING_TIME):
-                        log.debug(msg, switch.dpid, switch.is_connected(),
-                                  switch.waiting_for_reply, switch.lastseen)
                         message_out = EchoRequest()
                         switch.sent_xid = message_out.header.xid
                         switch.waiting_for_reply = True
@@ -71,10 +65,10 @@ class Main(KycoCoreNApp):
                 and switch.sent_xid == echo_reply.header.xid):
             switch.update_lastseen()
 
-    @listen_to('KycoMessageIn*')
+    @listen_to('KycoMessageIn.*')
     def update_switch_lastseen(self, event):
         """Updates lastseen of a switch on the arrival of any OF message"""
-        if (event.dpid is not None
+        if (event.dpid in self.controller.switches
                 and not isinstance(event, KycoMessageInEchoReply)):
             # Avoid updating liveness before the end of the handshake,
             # when the switch is not yet linked to the connection (socket)
