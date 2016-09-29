@@ -123,7 +123,7 @@ class Main(KycoCoreNApp):
         name = message.header.message_type.name.lower()
         of_event = KycoEvent(name="kytos/of.core.messages.in.{}".format(name),
                              content={'message': message,
-                                      'destination': event.source})
+                                      'source': event.source})
         self.controller.buffers.msg_in.put(of_event)
 
 #        # Now we create a new MessageInEvent based on the message_type
@@ -192,7 +192,7 @@ class Main(KycoCoreNApp):
 
         event_out = KycoEvent(name='kytos/of.core.messages.out.ofpt_features_request',
                               content={'message': FeaturesRequest(),
-                                       'destination': event.source})
+                                       'destination': event.destination})
         self.controller.buffers.msg_out.put(event_out)
 #
 #    def send_flow_delete(self, dpid):
