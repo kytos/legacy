@@ -8,7 +8,7 @@ from pyof.v0x01.common.phy_port import Port
 from pyof.v0x01.common.flow_match import Match
 from pyof.v0x01.common.flow_match import FlowWildCards
 
-from pyof.foundation.basic_types import HWAddress
+from pyof.foundation.basic_types import Ethernet
 
 from pyof.v0x01.controller2switch.flow_mod import FlowMod
 from pyof.v0x01.controller2switch.flow_mod import FlowModCommand
@@ -18,8 +18,9 @@ from pyof.v0x01.controller2switch.packet_out import PacketOut
 
 # TODO: This timeout should be setup on a config file from this napp
 from kyco.constants import FLOOD_TIMEOUT
-from kyco.core import events
-from kyco.utils import KycoCoreNApp, listen_to
+from kyco.core.events import KycoEvent
+from kyco.core.napps import KycoCoreNApp
+from kyco.utils import listen_to
 
 
 log = logging.getLogger('KycoNApp')
@@ -46,8 +47,8 @@ class Main(KycoCoreNApp):
         Users shouldn't call this method directly."""
         pass
 
-    @listen_to('KycoPacketIn')
-    def handle_message_in_packet_event(self, event):
+    @listen_to('kytos/of.core.messages.in.ofpt_packet_in')
+    def handle_packet_in(self, event):
         """Handle PacketIn Event by installing flows allowing communication
         between switch ports.
 
@@ -58,35 +59,26 @@ class Main(KycoCoreNApp):
 
         packet_in = event.content['message']
 
-        ethernet_frame = packet_in.data
-
-        mac_dst = HWAddress()
-        mac_src = HWAddress()
-
-        mac_dst.unpack(ethernet_frame.value[0:6])
-        mac_src.unpack(ethernet_frame.value[6:12])
-
+        ethernet = Ethernet()
+        ethernet.unpack(packet_in.data.value)
         in_port = packet_in.in_port.value
-
+        switch = event.source.switch
         # Updating mac_src and in_port
-        switch = self.controller.switches[event.dpid]
-        if mac_src.value in switch.mac2port:
-            switch.mac2port[mac_src.value].add(in_port)
+        if ethernet.source.value in switch.mac2port:
+            switch.mac2port[ethernet.source.value].add(in_port)
         else:
-            switch.mac2port[mac_src.value] = set([in_port])
+            switch.mac2port[ethernet.source.value] = set([in_port])
 
-        eth_type = int.from_bytes(ethernet_frame.value[12:14], 'big')
+#        msg = '----------------------------------------------------------\n'
+#        msg += '    dpid({}) | '.format(switch.dpid)
+#        msg += 'port({}) | '.format(switch.connection_id[1])
+#        msg += 'src({}) | '.format(mac_src.value)
+#        msg += 'dst({})\n'.format(mac_dst.value)
+#        msg += '    switch_mac2port: {}\n'.format(switch.mac2port)
+#        msg += '    switch_flood_table: {}\n'.format(switch.flood_table)
+#        msg += '=======================================================\n\n'
 
-        msg = '----------------------------------------------------------\n'
-        msg += '    dpid({}) | '.format(switch.dpid)
-        msg += 'port({}) | '.format(switch.connection_id[1])
-        msg += 'src({}) | '.format(mac_src.value)
-        msg += 'dst({})\n'.format(mac_dst.value)
-        msg += '    switch_mac2port: {}\n'.format(switch.mac2port)
-        msg += '    switch_flood_table: {}\n'.format(switch.flood_table)
-        msg += '=======================================================\n\n'
-
-        if mac_dst.value in switch.mac2port:
+        if ethernet.destination.value in switch.mac2port:
             # If we know the destination, just forward it.
             # Install a Flow with destination on the dst of this packet.
             flow_mod = FlowMod(xid=packet_in.header.xid)
@@ -97,9 +89,9 @@ class Main(KycoCoreNApp):
             flow_mod.match.wildcards -= FlowWildCards.OFPFW_DL_SRC
             flow_mod.match.wildcards -= FlowWildCards.OFPFW_DL_DST
             flow_mod.match.wildcards -= FlowWildCards.OFPFW_DL_TYPE
-            flow_mod.match.dl_src = mac_src.value
-            flow_mod.match.dl_dst = mac_dst.value
-            flow_mod.match.dl_type = eth_type
+            flow_mod.match.dl_src = ethernet.source.value
+            flow_mod.match.dl_dst = ethernet.destination.value
+            flow_mod.match.dl_type = ethernet.type
             flow_mod.cookie = 0
             flow_mod.idle_timeout = 100
             flow_mod.hard_timeout = 200
@@ -109,19 +101,20 @@ class Main(KycoCoreNApp):
             flow_mod.flags = FlowModFlags.OFPFF_CHECK_OVERLAP  # 0 pox
 
             output_action = ActionOutput()
-            output_action.port = list(switch.mac2port[mac_dst.value])[0]
+            output_action.port = list(switch.mac2port[ethernet.destination.value])[0]
             output_action.max_length = 0
             flow_mod.actions.append(output_action)
 
-            msg2 = '\n\n====================================================\n'
-            msg2 += ' ************* FORWARDING ************* '
-            msg2 += '    Dest: {} | out_port: {}\n'.format(mac_dst.value,
-                                                           output_action.port)
-            msg2 += msg
-            log.debug(msg2)
+#            msg2 = '\n\n====================================================\n'
+#            msg2 += ' ************* FORWARDING ************* '
+#            msg2 += '    Dest: {} | out_port: {}\n'.format(mac_dst.value,
+#                                                           output_action.port)
+#            msg2 += msg
+#            log.debug(msg2)
 
-            content = {'message': flow_mod}
-            event_out = events.KycoMessageOutFlowMod(event.dpid, content)
+            event_out = KycoEvent(name='kytos/of.l2ls.messages.out.ofpt_flow_mod',
+                                  content={'destination': event.source,
+                                           'message': flow_mod})
             self.controller.buffers.msg_out.put(event_out)
         else:
             # Flood the packet if we haven't done it yet
@@ -135,16 +128,18 @@ class Main(KycoCoreNApp):
             output_action.port = Port.OFPP_FLOOD
             output_action.max_length = 0
 
-            msg2 = '\n\n====================================================\n'
-            msg2 += ' $$$$$$$$$$$$$ FLOODING $$$$$$$$$$$$$ '
-            msg2 += '    Dest: {} | out_port: {}\n'.format(mac_dst.value,
-                                                           output_action.port)
-            msg2 += msg
-            log.debug(msg2)
+#            msg2 = '\n\n====================================================\n'
+#            msg2 += ' $$$$$$$$$$$$$ FLOODING $$$$$$$$$$$$$ '
+#            msg2 += '    Dest: {} | out_port: {}\n'.format(mac_dst.value,
+#                                                           output_action.port)
+#            msg2 += msg
+#            log.debug(msg2)
 
             packet_out.actions.append(output_action)
             content = {'message': packet_out}
-            event_out = events.KycoPacketOut(event.dpid, content)
+            event_out = KycoEvent(name='kytos/of.l2ls.messages.out.ofpt_packet_out',
+                                  content={'destination': event.source,
+                                           'message': packet_out})
             self.controller.buffers.msg_out.put(event_out)
 
     def shutdown(self):
