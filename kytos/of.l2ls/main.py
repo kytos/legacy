@@ -88,8 +88,6 @@ class Main(KycoCoreNApp):
             packet_out = PacketOut()
             packet_out.buffer_id = packet_in.buffer_id
             packet_out.in_port = packet_in.in_port
-            # TODO: update actions_len on packet_out dynamically during pack()
-            packet_out.actions_len = 8  # Only 1 ActionOutput (bytes)
 
             packet_out.actions.append(ActionOutput(port=Port.OFPP_FLOOD))
             event_out = KycoEvent(name='kytos/of.l2ls.messages.out.ofpt_packet_out',
