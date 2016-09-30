@@ -9,6 +9,7 @@ from pyof.v0x01.symmetric.hello import Hello
 
 from kyco.core.events import KycoEvent
 from kyco.core.napps import KycoCoreNApp
+from kyco.core.switch import Interface
 from kyco.utils import listen_to
 
 
@@ -59,6 +60,16 @@ class Main(KycoCoreNApp):
 
         switch = self.controller.get_switch_or_create(dpid=dpid,
                                                       connection=event.source)
+
+        for port in features.ports:
+            interface = Interface(name=port.name.value,
+                                  address=port.hw_addr.value,
+                                  port_number=port.port_no.value,
+                                  switch=switch,
+                                  state=port.state.value)
+            switch.update_interface(interface)
+
+
         switch.update_features(features)
 
     @listen_to('kyco/core.messages.openflow.new')
