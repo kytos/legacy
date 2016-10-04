@@ -1,28 +1,18 @@
 import logging
 import time
 
+from pyof.foundation.basic_types import HWAddress, UBInt8, UBInt16, UBInt64
+from pyof.foundation.constants import UBINT64_MAX_VALUE
 from pyof.v0x01.common.action import ActionOutput
 from pyof.v0x01.common.constants import NO_BUFFER
+from pyof.v0x01.common.flow_match import FlowWildCards, Match
 from pyof.v0x01.common.phy_port import Port
-
-from pyof.v0x01.common.flow_match import Match
-from pyof.v0x01.common.flow_match import FlowWildCards
-
-from pyof.foundation.constants import UBINT16_MAX_VALUE
-
-from pyof.v0x01.controller2switch.flow_mod import FlowMod
-from pyof.v0x01.controller2switch.flow_mod import FlowModCommand
-from pyof.v0x01.controller2switch.flow_mod import FlowModFlags
-
-from pyof.foundation.basic_types import UBInt8
-from pyof.foundation.basic_types import UBInt64
-from pyof.foundation.basic_types import UBInt16
-
+from pyof.v0x01.controller2switch.flow_mod import FlowMod, FlowModCommand
 from pyof.v0x01.controller2switch.packet_out import PacketOut
-from pyof.foundation.basic_types import HWAddress
 
 from kyco.constants import POOLING_TIME
 from kyco.core import events
+from kyco.core.events import KycoEvent
 from kyco.utils import KycoCoreNApp, listen_to
 
 log = logging.getLogger('KycoNApp')
@@ -34,50 +24,34 @@ class Main(KycoCoreNApp):
 
     def setup(self):
         """Creates an empty dict to store the switches references and data"""
-        self.name = 'core.lldp'
+        self.name = 'kytos/of.lldp'
         self.stop_signal = False
         # TODO: This switches object may change according to changes from #62
-        self.switches = self.controller.switches
 
     def execute(self):
         """Implement a loop to check switches liveness"""
         while not self.stop_signal:
-            if len(self.switches) > 0:
-                for switch in self.switches.values():
-                    # Gerar lldp para cada uma das portas do switch
-                    # Gerar o hash de cada um dos pacotes e armazenar
+            for switch in self.controller.switches.values():
+                # Gerar lldp para cada uma das portas do switch
+                # Gerar o hash de cada um dos pacotes e armazenar
 
-                    for port in switch.features.ports:
-                        pkt_lldp = lldp_generator(port.hw_addr, switch.dpid,
-                                             port.port_no)
-                        msg = 'Data Sent: {}\n'.format(pkt_lldp)
-                        log.debug(msg)
-                        packet_out = PacketOut()
-                        packet_out.buffer_id = NO_BUFFER
-                        packet_out.in_port = Port.OFPP_NONE
-                        packet_out.actions_len = 8  # Only 1 ActionOutput (bytes)
-                        packet_out.data = pkt_lldp
+                for port in switch.features.ports:
+                    output_action = ActionOutput()
+                    output_action.port = port.port_no
 
-                        output_action = ActionOutput()
-                        output_action.port = port.port_no
-                        output_action.max_length = 0
+                    packet_out = PacketOut()
+                    packet_out.data = lldp_generator(port.hw_addr,
+                                                     switch.dpid,
+                                                     port.port_no)
+                    packet_out.actions.append(output_action)
+                    event_out = KycoEvent()
+                    event_out.name = 'kytos/of.lldp.messages.out.packet_out'
+                    event_out.content = {'destination': switch.connection,
+                                         'message': packet_out}
+                    self.controller.buffers.msg_out.put(event_out)
 
-
-
-                        packet_out.actions.append(output_action)
-                        content = {'message': packet_out}
-                        event_out = events.KycoMessageOutFlowMod(switch.dpid,
-                                                                  content)
-                        self.controller.buffers.msg_out.put(event_out)
-
-
-                    #     msg += 'Switch: {} | '.format(switch.dpid)
-                    #     msg += 'Port: {} | '.format(port.port_no)
-                    #     msg += 'HW_Addr: {}'.format(port.hw_addr)
-                        msg = 'message: {}\n'.format(pkt_lldp)
-                    #     msg += '--------------------------------------------\n\n'
-                        log.debug(msg)
-
+                    log.debug("Sending a LLDP PacketOut to the switch %s",
+                              switch.dpid)
 
             # wait 1s until next check...
             time.sleep(POOLING_TIME)
@@ -85,7 +59,7 @@ class Main(KycoCoreNApp):
     @listen_to('KycoMessageIn')
     def update_lldp(self, event):
         log.debug("PacketIn Received")
-        packet_in = event.content['message']
+        packet_in = event.message
         # ethernet_frame = packet_in.data
 
     @listen_to('KycoSwitchUp')
@@ -95,7 +69,8 @@ class Main(KycoCoreNApp):
         Args:
             event (KycoSwitchUp): Switch connected to the controller
         """
-        log.debug("Installing LLDP Flow on Switch %s", event.dpid)
+        log.debug("Installing LLDP Flow on Switch %s",
+                  event.source.switch.dpid)
 
         flow_mod = FlowMod()
         flow_mod.command = FlowModCommand.OFPFC_ADD
@@ -104,23 +79,13 @@ class Main(KycoCoreNApp):
         flow_mod.match.wildcards -= FlowWildCards.OFPFW_DL_TYPE
         flow_mod.match.dl_dst = "01:23:20:00:00:01"
         flow_mod.match.dl_type = 0x88cc
-        flow_mod.cookie = 0
-        # TODO: Review timeouts
-        flow_mod.idle_timeout = 0
-        flow_mod.hard_timeout = 0
-        # TODO: Review priority
-        flow_mod.priority = 65000  # a high number
-        flow_mod.buffer_id = NO_BUFFER
-        flow_mod.out_port = Port.OFPP_NONE
-        flow_mod.flags = FlowModFlags.OFPFF_CHECK_OVERLAP  # 0 pox
+        flow_mod.priority = 65000  # a high number TODO: Review
+        flow_mod.actions.append(ActionOutput(port=Port.OFPP_CONTROLLER,
+                                             max_length=UBINT64_MAX_VALUE))
+        event_out = KycoEvent(name='kytos/of.lldp.messages.out.ofpt_flow_mod',
+                              content={'destination': event.source,
+                                       'message': flow_mod})
 
-        output_action = ActionOutput()
-        output_action.port = Port.OFPP_CONTROLLER
-        output_action.max_length = UBINT16_MAX_VALUE
-        flow_mod.actions.append(output_action)
-
-        content = {'message': flow_mod}
-        event_out = events.KycoMessageOutFlowMod(event.dpid, content)
         self.controller.buffers.msg_out.put(event_out)
 
     def shutdown(self):
