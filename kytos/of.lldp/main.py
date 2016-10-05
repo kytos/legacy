@@ -40,10 +40,10 @@ class Main(KycoCoreNApp):
                     output_action.port = port.port_no
 
                     packet_out = PacketOut()
-                    packet_out.data = lldp_generator(port.hw_addr,
-                                                     switch.dpid,
-                                                     port.port_no)
                     packet_out.actions.append(output_action)
+                    packet_out.data = LLDP(port.hw_addr,
+                                           switch.dpid,
+                                           port.port_no).pack()
                     event_out = KycoEvent()
                     event_out.name = 'kytos/of.lldp.messages.out.packet_out'
                     event_out.content = {'destination': switch.connection,
