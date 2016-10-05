@@ -45,7 +45,7 @@ class Main(KycoCoreNApp):
                                            switch.dpid,
                                            port.port_no).pack()
                     event_out = KycoEvent()
-                    event_out.name = 'kytos/of.lldp.messages.out.packet_out'
+                    event_out.name = 'kytos/of.lldp.messages.out.ofpt_packet_out'
                     event_out.content = {'destination': switch.connection,
                                          'message': packet_out}
                     self.controller.buffers.msg_out.put(event_out)
@@ -56,13 +56,13 @@ class Main(KycoCoreNApp):
             # wait 1s until next check...
             time.sleep(POOLING_TIME)
 
-    @listen_to('KycoMessageIn')
+    @listen_to('kytos/of.core.messages.in.ofpt_packet_in')
     def update_lldp(self, event):
         log.debug("PacketIn Received")
         packet_in = event.message
         # ethernet_frame = packet_in.data
 
-    @listen_to('KycoSwitchUp')
+    @listen_to('kyco/core.switches.new')
     def install_lldp_flow(self, event):
         """Install initial flow to forward any lldp to controller.
 
