@@ -6,8 +6,8 @@ from kyco.core.events import KycoEvent
 from kyco.core.napps import KycoCoreNApp
 from kyco.utils import listen_to
 from pyof.foundation.basic_types import HWAddress, UBInt8, UBInt16, UBInt64
-from pyof.foundation.constants import UBINT64_MAX_VALUE
 from pyof.foundation.network_types import LLDP
+from pyof.foundation.constants import UBINT16_MAX_VALUE
 from pyof.v0x01.common.action import ActionOutput
 from pyof.v0x01.common.constants import NO_BUFFER
 from pyof.v0x01.common.flow_match import FlowWildCards, Match
@@ -69,8 +69,9 @@ class Main(KycoCoreNApp):
         Args:
             event (KycoSwitchUp): Switch connected to the controller
         """
+        switch = event.content['switch']
         log.debug("Installing LLDP Flow on Switch %s",
-                  event.source.switch.dpid)
+                  switch.dpid)
 
         flow_mod = FlowMod()
         flow_mod.command = FlowModCommand.OFPFC_ADD
@@ -81,9 +82,9 @@ class Main(KycoCoreNApp):
         flow_mod.match.dl_type = 0x88cc
         flow_mod.priority = 65000  # a high number TODO: Review
         flow_mod.actions.append(ActionOutput(port=Port.OFPP_CONTROLLER,
-                                             max_length=UBINT64_MAX_VALUE))
+                                             max_length=UBINT16_MAX_VALUE))
         event_out = KycoEvent(name='kytos/of.lldp.messages.out.ofpt_flow_mod',
-                              content={'destination': event.source,
+                              content={'destination': switch.connection,
                                        'message': flow_mod})
 
         self.controller.buffers.msg_out.put(event_out)
