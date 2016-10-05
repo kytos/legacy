@@ -1,19 +1,19 @@
 import logging
 import time
 
+from kyco.constants import POOLING_TIME
+from kyco.core.events import KycoEvent
+from kyco.core.napps import KycoCoreNApp
+from kyco.utils import listen_to
 from pyof.foundation.basic_types import HWAddress, UBInt8, UBInt16, UBInt64
 from pyof.foundation.constants import UBINT64_MAX_VALUE
+from pyof.foundation.network_types import LLDP
 from pyof.v0x01.common.action import ActionOutput
 from pyof.v0x01.common.constants import NO_BUFFER
 from pyof.v0x01.common.flow_match import FlowWildCards, Match
 from pyof.v0x01.common.phy_port import Port
 from pyof.v0x01.controller2switch.flow_mod import FlowMod, FlowModCommand
 from pyof.v0x01.controller2switch.packet_out import PacketOut
-
-from kyco.constants import POOLING_TIME
-from kyco.core import events
-from kyco.core.events import KycoEvent
-from kyco.utils import KycoCoreNApp, listen_to
 
 log = logging.getLogger('KycoNApp')
 
