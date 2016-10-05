@@ -6,8 +6,8 @@ from kyco.core.events import KycoEvent
 from kyco.core.napps import KycoCoreNApp
 from kyco.utils import listen_to
 from pyof.foundation.basic_types import HWAddress, UBInt8, UBInt16, UBInt64
-from pyof.foundation.network_types import LLDP
 from pyof.foundation.constants import UBINT16_MAX_VALUE
+from pyof.foundation.network_types import Ethernet, LLDP
 from pyof.v0x01.common.action import ActionOutput
 from pyof.v0x01.common.constants import NO_BUFFER
 from pyof.v0x01.common.flow_match import FlowWildCards, Match
@@ -16,6 +16,8 @@ from pyof.v0x01.controller2switch.flow_mod import FlowMod, FlowModCommand
 from pyof.v0x01.controller2switch.packet_out import PacketOut
 
 log = logging.getLogger('KycoNApp')
+
+LLDP_ETH_TYPE = 0x88cc
 
 
 class Main(KycoCoreNApp):
@@ -59,8 +61,20 @@ class Main(KycoCoreNApp):
     @listen_to('kytos/of.core.messages.in.ofpt_packet_in')
     def update_lldp(self, event):
         log.debug("PacketIn Received")
-        packet_in = event.message
-        # ethernet_frame = packet_in.data
+        ethernet_frame = Ethernet()
+        ethernet_frame.unpack(event.message.data.value[:14])
+        if ethernet_frame.type == LLDP_ETH_TYPE:
+            lldp = LLDP()
+            lldp.unpack(event.message.data.value)
+            # update a link between two switches
+            # The node are a tuple with (switch, port.port_no)
+            nodeA = (event.source.switch.dpid, event.message.in_port)
+            switchB = UBInt64()
+            switchB.unpack(lldp.tlv_chassis_id.value.value)  # dpid
+            portB = UBInt16()
+            portB.unpack(lldp.tlv_port_id.value.value)  # port_no
+            nodeB = (switchB.value, portB.value)
+            self.controller.update_switches_link(nodeA, nodeB)
 
     @listen_to('kyco/core.switches.new')
     def install_lldp_flow(self, event):
@@ -78,8 +92,8 @@ class Main(KycoCoreNApp):
         flow_mod.match = Match()
         flow_mod.match.wildcards -= FlowWildCards.OFPFW_DL_DST
         flow_mod.match.wildcards -= FlowWildCards.OFPFW_DL_TYPE
-        flow_mod.match.dl_dst = "01:23:20:00:00:01"
-        flow_mod.match.dl_type = 0x88cc
+        flow_mod.match.dl_dst = '01:80:C2:00:00:0E'
+        flow_mod.match.dl_type = LLDP_ETH_TYPE
         flow_mod.priority = 65000  # a high number TODO: Review
         flow_mod.actions.append(ActionOutput(port=Port.OFPP_CONTROLLER,
                                              max_length=UBINT16_MAX_VALUE))
