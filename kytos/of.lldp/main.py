@@ -5,7 +5,7 @@ from kyco.constants import POOLING_TIME
 from kyco.core.events import KycoEvent
 from kyco.core.napps import KycoCoreNApp
 from kyco.utils import listen_to
-from pyof.foundation.basic_types import HWAddress, UBInt8, UBInt16, UBInt64
+from pyof.foundation.basic_types import HWAddress, UBInt8, UBInt16, UBInt64, DPID
 from pyof.foundation.constants import UBINT16_MAX_VALUE
 from pyof.foundation.network_types import Ethernet, LLDP
 from pyof.v0x01.common.action import ActionOutput
@@ -16,8 +16,6 @@ from pyof.v0x01.controller2switch.flow_mod import FlowMod, FlowModCommand
 from pyof.v0x01.controller2switch.packet_out import PacketOut
 
 log = logging.getLogger('KycoNApp')
-
-LLDP_ETH_TYPE = 0x88cc
 
 
 class Main(KycoCoreNApp):
@@ -41,11 +39,24 @@ class Main(KycoCoreNApp):
                     output_action = ActionOutput()
                     output_action.port = port.port_no
 
+                    if port.port_no.value == 65534:
+                        continue
+
+                    ethernet = Ethernet()
+                    ethernet.type = 0x88cc # lldp
+                    ethernet.source = port.hw_addr
+                    ethernet.destination = '01:80:c2:00:00:0e' # lldp multicast
+
+                    lldp = LLDP()
+                    lldp.chassis_id.sub_value = DPID(switch.dpid)
+                    lldp.port_id.sub_value = port.port_no
+
+                    ethernet.data = lldp.pack()
+
                     packet_out = PacketOut()
                     packet_out.actions.append(output_action)
-                    packet_out.data = LLDP(port.hw_addr,
-                                           switch.dpid,
-                                           port.port_no).pack()
+                    packet_out.data = ethernet.pack()
+
                     event_out = KycoEvent()
                     event_out.name = 'kytos/of.lldp.messages.out.ofpt_packet_out'
                     event_out.content = {'destination': switch.connection,
@@ -58,50 +69,48 @@ class Main(KycoCoreNApp):
             # wait 1s until next check...
             time.sleep(POOLING_TIME)
 
-    @listen_to('kytos/of.core.messages.in.ofpt_packet_in')
-    def update_lldp(self, event):
-        log.debug("PacketIn Received")
-        ethernet_frame = Ethernet()
-        ethernet_frame.unpack(event.message.data.value[:14])
-        if ethernet_frame.type == LLDP_ETH_TYPE:
-            lldp = LLDP()
-            lldp.unpack(event.message.data.value)
-            # update a link between two switches
-            # The node are a tuple with (switch, port.port_no)
-            nodeA = (event.source.switch.dpid, event.message.in_port)
-            switchB = UBInt64()
-            switchB.unpack(lldp.tlv_chassis_id.value.value)  # dpid
-            portB = UBInt16()
-            portB.unpack(lldp.tlv_port_id.value.value)  # port_no
-            nodeB = (switchB.value, portB.value)
-            self.controller.update_switches_link(nodeA, nodeB)
+#    @listen_to('kytos/of.core.messages.in.ofpt_packet_in')
+#    def update_lldp(self, event):
+#        log.debug("PacketIn Received")
+#        ethernet_frame = Ethernet()
+#        ethernet_frame.unpack(event.message.data.value[:14])
+#        if ethernet_frame.type == LLDP_ETH_TYPE:
+#            lldp = LLDP()
+#            lldp.unpack(event.message.data.value)
+#            # update a link between two switches
+#            # The node are a tuple with (switch, port.port_no)
+#            nodeA = (event.source.switch.dpid, event.message.in_port)
+#            switchB = UBInt64()
+#            switchB.unpack(lldp.tlv_chassis_id.value.value)  # dpid
+#            portB = UBInt16()
+#            portB.unpack(lldp.tlv_port_id.value.value)  # port_no
+#            nodeB = (switchB.value, portB.value)
+#            self.controller.update_switches_link(nodeA, nodeB)
 
-    @listen_to('kyco/core.switches.new')
-    def install_lldp_flow(self, event):
-        """Install initial flow to forward any lldp to controller.
-
-        Args:
-            event (KycoSwitchUp): Switch connected to the controller
-        """
-        switch = event.content['switch']
-        log.debug("Installing LLDP Flow on Switch %s",
-                  switch.dpid)
-
-        flow_mod = FlowMod()
-        flow_mod.command = FlowModCommand.OFPFC_ADD
-        flow_mod.match = Match()
-        flow_mod.match.wildcards -= FlowWildCards.OFPFW_DL_DST
-        flow_mod.match.wildcards -= FlowWildCards.OFPFW_DL_TYPE
-        flow_mod.match.dl_dst = '01:80:C2:00:00:0E'
-        flow_mod.match.dl_type = LLDP_ETH_TYPE
-        flow_mod.priority = 65000  # a high number TODO: Review
-        flow_mod.actions.append(ActionOutput(port=Port.OFPP_CONTROLLER,
-                                             max_length=UBINT16_MAX_VALUE))
-        event_out = KycoEvent(name='kytos/of.lldp.messages.out.ofpt_flow_mod',
-                              content={'destination': switch.connection,
-                                       'message': flow_mod})
-
-        self.controller.buffers.msg_out.put(event_out)
+#    @listen_to('kyco/core.switches.new')
+#    def install_lldp_flow(self, event):
+#        """Install initial flow to forward any lldp to controller.
+#
+#        Args:
+#            event (KycoSwitchUp): Switch connected to the controller
+#        """
+#        switch = event.content['switch']
+#        log.debug("Installing LLDP Flow on Switch %s",
+#                  switch.dpid)
+#
+#        flow_mod = FlowMod()
+#        flow_mod.command = FlowModCommand.OFPFC_ADD
+#        flow_mod.match = Match()
+#        flow_mod.match.wildcards -= FlowWildCards.OFPFW_DL_DST
+#        flow_mod.match.dl_type = LLDP_ETH_TYPE
+#        flow_mod.priority = 65000  # a high number TODO: Review
+#        flow_mod.actions.append(ActionOutput(port=Port.OFPP_CONTROLLER,
+#                                             max_length=UBINT16_MAX_VALUE))
+#        event_out = KycoEvent(name='kytos/of.lldp.messages.out.ofpt_flow_mod',
+#                              content={'destination': switch.connection,
+#                                       'message': flow_mod})
+#
+#        self.controller.buffers.msg_out.put(event_out)
 
     def shutdown(self):
         self.stop_signal = True
