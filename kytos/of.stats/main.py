@@ -1,19 +1,15 @@
 """Statistics application."""
-import sys
+from abc import ABCMeta, abstractmethod
 from logging import getLogger
-from os.path import dirname
 from threading import Event
 
 from kyco.constants import POOLING_TIME
+from kyco.core.events import KycoEvent
 from kyco.core.napps import KycoNApp
 from kyco.utils import listen_to
 from pyof.v0x01.common.phy_port import Port
 from pyof.v0x01.controller2switch.common import PortStatsRequest
 from pyof.v0x01.controller2switch.stats_request import StatsRequest, StatsTypes
-
-sys.path.insert(0, dirname(__file__))
-from stats import Stats
-sys.path.pop(0)
 
 log = getLogger('Stats')
 
@@ -56,6 +52,30 @@ class Main(KycoNApp):
         else:
             log.debug('No listener for %s in %s.', msg.body_type.value,
                       list(self._stats.keys()))
+
+
+class Stats(metaclass=ABCMeta):
+    """Abstract class for Statistics implementation."""
+
+    def __init__(self, msg_out_buffer):
+        """Store a reference to the controller's msg_out buffer."""
+        self._buffer = msg_out_buffer
+
+    @abstractmethod
+    def request(self, conn):
+        """Request statistics."""
+        pass
+
+    @abstractmethod
+    def listen(self, dpid, ports_stats):
+        """Listener for statistics."""
+        pass
+
+    def _send_event(self, req, conn):
+        event = KycoEvent(
+            name='kytos/of.stats.messages.out.ofpt_stats_request',
+            content={'message': req, 'destination': conn})
+        self._buffer.put(event)
 
 
 class PortStats(Stats):
