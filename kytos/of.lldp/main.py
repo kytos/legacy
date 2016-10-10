@@ -69,23 +69,29 @@ class Main(KycoCoreNApp):
             # wait 1s until next check...
             time.sleep(POOLING_TIME)
 
-#    @listen_to('kytos/of.core.messages.in.ofpt_packet_in')
-#    def update_lldp(self, event):
-#        log.debug("PacketIn Received")
-#        ethernet_frame = Ethernet()
-#        ethernet_frame.unpack(event.message.data.value[:14])
-#        if ethernet_frame.type == LLDP_ETH_TYPE:
-#            lldp = LLDP()
-#            lldp.unpack(event.message.data.value)
-#            # update a link between two switches
-#            # The node are a tuple with (switch, port.port_no)
-#            nodeA = (event.source.switch.dpid, event.message.in_port)
-#            switchB = UBInt64()
-#            switchB.unpack(lldp.tlv_chassis_id.value.value)  # dpid
-#            portB = UBInt16()
-#            portB.unpack(lldp.tlv_port_id.value.value)  # port_no
-#            nodeB = (switchB.value, portB.value)
-#            self.controller.update_switches_link(nodeA, nodeB)
+    @listen_to('kytos/of.core.messages.in.ofpt_packet_in')
+    def update_links(self, event):
+        ethernet = Ethernet()
+        ethernet.unpack(event.message.data.value)
+        if ethernet.type == 0x88cc:
+            lldp = LLDP()
+            lldp.unpack(ethernet.data.value)
+
+            dpid = DPID()
+            dpid.unpack(lldp.chassis_id.sub_value.value)
+
+            port_no_b = UBInt16()
+
+            switch_a = event.source.switch
+            port_no_a = event.message.in_port
+            interface_a = switch_a.get_interface_by_port_no(port_no_a.value)
+
+            switch_b = self.controller.get_switch_by_dpid(dpid.value)
+            port_no_b.unpack(lldp.port_id.sub_value.value)
+            interface_b = switch_b.get_interface_by_port_no(port_no_b.value)
+
+            interface_a.update_endpoint(interface_b)
+            interface_b.update_endpoint(interface_a)
 
 #    @listen_to('kyco/core.switches.new')
 #    def install_lldp_flow(self, event):
