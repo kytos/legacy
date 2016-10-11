@@ -6,7 +6,6 @@ from threading import Event
 
 import rrdtool
 
-from kyco.constants import POOLING_TIME
 from kyco.core.events import KycoEvent
 from kyco.core.napps import KycoNApp
 from kyco.utils import listen_to
@@ -14,7 +13,8 @@ from pyof.v0x01.common.phy_port import Port
 from pyof.v0x01.controller2switch.common import PortStatsRequest
 from pyof.v0x01.controller2switch.stats_request import StatsRequest, StatsTypes
 
-
+#: Seconds to wait before asking for more statistics.
+STATS_INTERVAL = 30
 log = getLogger('Stats')
 
 
@@ -34,7 +34,7 @@ class Main(KycoNApp):
         while not self._stopper.is_set():
             for switch in self.controller.switches.values():
                 self._update_stats(switch)
-            self._stopper.wait(POOLING_TIME)
+            self._stopper.wait(STATS_INTERVAL)
         log.debug('Thread finished.')
 
     def shutdown(self):
@@ -135,13 +135,13 @@ class Description(Stats):
 class RRD:
     """"Round-robin database for keeping stats.
 
-    It store statistics every :data:`kyco.constants.POOLING_TIME`.
+    It store statistics every :data:`STATS_INTERVAL`.
     """
 
     _DIR = Path(__file__).parent / 'rrd'
     #: If no new data is supplied for more than *_TIMEOUT* seconds,
     #: the temperature becomes *UNKNOWN*.
-    _TIMEOUT = 2 * POOLING_TIME
+    _TIMEOUT = 2 * STATS_INTERVAL
     #: Minimum accepted value
     _MIN = 0
     #: Maximum accepted value is the maximum PortStats attribute value.
@@ -156,13 +156,13 @@ class RRD:
     #: d (days), w (weeks), M (months), and y (years).
     _PERIOD = '1M'
 
-    def update(self, dpid, port, rx_bytes, tx_bytes):
+    def update(self, dpid, port, rx_bytes, tx_bytes, tstamp='N'):
         """Add a row to rrd file of *dpid* and *port*.
 
         Create rrd if necessary.
         """
         rrd = self.get_or_create_rrd(dpid, port)
-        rrdtool.update(rrd, 'N:{}:{}'.format(rx_bytes, tx_bytes))
+        rrdtool.update(rrd, '{}:{}:{}'.format(str(tstamp), rx_bytes, tx_bytes))
 
     def get_rrd(self, dpid, port):
         """Return path of the rrd for *dpid* and *port*.
@@ -170,19 +170,44 @@ class RRD:
         If rrd doesn't exist, it is *not* created.
 
         See Also:
-            :meth:`get_or_create_rdd`
+            :meth:`get_or_create_rrd`
         """
-        return str(self._DIR / 'switch{}port{}.rrd'.format(dpid, port))
+        return str(self._DIR / str(dpid) / '{}.rrd'.format(port))
 
-    def get_or_create_rrd(self, dpid, port):
+    def get_or_create_rrd(self, dpid, port, tstamp=None):
         """If rrd is not found, create it."""
         rrd = self.get_rrd(dpid, port)
         if not Path(rrd).exists():
             log.debug('Creating rrd for dpid %d, port %d', dpid, port)
-            rrdtool.create(rrd, '--start', 'now', '--step', str(POOLING_TIME),
-                           self._get_counter('rx_bytes'),
-                           self._get_counter('tx_bytes'), self._get_archive())
+            parent = Path(rrd).parent
+            if not parent.exists():
+                parent.mkdir()
+            self.create_rrd(rrd, tstamp)
         return rrd
+
+    def create_rrd(self, rrd, tstamp=None):
+        """Create an RRD file."""
+        if tstamp is None:
+            tstamp = 'now'
+        rrdtool.create(rrd, '--start', str(tstamp), '--step',
+                       str(STATS_INTERVAL), self._get_counter('rx_bytes'),
+                       self._get_counter('tx_bytes'), self._get_archive())
+
+    def fetch(self, dpid, port, start, end):
+        """Fetch average values from rrd.
+
+        Returns:
+            A tuple with:
+
+            1. Iterator over timestamps
+            2. Column (DS) names
+            3. List of rows as tuples
+        """
+        rrd = self.get_or_create_rrd(dpid, port)
+        tstamps, cols, rows = rrdtool.fetch(rrd, 'AVERAGE', '--start',
+                                            str(start), '--end', str(end))
+        start, stop, step = tstamps
+        return range(start + step, stop + 1, step), cols, rows
 
     def _get_counter(self, name):
         return 'DS:{}:COUNTER:{}:{}:{}'.format(name, self._TIMEOUT, self._MIN,
