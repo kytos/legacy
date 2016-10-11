@@ -8,7 +8,7 @@ from pyof.v0x01.common.phy_port import Port
 from pyof.v0x01.common.flow_match import Match
 from pyof.v0x01.common.flow_match import FlowWildCards
 
-from pyof.foundation.basic_types import Ethernet
+from pyof.foundation.network_types import Ethernet
 
 from pyof.v0x01.controller2switch.flow_mod import FlowMod
 from pyof.v0x01.controller2switch.flow_mod import FlowModCommand
@@ -72,9 +72,9 @@ class Main(KycoCoreNApp):
             flow_mod = FlowMod()
             flow_mod.command = FlowModCommand.OFPFC_ADD
             flow_mod.match = Match()
-            flow_mod.match.wildcards -= FlowWildCards.OFPFW_DL_SRC
-            flow_mod.match.wildcards -= FlowWildCards.OFPFW_DL_DST
-            flow_mod.match.wildcards -= FlowWildCards.OFPFW_DL_TYPE
+            #flow_mod.match.wildcards -= FlowWildCards.OFPFW_DL_SRC
+            #flow_mod.match.wildcards -= FlowWildCards.OFPFW_DL_DST
+            #flow_mod.match.wildcards -= FlowWildCards.OFPFW_DL_TYPE
             flow_mod.match.dl_src = ethernet.source.value
             flow_mod.match.dl_dst = ethernet.destination.value
             flow_mod.match.dl_type = ethernet.type
