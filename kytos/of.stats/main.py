@@ -4,8 +4,9 @@ from logging import getLogger
 from pathlib import Path
 from threading import Event
 
-import rrdtool
+from flask import Flask
 
+import rrdtool
 from kyco.core.events import KycoEvent
 from kyco.core.napps import KycoNApp
 from kyco.utils import listen_to
@@ -216,3 +217,24 @@ class RRD:
     def _get_archive(self):
         """Average every row."""
         return 'RRA:AVERAGE:{}:1:{}'.format(self._XFF, self._PERIOD)
+
+
+app = Flask(__name__)
+
+
+@app.route("/of.stats/<dpid>/<int:port>/<int:start>/<int:end>")
+def get_bytes(dpid, port, start, end):
+    """Get 30 rx and tx bytes/sec between start and end, including both.
+
+    Args:
+        dpid (str): Switch dpid.
+        port (int): Switch port.
+        start (int): Unix timestamp in seconds.
+        end (int): Unix timestamp in seconds.
+    """
+    return 'rx_bytes and tx_bytes for switch {}, port {}, ' \
+           'start timestamp {}, end timestamp {}.'.format(dpid, port, start,
+                                                          end)
+
+if __name__ == "__main__":
+    app.run()
