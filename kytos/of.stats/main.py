@@ -2,7 +2,7 @@
 from abc import ABCMeta, abstractmethod
 from logging import getLogger
 from pathlib import Path
-from threading import Event
+from threading import Event, Lock
 
 from flask import Flask
 
@@ -17,6 +17,8 @@ from pyof.v0x01.controller2switch.stats_request import StatsRequest, StatsTypes
 #: Seconds to wait before asking for more statistics.
 STATS_INTERVAL = 30
 log = getLogger('Stats')
+#: Avoid segmentation fault
+rrd_lock = Lock()
 
 
 class Main(KycoNApp):
@@ -152,10 +154,11 @@ class RRD:
     #: regarded as known. It is given as the ratio of allowed *UNKNOWN* PDPs
     #: to the number of PDPs in the interval. Thus, it ranges from 0 to 1
     #: (exclusive).
-    _XFF = 0
+    _XFF = '0.5'
     #: How long to keep the data. Accepts s (seconds), m (minutes), h (hours),
     #: d (days), w (weeks), M (months), and y (years).
-    _PERIOD = '1M'
+    #: Must be a multiple of consolidation steps.
+    _PERIOD = '30d'
 
     def update(self, dpid, port, rx_bytes, tx_bytes, tstamp='N'):
         """Add a row to rrd file of *dpid* and *port*.
@@ -163,7 +166,8 @@ class RRD:
         Create rrd if necessary.
         """
         rrd = self.get_or_create_rrd(dpid, port)
-        rrdtool.update(rrd, '{}:{}:{}'.format(str(tstamp), rx_bytes, tx_bytes))
+        with rrd_lock:
+            rrdtool.update(rrd, '{}:{}:{}'.format(tstamp, rx_bytes, tx_bytes))
 
     def get_rrd(self, dpid, port):
         """Return path of the rrd for *dpid* and *port*.
@@ -179,7 +183,7 @@ class RRD:
         """If rrd is not found, create it."""
         rrd = self.get_rrd(dpid, port)
         if not Path(rrd).exists():
-            log.debug('Creating rrd for dpid %d, port %d', dpid, port)
+            log.debug('Creating rrd for dpid %s, port %d', dpid, port)
             parent = Path(rrd).parent
             if not parent.exists():
                 parent.mkdir()
@@ -188,11 +192,12 @@ class RRD:
 
     def create_rrd(self, rrd, tstamp=None):
         """Create an RRD file."""
-        if tstamp is None:
-            tstamp = 'now'
-        rrdtool.create(rrd, '--start', str(tstamp), '--step',
-                       str(STATS_INTERVAL), self._get_counter('rx_bytes'),
-                       self._get_counter('tx_bytes'), self._get_archive())
+        tstamp = 'now' if tstamp is None else str(tstamp)
+        interval = '{}s'.format(STATS_INTERVAL)
+        args = [self._get_counter('rx_bytes'), self._get_counter('tx_bytes'),
+                *self._get_archives()]
+        with rrd_lock:
+            rrdtool.create(rrd, '--start', tstamp, '--step', interval, *args)
 
     def fetch(self, dpid, port, start, end):
         """Fetch average values from rrd.
