@@ -98,7 +98,8 @@ class PortStats(Stats):
     def listen(self, dpid, ports_stats):
         """Receive port stats."""
         debug_msg = 'Received port {} stats of switch {}: rx_bytes {}'
-        debug_msg += ', tx_bytes {}, rx_dropped {}, tx_dropped {}'
+        debug_msg += ', tx_bytes {}, rx_dropped {}, tx_dropped {},'
+        debug_msg += 'rx_errors {}, tx_errors {}'
 
         for ps in ports_stats:
             self._rrd.update(dpid, 'port',
@@ -106,11 +107,14 @@ class PortStats(Stats):
                              rx_bytes=ps.rx_bytes.value,
                              tx_bytes=ps.tx_bytes.value,
                              rx_dropped=ps.rx_dropped.value,
-                             tx_dropped=ps.tx_dropped.value)
+                             tx_dropped=ps.tx_dropped.value,
+                             rx_errors=ps.rx_errors.value,
+                             tx_errors=ps.tx_errors.value)
 
             log.debug(debug_msg.format(ps.port_no.value, dpid,
                       ps.rx_bytes.value, ps.tx_bytes.value,
-                      ps.rx_dropped.value, ps.tx_dropped.value))
+                      ps.rx_dropped.value, ps.tx_dropped.value,
+                      ps.rx_errors.value, ps.tx_errors.value))
 
 
 class AggregateStats(Stats):
