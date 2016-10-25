@@ -1,11 +1,13 @@
 """Statistics application."""
+import json
 from abc import ABCMeta, abstractmethod
 from logging import getLogger
 from pathlib import Path
-from threading import Event
+from threading import Event, Lock
+
+from flask import Flask, Response
 
 import rrdtool
-
 from kyco.core.events import KycoEvent
 from kyco.core.napps import KycoNApp
 from kyco.utils import listen_to
@@ -16,6 +18,8 @@ from pyof.v0x01.controller2switch.stats_request import StatsRequest, StatsTypes
 #: Seconds to wait before asking for more statistics.
 STATS_INTERVAL = 30
 log = getLogger('Stats')
+#: Avoid segmentation fault
+rrd_lock = Lock()
 
 
 class Main(KycoNApp):
@@ -151,10 +155,11 @@ class RRD:
     #: regarded as known. It is given as the ratio of allowed *UNKNOWN* PDPs
     #: to the number of PDPs in the interval. Thus, it ranges from 0 to 1
     #: (exclusive).
-    _XFF = 0
+    _XFF = '0.5'
     #: How long to keep the data. Accepts s (seconds), m (minutes), h (hours),
     #: d (days), w (weeks), M (months), and y (years).
-    _PERIOD = '1M'
+    #: Must be a multiple of consolidation steps.
+    _PERIOD = '30d'
 
     def update(self, dpid, port, rx_bytes, tx_bytes, tstamp='N'):
         """Add a row to rrd file of *dpid* and *port*.
@@ -162,23 +167,28 @@ class RRD:
         Create rrd if necessary.
         """
         rrd = self.get_or_create_rrd(dpid, port)
-        rrdtool.update(rrd, '{}:{}:{}'.format(str(tstamp), rx_bytes, tx_bytes))
+        with rrd_lock:
+            rrdtool.update(rrd, '{}:{}:{}'.format(tstamp, rx_bytes, tx_bytes))
 
     def get_rrd(self, dpid, port):
         """Return path of the rrd for *dpid* and *port*.
 
         If rrd doesn't exist, it is *not* created.
 
+        Args:
+            dpid (str): Switch dpid.
+            port (str, int): Switch port number.
+
         See Also:
             :meth:`get_or_create_rrd`
         """
-        return str(self._DIR / str(dpid) / '{}.rrd'.format(port))
+        return str(self._DIR / dpid / '{}.rrd'.format(port))
 
     def get_or_create_rrd(self, dpid, port, tstamp=None):
         """If rrd is not found, create it."""
         rrd = self.get_rrd(dpid, port)
         if not Path(rrd).exists():
-            log.debug('Creating rrd for dpid %d, port %d', dpid, port)
+            log.debug('Creating rrd for dpid %s, port %d', dpid, port)
             parent = Path(rrd).parent
             if not parent.exists():
                 parent.mkdir()
@@ -187,14 +197,24 @@ class RRD:
 
     def create_rrd(self, rrd, tstamp=None):
         """Create an RRD file."""
-        if tstamp is None:
-            tstamp = 'now'
-        rrdtool.create(rrd, '--start', str(tstamp), '--step',
-                       str(STATS_INTERVAL), self._get_counter('rx_bytes'),
-                       self._get_counter('tx_bytes'), self._get_archive())
+        tstamp = 'now' if tstamp is None else str(tstamp)
+        interval = '{}s'.format(STATS_INTERVAL)
+        args = [self._get_counter('rx_bytes'), self._get_counter('tx_bytes'),
+                *self._get_archives()]
+        with rrd_lock:
+            rrdtool.create(rrd, '--start', tstamp, '--step', interval, *args)
 
-    def fetch(self, dpid, port, start, end):
+    def fetch(self, dpid, port, start, end, n_points=None):
         """Fetch average values from rrd.
+
+        Args:
+            dpid (str): Switch dpid.
+            port (str, int): Switch port number.
+            start (int): Unix timestamp in seconds for the first stats.
+            end (int): Unix timestamp in seconds for the last stats.
+            n_points (int): Return n_points. May return more if there is no
+                matching resolution in the RRD file. Defaults to as many points
+                as possible.
 
         Returns:
             A tuple with:
@@ -203,9 +223,23 @@ class RRD:
             2. Column (DS) names
             3. List of rows as tuples
         """
-        rrd = self.get_or_create_rrd(dpid, port)
+        def get_res_args():
+            """Return the best matching resolution for returning n_points."""
+            if n_points is not None:
+                resolution = (end - start) // n_points
+                if resolution > 0:
+                    return ['-a', '-r', '{}s'.format(resolution)]
+            return []
+
+        rrd = self.get_rrd(dpid, port)
+        if not Path(rrd).exists():
+            msg = 'RRD for dpid {} and port {} not found'.format(dpid, port)
+            raise FileNotFoundError(msg)
+
+        res_args = get_res_args()
         tstamps, cols, rows = rrdtool.fetch(rrd, 'AVERAGE', '--start',
-                                            str(start), '--end', str(end))
+                                            str(start - 1), '--end',
+                                            str(end - 1), *res_args)
         start, stop, step = tstamps
         return range(start + step, stop + 1, step), cols, rows
 
@@ -213,6 +247,93 @@ class RRD:
         return 'DS:{}:COUNTER:{}:{}:{}'.format(name, self._TIMEOUT, self._MIN,
                                                self._MAX)
 
-    def _get_archive(self):
+    def _get_archives(self):
         """Average every row."""
-        return 'RRA:AVERAGE:{}:1:{}'.format(self._XFF, self._PERIOD)
+        averages = []
+        # One month stats for the following periods:
+        for steps in ('30s', '1m', '2m', '4m', '8m', '15m', '30m', '1h', '2h',
+                      '4h', '8h', '12h', '1d', '2d', '3d', '6d', '10d', '15d'):
+            averages.append('RRA:AVERAGE:{}:{}:{}'.format(self._XFF, steps,
+                                                          self._PERIOD))
+        return averages
+
+
+app = Flask(__name__)
+
+
+class StatsAPI:
+    """Class to answer REST API requests."""
+
+    def __init__(self):
+        """Initialize stats attribute."""
+        self._stats = {}
+
+    def fetch_port(self, dpid, port, start, end):
+        """Return Flask response for port stats."""
+        try:
+            content = self._fetch(dpid, port, start, end)
+        except FileNotFoundError as e:
+            content = StatsAPI._get_rrd_not_found_error(e)
+        return StatsAPI._get_response(content)
+
+    def _remove_null(self):
+        """Remove a row if all its values are null."""
+        nullable_cols = list(self._stats.keys())
+        nullable_cols.remove('timestamps')
+        n_elements = len(self._stats['timestamps'])
+
+        # Check elements backwards for safe removal
+        for i in range(n_elements - 1, -1, -1):
+            for col in nullable_cols:
+                # Stop if a non-null element is found in the row.
+                if self._stats[col][i] is not None:
+                    break
+            if self._stats[col][i] is not None:
+                # Keep current row and check the next one.
+                continue
+            # Remove the current row from every list
+            for lst in self._stats.values():
+                lst.pop(i)
+
+    def _fetch(self, dpid, port, start, end):
+        tstamps, cols, rows = RRD().fetch(dpid, port, start, end, n_points=30)
+        self._stats = {col: [] for col in cols}
+        self._stats['timestamps'] = list(tstamps)
+        for row in rows:
+            for col, value in zip(cols, row):
+                self._stats[col].append(value)
+        self._remove_null()
+        return {'data': self._stats}
+
+    @staticmethod
+    def _get_rrd_not_found_error(exception):
+        return {'errors': {
+            'status': '404',
+            'title': 'Database not found.',
+            'detail': str(exception)}}
+
+    @staticmethod
+    def _get_response(dct):
+        json_ = json.dumps(dct, sort_keys=True, indent=4)
+        return Response(json_, mimetype='application/vnd.api+json')
+
+
+@app.route("/of.stats/<dpid>/<int:port>/<int:start>/<int:end>")
+def get_stats(dpid, port, start, end):
+    """Get 30 rx and tx bytes/sec between start and end, including both.
+
+    Args:
+        dpid (str): Switch dpid.
+        port (str, int): Switch port number.
+        start (int): Unix timestamp in seconds for the first stats.
+        end (int): Unix timestamp in seconds for the last stats.
+        n_points (int): Return n_points. May return more if there is no
+            matching resolution in the RRD file. Defaults to as many points
+            as possible.
+    """
+    api = StatsAPI()
+    return api.fetch_port(dpid, port, start, end)
+
+
+if __name__ == "__main__":
+    app.run()
