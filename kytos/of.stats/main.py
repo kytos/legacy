@@ -10,7 +10,8 @@ from kyco.core.events import KycoEvent
 from kyco.core.napps import KycoNApp
 from kyco.utils import listen_to
 from pyof.v0x01.common.phy_port import Port
-from pyof.v0x01.controller2switch.common import PortStatsRequest
+from pyof.v0x01.controller2switch.common import (PortStatsRequest,
+    FlowStatsRequest, AggregateStatsRequest)
 from pyof.v0x01.controller2switch.stats_request import StatsRequest, StatsTypes
 
 #: Seconds to wait before asking for more statistics.
@@ -25,22 +26,19 @@ class Main(KycoNApp):
         """`__init__` method of KycoNApp."""
         msg_out = self.controller.buffers.msg_out
         self._stats = {StatsTypes.OFPST_DESC.value: Description(msg_out),
-                       StatsTypes.OFPST_PORT.value: PortStats(msg_out)}
-        # To stop the main loop
-        self._stopper = Event()
+                       StatsTypes.OFPST_PORT.value: PortStats(msg_out),
+                       StatsTypes.OFPST_FLOW.value: FlowStats(msg_out)}
+        self.EXECUTE_INTERVAL = STATS_INTERVAL
 
     def execute(self):
         """Query all switches sequentially and then sleep before repeating."""
-        while not self._stopper.is_set():
-            for switch in self.controller.switches.values():
-                self._update_stats(switch)
-            self._stopper.wait(STATS_INTERVAL)
-        log.debug('Thread finished.')
+        switches = self.controller.switches.values()
+        for switch in switches:
+            self._update_stats(switch)
 
     def shutdown(self):
         """End of the application."""
         log.debug('Shutting down...')
-        self._stopper.set()
 
     def _update_stats(self, switch):
         for stats in self._stats.values():
@@ -71,7 +69,7 @@ class Stats(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def listen(self, dpid, ports_stats):
+    def listen(self, dpid, stats):
         """Listener for statistics."""
         pass
 
@@ -99,11 +97,82 @@ class PortStats(Stats):
 
     def listen(self, dpid, ports_stats):
         """Receive port stats."""
+        debug_msg = 'Received port {} stats of switch {}: rx_bytes {}'
+        debug_msg += ', tx_bytes {}, rx_dropped {}, tx_dropped {}'
+
         for ps in ports_stats:
-            self._rrd.update(dpid, ps.port_no.value, ps.rx_bytes, ps.tx_bytes)
-            log.debug('Received port %d stats of switch %s: rx_bytes %d'
-                      ', tx_bytes %d', ps.port_no.value, dpid,
-                      ps.rx_bytes.value, ps.tx_bytes.value)
+            self._rrd.update(dpid, 'port',
+                             port=ps.port_no.value,
+                             rx_bytes=ps.rx_bytes.value,
+                             tx_bytes=ps.tx_bytes.value,
+                             rx_dropped=ps.rx_dropped.value,
+                             tx_dropped=ps.tx_dropped.value)
+
+            log.debug(debug_msg.format(ps.port_no.value, dpid,
+                      ps.rx_bytes.value, ps.tx_bytes.value,
+                      ps.rx_dropped.value, ps.tx_dropped.value))
+
+
+class AggregateStats(Stats):
+    """Deal with FlowStats message."""
+
+    def __init__(self, msg_out_buffer):
+        """Initialize database."""
+        super().__init__(msg_out_buffer)
+        self._rrd = RRD()
+
+    def request(self, conn):
+        """Ask for flow stats."""
+        body = AggregateStatsRequest() # Port.OFPP_NONE and All Tables
+        req = StatsRequest(body_type=StatsTypes.OFPST_AGGREGATE, body=body)
+        self._send_event(req, conn)
+        log.debug('Aggregate Stats request for switch %s sent.', conn.switch.dpid)
+
+    def listen(self, dpid, aggregate_stats):
+        """Receive flow stats."""
+        debug_msg = 'Received aggregate stats from switch {}:'
+        debug_msg += ' packet_count {}, byte_count {}, flow_count {}'
+
+        for ag in aggregate_stats:
+            # need to choose the _id to aggregate_stats
+            # this class isn't used yet.
+            self._rrd.update(dpid, "",
+                             packet_count=ag.packet_count.value,
+                             byte_count=ag.byte_count.value,
+                             flow_count=ag.flow_count.value)
+
+            log.debug(debug_msg.format(dpid, ag.packet_count.value,
+                      ag.byte_count.value, ag.flow_count.value))
+
+
+class FlowStats(Stats):
+    """Deal with FlowStats message."""
+
+    def __init__(self, msg_out_buffer):
+        """Initialize database."""
+        super().__init__(msg_out_buffer)
+        self._rrd = RRD()
+
+    def request(self, conn):
+        """Ask for flow stats."""
+        body = FlowStatsRequest() # Port.OFPP_NONE and All Tables
+        req = StatsRequest(body_type=StatsTypes.OFPST_FLOW, body=body)
+        self._send_event(req, conn)
+        log.debug('Flow Stats request for switch %s sent.', conn.switch.dpid)
+
+    def listen(self, dpid, flows_stats):
+        """Receive flow stats."""
+        debug_msg = 'Received flow stats from table {} of switch {}:'
+        debug_msg += 'packet_count {}, byte_count {}'
+
+        for fs in flows_stats:
+            self._rrd.update(dpid,'table_id',
+                             table_id=fs.table_id.value,
+                             packet_count = fs.packet_count.value,
+                             byte_count = fs.byte_count.value)
+
+            log.debug(debug_msg.format(fs.table_id.value, dpid,
+                      fs.packet_count.value, fs.byte_count.value))
 
 
 class Description(Stats):
@@ -131,7 +200,6 @@ class Description(Stats):
                   desc.mfr_desc, desc.hw_desc, desc.sw_desc,
                   desc.serial_num)
 
-
 class RRD:
     """"Round-robin database for keeping stats.
 
@@ -156,44 +224,51 @@ class RRD:
     #: d (days), w (weeks), M (months), and y (years).
     _PERIOD = '1M'
 
-    def update(self, dpid, port, rx_bytes, tx_bytes, tstamp='N'):
-        """Add a row to rrd file of *dpid* and *port*.
+    def update(self,dpid,_id, **kwargs):
+        """Add a row to rrd file of *dpid* and *_id*.
 
         Create rrd if necessary.
         """
-        rrd = self.get_or_create_rrd(dpid, port)
-        rrdtool.update(rrd, '{}:{}:{}'.format(str(tstamp), rx_bytes, tx_bytes))
+        tstamp = kwargs.pop('tstamp','N')
+        msg = "{}:".format(tstamp)
+        msg += ":".join(str(value) for value in kwargs.values())
+        rrd = self.get_or_create_rrd(dpid, _id, **kwargs)
+        rrdtool.update(rrd, msg)
 
-    def get_rrd(self, dpid, port):
-        """Return path of the rrd for *dpid* and *port*.
+    def get_rrd(self, dpid, _id):
+        """Return path of the rrd for *dpid* and *_id*.
 
         If rrd doesn't exist, it is *not* created.
 
         See Also:
             :meth:`get_or_create_rrd`
         """
-        return str(self._DIR / str(dpid) / '{}.rrd'.format(port))
+        return str(self._DIR / str(dpid) / '{}.rrd'.format(_id))
 
-    def get_or_create_rrd(self, dpid, port, tstamp=None):
+    def get_or_create_rrd(self, dpid, _id, **kwargs):
         """If rrd is not found, create it."""
-        rrd = self.get_rrd(dpid, port)
+        tstamp = kwargs.get('tstamp',None)
+
+        rrd = self.get_rrd(dpid, _id)
         if not Path(rrd).exists():
-            log.debug('Creating rrd for dpid %d, port %d', dpid, port)
+            log_msg = 'Creating rrd for dpid {}, {} {}'
+            log.debug(log_msg.format(dpid, _id, kwargs.get(_id)))
             parent = Path(rrd).parent
             if not parent.exists():
                 parent.mkdir()
-            self.create_rrd(rrd, tstamp)
+            self.create_rrd(rrd, **kwargs)
         return rrd
 
-    def create_rrd(self, rrd, tstamp=None):
+    def create_rrd(self, rrd, **kwargs):
         """Create an RRD file."""
-        if tstamp is None:
-            tstamp = 'now'
-        rrdtool.create(rrd, '--start', str(tstamp), '--step',
-                       str(STATS_INTERVAL), self._get_counter('rx_bytes'),
-                       self._get_counter('tx_bytes'), self._get_archive())
+        tstamp = kwargs.get('tstamp','now')
+        options = [rrd, '--start', str(tstamp), '--step', str(STATS_INTERVAL)]
 
-    def fetch(self, dpid, port, start, end):
+        options.extend([self._get_counter(arg) for arg in kwargs.keys()])
+        options.append(self._get_archive())
+        rrdtool.create(*options)
+
+    def fetch(self, dpid, _id, start, end):
         """Fetch average values from rrd.
 
         Returns:
@@ -203,7 +278,7 @@ class RRD:
             2. Column (DS) names
             3. List of rows as tuples
         """
-        rrd = self.get_or_create_rrd(dpid, port)
+        rrd = self.get_or_create_rrd(dpid, _id)
         tstamps, cols, rows = rrdtool.fetch(rrd, 'AVERAGE', '--start',
                                             str(start), '--end', str(end))
         start, stop, step = tstamps
