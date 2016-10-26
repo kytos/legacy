@@ -69,7 +69,6 @@ class Main(KycoCoreNApp):
                                   state=port.state.value)
             switch.update_interface(interface)
 
-
         switch.update_features(features)
 
     @listen_to('kyco/core.messages.openflow.new')
@@ -109,7 +108,8 @@ class Main(KycoCoreNApp):
 
         echo_request = event.content['message']
         echo_reply = EchoReply(xid=echo_request.header.xid)
-        event_out = KycoEvent(name='kytos/of.core.messages.out.ofpt_echo_reply',
+        event_out = KycoEvent(name=('kytos/of.core.messages.out.'
+                                    'ofpt_echo_reply'),
                               content={'message': echo_reply,
                                        'destination': event.source})
         self.controller.buffers.msg_out.put(event_out)
