@@ -36,7 +36,7 @@ class Main(KycoCoreNApp):
         if ethernet.type != 0x88cc:
 
             port_no = event.message.in_port
-            hw_address = event.message.source
+            hw_address = ethernet.source
             switch = event.source.switch
             interface = switch.get_interface_by_port_no(port_no)
             if not interface.is_link_between_switches():
