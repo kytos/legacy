@@ -1,19 +1,24 @@
 """This App is the responsible for the main OpenFlow basic operations."""
 
-import logging
-
-from pyof.v0x01.common.utils import new_message_from_header
-from pyof.v0x01.controller2switch.features_request import FeaturesRequest
-from pyof.v0x01.symmetric.echo_reply import EchoReply
-from pyof.v0x01.symmetric.hello import Hello
+from logging import getLogger
+from threading import Event
 
 from kyco.core.events import KycoEvent
+from kyco.core.flow import Flow
 from kyco.core.napps import KycoCoreNApp
 from kyco.core.switch import Interface
 from kyco.utils import listen_to
+from pyof.v0x01.common.utils import new_message_from_header
+from pyof.v0x01.controller2switch.features_request import FeaturesRequest
+from pyof.v0x01.controller2switch.stats_request import (StatsRequest,
+                                                        StatsTypes)
+from pyof.v0x01.controller2switch.common import FlowStatsRequest
+from pyof.v0x01.symmetric.echo_reply import EchoReply
+from pyof.v0x01.symmetric.hello import Hello
 
 
-log = logging.getLogger('Kyco')
+log = getLogger('Kyco')
+STATS_INTERVAL = 5
 
 
 class Main(KycoCoreNApp):
@@ -29,13 +34,49 @@ class Main(KycoCoreNApp):
         Users shouldn't call this method directly."""
         # TODO: App information goes to app_name.json
         self.name = 'kytos/of.core'
+        self._stopper = Event()
 
     def execute(self):
         """Method to be runned once on app 'start' or in a loop.
 
         The execute method is called by the run method of KycoNApp class.
         Users shouldn't call this method directly."""
-        pass
+        while not self._stopper.is_set():
+            for switch in self.controller.switches.values():
+                self._update_flow_list(switch)
+            self._stopper.wait(STATS_INTERVAL)
+        log.debug('Thread finished.')
+
+    def _update_flow_list(self, switch):
+        """Requests ofp_stats of the flow type"""
+        log.debug("\n\n\n\n**** Requesting Update for Flow list! ***\n\n\n\n")
+        body = FlowStatsRequest()  # Port.OFPP_NONE and All Tables
+        req = StatsRequest(body_type=StatsTypes.OFPST_FLOW, body=body)
+        self._send_event(req, switch.connection)
+        log.debug('Flow Stats request for switch %s sent.', switch.dpid)
+
+    def _send_event(self, req, conn):
+        """Utilitary function to send an OpenFlow message to a connection"""
+        event = KycoEvent(
+            name='kytos/of.stats.messages.out.ofpt_stats_request',
+            content={'message': req, 'destination': conn})
+        self.controller.buffers.msg_out.put(event)
+
+    @listen_to('kytos/of.core.messages.in.ofpt_stats_reply')
+    def handle_flow_stats_reply(self, event):
+        """Handles FlowStatsReply and updates the switch list with its
+        flowstats"""
+        log.debug("\n\n\n\n**** Received flow_stats!! ***\n\n\n\n")
+        msg = event.content['message']
+        log.debug("Type: {} -> {} \n\n\n\n".format(msg.body_type.value,
+                                                   len(msg.body)))
+        if msg.body_type == StatsTypes.OFPST_FLOW:
+            log.debug("OFPST_FLOW type msg")
+            flows = []
+            for flow_stat in msg.body:
+                flows.append(Flow.from_flow_stats(flow_stat))
+            log.debug("Flow List: {}".format(len(flows)))
+            event.source.switch.flows.extend(flows)
 
     @listen_to('kytos/of.core.messages.in.ofpt_features_reply')
     def handle_features_reply(self, event):
@@ -143,10 +184,12 @@ class Main(KycoCoreNApp):
         """
         log.debug('Sending a FeaturesRequest after responding to a Hello')
 
-        event_out = KycoEvent(name='kytos/of.core.messages.out.ofpt_features_request',
+        event_out = KycoEvent(name=('kytos/of.core.messages.out.'
+                                    'ofpt_features_request'),
                               content={'message': FeaturesRequest(),
                                        'destination': event.destination})
         self.controller.buffers.msg_out.put(event_out)
 
     def shutdown(self):
-        pass
+        log.debug('Shutting down...')
+        self._stopper.set()
