@@ -2,12 +2,11 @@
 
 import logging
 
-from pyof.v0x01.controller2switch.flow_mod import FlowMod, FlowModCommand
-from pyof.v0x01.common.flow_match import FlowWildCards, Match
-
 from kyco.core.events import KycoEvent
 from kyco.core.napps import KycoCoreNApp
 from kyco.utils import listen_to
+from pyof.v0x01.common.flow_match import Match
+from pyof.v0x01.controller2switch.flow_mod import FlowMod, FlowModCommand
 
 
 log = logging.getLogger('Kyco')
@@ -35,15 +34,14 @@ class Main(KycoCoreNApp):
 
     @listen_to('kyco/core.switches.new')
     def disable_ipv6(self, event):
-        
         switch = event.content['switch']
 
         flow_mod = FlowMod()
         flow_mod.command = FlowModCommand.OFPFC_ADD
         flow_mod.match = Match()
-        flow_mod.match.wildcards -= FlowWildCards.OFPFW_DL_TYPE
-        flow_mod.match.dl_type = 0x86dd # ipv6
-        event_out = KycoEvent(name='kytos/of.ipv6disable.messages.out.ofpt_flow_mod',
+        flow_mod.match.dl_type = 0x86dd  # ipv6
+        event_out = KycoEvent(name=('kytos/of.ipv6disable.messages.out.'
+                                    'ofpt_flow_mod'),
                               content={'destination': switch.connection,
                                        'message': flow_mod})
         self.controller.buffers.msg_out.put(event_out)
