@@ -29,7 +29,7 @@ class Main(KycoNApp):
     """Main class for statistics application."""
 
     def setup(self):
-        """`__init__` method of KycoNApp."""
+        """Initialize all statistics and set their loop interval."""
         msg_out = self.controller.buffers.msg_out
         self._stats = {StatsTypes.OFPST_DESC.value: Description(msg_out),
                        StatsTypes.OFPST_PORT.value: PortStats(msg_out),
@@ -282,7 +282,7 @@ class PortStats(Stats):
                     ' rx_errors %s, tx_errors %s'
 
         for ps in ports_stats:
-            self.rrd.update(dpid, ps.port_no.value,
+            self.rrd.update((dpid, ps.port_no.value),
                             rx_bytes=ps.rx_bytes.value,
                             tx_bytes=ps.tx_bytes.value,
                             rx_dropped=ps.rx_dropped.value,
