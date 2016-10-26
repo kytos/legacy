@@ -21,6 +21,7 @@ from pyof.v0x01.controller2switch.stats_request import StatsRequest, StatsTypes
 
 #: Seconds to wait before asking for more statistics.
 STATS_INTERVAL = 30
+# STATS_INTERVAL = 1  # 1 second for testing - check RRD._get_archives()
 log = getLogger('Stats')
 #: Avoid segmentation fault
 rrd_lock = Lock()
@@ -269,6 +270,7 @@ class RRD:
                       '4h', '8h', '12h', '1d', '2d', '3d', '6d', '10d', '15d'):
             averages.append('RRA:AVERAGE:{}:{}:{}'.format(self._XFF, steps,
                                                           self._PERIOD))
+        # averages = ['RRA:AVERAGE:0:1:1d']  # More samples for testing
         return averages
 
 
