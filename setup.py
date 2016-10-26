@@ -72,12 +72,17 @@ class FastLinter(Linter):
 
 
 def retrieve_apps(kytos_napps_path):
+    """
+    Retrieves the list of files within each app directory
+    """
     apps = []
     for napp_name in os.listdir("./kytos"):
         app_files = []
         app_path = os.path.join("./kytos", napp_name)
         for file_name in os.listdir(app_path):
-            app_files.append(os.path.join(app_path, file_name))
+            file_path = os.path.join(app_path, file_name)
+            if os.path.isfile(file_path):  # Only select files
+                app_files.append(file_path)
         apps.append((os.path.join(kytos_napps_path, napp_name), app_files))
     return apps
 
