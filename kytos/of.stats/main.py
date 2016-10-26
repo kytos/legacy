@@ -1,22 +1,28 @@
 """Statistics application."""
+import json
 from abc import ABCMeta, abstractmethod
 from logging import getLogger
 from pathlib import Path
-from threading import Event
+from threading import Lock
+
+from flask import Flask, Response
 
 import rrdtool
-
 from kyco.core.events import KycoEvent
+from kyco.core.flow import Flow
 from kyco.core.napps import KycoNApp
 from kyco.utils import listen_to
 from pyof.v0x01.common.phy_port import Port
-from pyof.v0x01.controller2switch.common import (PortStatsRequest,
-    FlowStatsRequest, AggregateStatsRequest)
+from pyof.v0x01.controller2switch.common import (AggregateStatsRequest,
+                                                 FlowStatsRequest,
+                                                 PortStatsRequest)
 from pyof.v0x01.controller2switch.stats_request import StatsRequest, StatsTypes
 
 #: Seconds to wait before asking for more statistics.
 STATS_INTERVAL = 30
 log = getLogger('Stats')
+#: Avoid segmentation fault
+rrd_lock = Lock()
 
 
 class Main(KycoNApp):
@@ -28,7 +34,7 @@ class Main(KycoNApp):
         self._stats = {StatsTypes.OFPST_DESC.value: Description(msg_out),
                        StatsTypes.OFPST_PORT.value: PortStats(msg_out),
                        StatsTypes.OFPST_FLOW.value: FlowStats(msg_out)}
-        self.EXECUTE_INTERVAL = STATS_INTERVAL
+        self.execute_as_loop(STATS_INTERVAL)
 
     def execute(self):
         """Query all switches sequentially and then sleep before repeating."""
@@ -80,13 +86,187 @@ class Stats(metaclass=ABCMeta):
         self._buffer.put(event)
 
 
+class RRD:
+    """"Round-robin database for keeping stats.
+
+    It store statistics every :data:`STATS_INTERVAL`.
+    """
+
+    _DIR = Path(__file__).parent / 'rrd'
+    #: If no new data is supplied for more than *_TIMEOUT* seconds,
+    #: the temperature becomes *UNKNOWN*.
+    _TIMEOUT = 2 * STATS_INTERVAL
+    #: Minimum accepted value
+    _MIN = 0
+    #: Maximum accepted value is the maximum PortStats attribute value.
+    _MAX = 2**64 - 1
+    #: The xfiles factor defines what part of a consolidation interval may be
+    #: made up from *UNKNOWN* data while the consolidated value is still
+    #: regarded as known. It is given as the ratio of allowed *UNKNOWN* PDPs
+    #: to the number of PDPs in the interval. Thus, it ranges from 0 to 1
+    #: (exclusive).
+    _XFF = '0.5'
+    #: How long to keep the data. Accepts s (seconds), m (minutes), h (hours),
+    #: d (days), w (weeks), M (months), and y (years).
+    #: Must be a multiple of consolidation steps.
+    _PERIOD = '30d'
+
+    def __init__(self, app_folder, data_sources):
+        """Specify a folder to store RRDs.
+
+        Args:
+            app_folder (str): Parent folder for dpids folders.
+            data_sources (iterable): Data source names (e.g. tx_bytes,
+                rx_bytes).
+        """
+        self._app = app_folder
+        self._ds = data_sources
+
+    def update(self, index, tstamp=None, **ds_values):
+        """Add a row to rrd file of *dpid* and *_id*.
+
+        Args:
+            dpid (str): Switch dpid.
+            index (list of str): Index for the RRD database. Examples:
+                [dpid], [dpid, port_no], [dpid, table id, flow hash].
+            tstamp (str, int): Unix timestamp in seconds. Defaults to now.
+
+        Create rrd if necessary.
+        """
+        if tstamp is None:
+            tstamp = 'N'
+        rrd = self.get_or_create_rrd(index)
+        data = ':'.join(str(ds_values[ds]) for ds in self._ds)
+        with rrd_lock:
+            rrdtool.update(rrd, '{}:{}'.format(tstamp, data))
+
+    def get_rrd(self, index):
+        """Return path of the RRD file for *dpid* with *basename*.
+
+        If rrd doesn't exist, it is *not* created.
+
+        Args:
+            index (iterable of str): Index for the RRD database. Examples:
+                [dpid], [dpid, port_no], [dpid, table id, flow hash].
+
+        Returns:
+            str: Absolute RRD path.
+
+        See Also:
+            :meth:`get_or_create_rrd`
+        """
+        path = self._DIR / self._app
+        folders, basename = index[:-1], index[-1]
+        for folder in folders:
+            path = path / folder
+        path = path / '{}.rrd'.format(basename)
+        return str(path)
+
+    def get_or_create_rrd(self, index, tstamp=None):
+        """If rrd is not found, create it.
+
+        Args:
+            index (list of str): Index for the RRD database. Examples:
+                [dpid], [dpid, port_no], [dpid, table id, flow hash].
+            tstamp (str, int): Value for start argument of RRD creation.
+        """
+        if tstamp is None:
+            tstamp = 'N'
+
+        rrd = self.get_rrd(index)
+        if not Path(rrd).exists():
+            log.debug('Creating rrd for app %s, index %s.', self._app, index)
+            parent = Path(rrd).parent
+            if not parent.exists():
+                parent.mkdir(parents=True)
+            self.create_rrd(rrd, tstamp)
+        return rrd
+
+    def create_rrd(self, rrd, tstamp=None):
+        """Create an RRD file.
+
+        Args:
+            rrd (str): Path of RRD file to be created.
+            tstamp (str, int): Unix timestamp in seconds for RRD creation.
+                Defaults to now.
+        """
+        if tstamp is None:
+            tstamp = 'N'
+        options = [rrd, '--start', str(tstamp), '--step', str(STATS_INTERVAL)]
+        options.extend([self._get_counter(ds) for ds in self._ds])
+        options.extend(self._get_archives())
+        rrdtool.create(*options)
+
+    def fetch(self, index, start='start', end='now', n_points=None):
+        """Fetch average values from rrd.
+
+        Args:
+            index (list of str): Index for the RRD database. Examples:
+                [dpid], [dpid, port_no], [dpid, table id, flow hash].
+            start (str, int): Unix timestamp in seconds for the first stats.
+                Defaults to the rrd file creation start time.
+            end (str, int): Unix timestamp in seconds for the last stats.
+                Defaults to current time.
+            n_points (int): Number of points to return. May return more if
+                there is no matching resolution in the RRD file, or less if
+                there is no records for all the time range.
+                Defaults to as many points as possible.
+
+        Returns:
+            A tuple with:
+
+            1. Iterator over timestamps
+            2. Column (DS) names
+            3. List of rows as tuples
+        """
+        rrd = self.get_rrd(index)
+        if not Path(rrd).exists():
+            msg = 'RRD for app {} and index {} not found'.format(self._app,
+                                                                 index)
+            raise FileNotFoundError(msg)
+
+        # Find the best matching resolution for returning n_points.
+        res_args = []
+        if n_points is not None:
+            resolution = (end - start) // n_points
+            if resolution > 0:
+                res_args.extend(['-a', '-r', '{}s'.format(resolution)])
+
+        # For RRDtool to include start and end timestamps.
+        if isinstance(start, int):
+            start = str(start - 1)
+        if isinstance(end, int):
+            end = str(end - 1)
+
+        tstamps, cols, rows = rrdtool.fetch(rrd, 'AVERAGE', '--start', start,
+                                            '--end', end, *res_args)
+        start, stop, step = tstamps
+        return range(start + step, stop + 1, step), cols, rows
+
+    def _get_counter(self, ds):
+        return 'DS:{}:COUNTER:{}:{}:{}'.format(ds, self._TIMEOUT, self._MIN,
+                                               self._MAX)
+
+    def _get_archives(self):
+        """Averaged for all Data Sources."""
+        averages = []
+        # One month stats for the following periods:
+        for steps in ('30s', '1m', '2m', '4m', '8m', '15m', '30m', '1h', '2h',
+                      '4h', '8h', '12h', '1d', '2d', '3d', '6d', '10d', '15d'):
+            averages.append('RRA:AVERAGE:{}:{}:{}'.format(self._XFF, steps,
+                                                          self._PERIOD))
+        return averages
+
+
 class PortStats(Stats):
     """Deal with PortStats messages."""
+
+    rrd = RRD('ports', [rt + 'x_' + stat for stat in
+                        ('bytes', 'dropped', 'errors') for rt in 'rt'])
 
     def __init__(self, msg_out_buffer):
         """Initialize database."""
         super().__init__(msg_out_buffer)
-        self._rrd = RRD()
 
     def request(self, conn):
         """Ask for port stats."""
@@ -97,24 +277,23 @@ class PortStats(Stats):
 
     def listen(self, dpid, ports_stats):
         """Receive port stats."""
-        debug_msg = 'Received port {} stats of switch {}: rx_bytes {}'
-        debug_msg += ', tx_bytes {}, rx_dropped {}, tx_dropped {},'
-        debug_msg += 'rx_errors {}, tx_errors {}'
+        debug_msg = 'Received port %s stats of switch %s: rx_bytes %s,' \
+                    ' tx_bytes %s, rx_dropped %s, tx_dropped %s,' \
+                    ' rx_errors %s, tx_errors %s'
 
         for ps in ports_stats:
-            self._rrd.update(dpid, 'port',
-                             port=ps.port_no.value,
-                             rx_bytes=ps.rx_bytes.value,
-                             tx_bytes=ps.tx_bytes.value,
-                             rx_dropped=ps.rx_dropped.value,
-                             tx_dropped=ps.tx_dropped.value,
-                             rx_errors=ps.rx_errors.value,
-                             tx_errors=ps.tx_errors.value)
+            self.rrd.update(dpid, ps.port_no.value,
+                            rx_bytes=ps.rx_bytes.value,
+                            tx_bytes=ps.tx_bytes.value,
+                            rx_dropped=ps.rx_dropped.value,
+                            tx_dropped=ps.tx_dropped.value,
+                            rx_errors=ps.rx_errors.value,
+                            tx_errors=ps.tx_errors.value)
 
-            log.debug(debug_msg.format(ps.port_no.value, dpid,
-                      ps.rx_bytes.value, ps.tx_bytes.value,
-                      ps.rx_dropped.value, ps.tx_dropped.value,
-                      ps.rx_errors.value, ps.tx_errors.value))
+            log.debug(debug_msg, ps.port_no.value, dpid, ps.rx_bytes.value,
+                      ps.tx_bytes.value, ps.rx_dropped.value,
+                      ps.tx_dropped.value, ps.rx_errors.value,
+                      ps.tx_errors.value)
 
 
 class AggregateStats(Stats):
@@ -123,30 +302,31 @@ class AggregateStats(Stats):
     def __init__(self, msg_out_buffer):
         """Initialize database."""
         super().__init__(msg_out_buffer)
-        self._rrd = RRD()
+        self._rrd = RRD('aggr', ('packet_count', 'byte_count', 'flow_count'))
 
     def request(self, conn):
         """Ask for flow stats."""
-        body = AggregateStatsRequest() # Port.OFPP_NONE and All Tables
+        body = AggregateStatsRequest()  # Port.OFPP_NONE and All Tables
         req = StatsRequest(body_type=StatsTypes.OFPST_AGGREGATE, body=body)
         self._send_event(req, conn)
-        log.debug('Aggregate Stats request for switch %s sent.', conn.switch.dpid)
+        log.debug('Aggregate Stats request for switch %s sent.',
+                  conn.switch.dpid)
 
     def listen(self, dpid, aggregate_stats):
         """Receive flow stats."""
-        debug_msg = 'Received aggregate stats from switch {}:'
-        debug_msg += ' packet_count {}, byte_count {}, flow_count {}'
+        debug_msg = 'Received aggregate stats from switch {}:' \
+                    ' packet_count {}, byte_count {}, flow_count {}'
 
         for ag in aggregate_stats:
             # need to choose the _id to aggregate_stats
             # this class isn't used yet.
-            self._rrd.update(dpid, "",
+            self._rrd.update((dpid,),
                              packet_count=ag.packet_count.value,
                              byte_count=ag.byte_count.value,
                              flow_count=ag.flow_count.value)
 
-            log.debug(debug_msg.format(dpid, ag.packet_count.value,
-                      ag.byte_count.value, ag.flow_count.value))
+            log.debug(debug_msg, dpid, ag.packet_count.value,
+                      ag.byte_count.value, ag.flow_count.value)
 
 
 class FlowStats(Stats):
@@ -155,28 +335,28 @@ class FlowStats(Stats):
     def __init__(self, msg_out_buffer):
         """Initialize database."""
         super().__init__(msg_out_buffer)
-        self._rrd = RRD()
+        self._rrd = RRD('flows', ('packet_count', 'byte_count'))
 
     def request(self, conn):
         """Ask for flow stats."""
-        body = FlowStatsRequest() # Port.OFPP_NONE and All Tables
+        body = FlowStatsRequest()  # Port.OFPP_NONE and All Tables
         req = StatsRequest(body_type=StatsTypes.OFPST_FLOW, body=body)
         self._send_event(req, conn)
         log.debug('Flow Stats request for switch %s sent.', conn.switch.dpid)
 
     def listen(self, dpid, flows_stats):
         """Receive flow stats."""
-        debug_msg = 'Received flow stats from table {} of switch {}:'
-        debug_msg += 'packet_count {}, byte_count {}'
+        debug_msg = 'Received flow stats from table %s of switch %s: ' \
+                    'packet_count %s, byte_count %s'
 
         for fs in flows_stats:
-            self._rrd.update(dpid,'table_id',
-                             table_id=fs.table_id.value,
-                             packet_count = fs.packet_count.value,
-                             byte_count = fs.byte_count.value)
+            flow = Flow.from_flow_stats(fs)
+            self._rrd.update((dpid, hash(flow)),
+                             packet_count=fs.packet_count.value,
+                             byte_count=fs.byte_count.value)
 
-            log.debug(debug_msg.format(fs.table_id.value, dpid,
-                      fs.packet_count.value, fs.byte_count.value))
+            log.debug(debug_msg, fs.table_id.value, dpid,
+                      fs.packet_count.value, fs.byte_count.value)
 
 
 class Description(Stats):
@@ -204,94 +384,83 @@ class Description(Stats):
                   desc.mfr_desc, desc.hw_desc, desc.sw_desc,
                   desc.serial_num)
 
-class RRD:
-    """"Round-robin database for keeping stats.
 
-    It store statistics every :data:`STATS_INTERVAL`.
+app = Flask(__name__)
+
+
+class PortStatsAPI:
+    """Class to answer REST API requests."""
+
+    def __init__(self):
+        """Initialize stats attribute."""
+        self._stats = {}
+
+    def fetch_port(self, dpid, port, start, end):
+        """Return Flask response for port stats."""
+        try:
+            content = self._fetch(dpid, port, start, end)
+        except FileNotFoundError as e:
+            content = PortStatsAPI._get_rrd_not_found_error(e)
+        return PortStatsAPI._get_response(content)
+
+    def _remove_null(self):
+        """Remove a row if all its values are null."""
+        nullable_cols = list(self._stats.keys())
+        nullable_cols.remove('timestamps')
+        n_elements = len(self._stats['timestamps'])
+
+        # Check elements backwards for safe removal
+        for i in range(n_elements - 1, -1, -1):
+            for col in nullable_cols:
+                # Stop if a non-null element is found in the row.
+                if self._stats[col][i] is not None:
+                    break
+            if self._stats[col][i] is not None:
+                # Keep current row and check the next one.
+                continue
+            # Remove the current row from every list
+            for lst in self._stats.values():
+                lst.pop(i)
+
+    def _fetch(self, dpid, port, start, end):
+        tstamps, cols, rows = PortStats.rrd.fetch((dpid, port), start, end, 30)
+        self._stats = {col: [] for col in cols}
+        self._stats['timestamps'] = list(tstamps)
+        for row in rows:
+            for col, value in zip(cols, row):
+                self._stats[col].append(value)
+        self._remove_null()
+        return {'data': self._stats}
+
+    @staticmethod
+    def _get_rrd_not_found_error(exception):
+        return {'errors': {
+            'status': '404',
+            'title': 'Database not found.',
+            'detail': str(exception)}}
+
+    @staticmethod
+    def _get_response(dct):
+        json_ = json.dumps(dct, sort_keys=True, indent=4)
+        return Response(json_, mimetype='application/vnd.api+json')
+
+
+@app.route("/of.stats/<dpid>/<int:port>/<int:start>/<int:end>")
+def get_stats(dpid, port, start, end):
+    """Get 30 rx and tx bytes/sec between start and end, including both.
+
+    Args:
+        dpid (str): Switch dpid.
+        port (str, int): Switch port number.
+        start (int): Unix timestamp in seconds for the first stats.
+        end (int): Unix timestamp in seconds for the last stats.
+        n_points (int): Return n_points. May return more if there is no
+            matching resolution in the RRD file. Defaults to as many points
+            as possible.
     """
+    api = PortStatsAPI()
+    return api.fetch_port(dpid, port, start, end)
 
-    _DIR = Path(__file__).parent / 'rrd'
-    #: If no new data is supplied for more than *_TIMEOUT* seconds,
-    #: the temperature becomes *UNKNOWN*.
-    _TIMEOUT = 2 * STATS_INTERVAL
-    #: Minimum accepted value
-    _MIN = 0
-    #: Maximum accepted value is the maximum PortStats attribute value.
-    _MAX = 2**64 - 1
-    #: The xfiles factor defines what part of a consolidation interval may be
-    #: made up from *UNKNOWN* data while the consolidated value is still
-    #: regarded as known. It is given as the ratio of allowed *UNKNOWN* PDPs
-    #: to the number of PDPs in the interval. Thus, it ranges from 0 to 1
-    #: (exclusive).
-    _XFF = 0
-    #: How long to keep the data. Accepts s (seconds), m (minutes), h (hours),
-    #: d (days), w (weeks), M (months), and y (years).
-    _PERIOD = '1M'
 
-    def update(self,dpid,_id, **kwargs):
-        """Add a row to rrd file of *dpid* and *_id*.
-
-        Create rrd if necessary.
-        """
-        tstamp = kwargs.pop('tstamp','N')
-        msg = "{}:".format(tstamp)
-        msg += ":".join(str(value) for value in kwargs.values())
-        rrd = self.get_or_create_rrd(dpid, _id, **kwargs)
-        rrdtool.update(rrd, msg)
-
-    def get_rrd(self, dpid, _id):
-        """Return path of the rrd for *dpid* and *_id*.
-
-        If rrd doesn't exist, it is *not* created.
-
-        See Also:
-            :meth:`get_or_create_rrd`
-        """
-        return str(self._DIR / str(dpid) / '{}.rrd'.format(_id))
-
-    def get_or_create_rrd(self, dpid, _id, **kwargs):
-        """If rrd is not found, create it."""
-        tstamp = kwargs.get('tstamp',None)
-
-        rrd = self.get_rrd(dpid, _id)
-        if not Path(rrd).exists():
-            log_msg = 'Creating rrd for dpid {}, {} {}'
-            log.debug(log_msg.format(dpid, _id, kwargs.get(_id)))
-            parent = Path(rrd).parent
-            if not parent.exists():
-                parent.mkdir()
-            self.create_rrd(rrd, **kwargs)
-        return rrd
-
-    def create_rrd(self, rrd, **kwargs):
-        """Create an RRD file."""
-        tstamp = kwargs.get('tstamp','now')
-        options = [rrd, '--start', str(tstamp), '--step', str(STATS_INTERVAL)]
-
-        options.extend([self._get_counter(arg) for arg in kwargs.keys()])
-        options.append(self._get_archive())
-        rrdtool.create(*options)
-
-    def fetch(self, dpid, _id, start, end):
-        """Fetch average values from rrd.
-
-        Returns:
-            A tuple with:
-
-            1. Iterator over timestamps
-            2. Column (DS) names
-            3. List of rows as tuples
-        """
-        rrd = self.get_or_create_rrd(dpid, _id)
-        tstamps, cols, rows = rrdtool.fetch(rrd, 'AVERAGE', '--start',
-                                            str(start), '--end', str(end))
-        start, stop, step = tstamps
-        return range(start + step, stop + 1, step), cols, rows
-
-    def _get_counter(self, name):
-        return 'DS:{}:COUNTER:{}:{}:{}'.format(name, self._TIMEOUT, self._MIN,
-                                               self._MAX)
-
-    def _get_archive(self):
-        """Average every row."""
-        return 'RRA:AVERAGE:{}:1:{}'.format(self._XFF, self._PERIOD)
+if __name__ == "__main__":
+    app.run()
