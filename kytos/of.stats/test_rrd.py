@@ -28,21 +28,22 @@ class TestRRD(unittest.TestCase):
         get_rrd_method.return_value = rrd_file
 
         start = 1234567800 - STATS_INTERVAL  # can't update using start time
-        rrd = RRD()
+        rrd = RRD('test', ('rx', 'tx'))
         rrd.create_rrd(rrd_file, tstamp=start)
 
         def update_rrd(multiplier):
             """Update rrd."""
             rx = tx = multiplier * STATS_INTERVAL
             tstamp = start + rx
-            rrd.update('', '', rx, tx, tstamp)  # any value for the mock is OK
+            # any value for index is OK
+            rrd.update([None], tstamp, rx=rx, tx=tx)
 
         update_rrd(1)
         update_rrd(3)
 
         second = start + 2 * STATS_INTERVAL
         # Interval between x and y excludes y
-        tstamps, _, rows = rrd.fetch('', '', start=second, end=second)
+        tstamps, _, rows = rrd.fetch([None], start=second, end=second)
 
         os.unlink(rrd_file)
 
