@@ -1,11 +1,12 @@
 """Statistics application."""
 import json
+import time
 from abc import ABCMeta, abstractmethod
 from logging import getLogger
 from pathlib import Path
 from threading import Lock
 
-from flask import Flask, Response
+from flask import Flask, Response, request
 
 import rrdtool
 from kyco.core.events import KycoEvent
@@ -195,16 +196,17 @@ class RRD:
         options = [rrd, '--start', str(tstamp), '--step', str(STATS_INTERVAL)]
         options.extend([self._get_counter(ds) for ds in self._ds])
         options.extend(self._get_archives())
-        rrdtool.create(*options)
+        with rrd_lock:
+            rrdtool.create(*options)
 
-    def fetch(self, index, start='start', end='now', n_points=None):
+    def fetch(self, index, start='first', end='now', n_points=None):
         """Fetch average values from rrd.
 
         Args:
             index (list of str): Index for the RRD database. Examples:
                 [dpid], [dpid, port_no], [dpid, table id, flow hash].
             start (str, int): Unix timestamp in seconds for the first stats.
-                Defaults to the rrd file creation start time.
+                Defaults to the first recorded sample.
             end (str, int): Unix timestamp in seconds for the last stats.
                 Defaults to current time.
             n_points (int): Number of points to return. May return more if
@@ -225,22 +227,33 @@ class RRD:
                                                                  index)
             raise FileNotFoundError(msg)
 
+        # Use integers to calculate resolution
+        if end == 'now':
+            end = int(time.time())
+        if start == 'first':
+            with rrd_lock:
+                start = rrdtool.first(rrd)
+
         # Find the best matching resolution for returning n_points.
         res_args = []
-        if n_points is not None:
+        if n_points is not None and isinstance(start, int) \
+                and isinstance(end, int):
             resolution = (end - start) // n_points
             if resolution > 0:
                 res_args.extend(['-a', '-r', '{}s'.format(resolution)])
 
         # For RRDtool to include start and end timestamps.
         if isinstance(start, int):
-            start = str(start - 1)
+            start -= 1
         if isinstance(end, int):
-            end = str(end - 1)
+            end -= 1
 
-        tstamps, cols, rows = rrdtool.fetch(rrd, 'AVERAGE', '--start', start,
-                                            '--end', end, *res_args)
+        args = [rrd, 'AVERAGE', '--start', str(start), '--end', str(end)]
+        args.extend(res_args)
+        with rrd_lock:
+            tstamps, cols, rows = rrdtool.fetch(*args)
         start, stop, step = tstamps
+        # rrdtool range is different from Python's.
         return range(start + step, stop + 1, step), cols, rows
 
     def _get_counter(self, ds):
@@ -395,10 +408,10 @@ class PortStatsAPI:
         """Initialize stats attribute."""
         self._stats = {}
 
-    def fetch_port(self, dpid, port, start, end):
+    def fetch_port(self, dpid, port, start, end, n_points):
         """Return Flask response for port stats."""
         try:
-            content = self._fetch(dpid, port, start, end)
+            content = self._fetch(dpid, port, start, end, n_points)
         except FileNotFoundError as e:
             content = PortStatsAPI._get_rrd_not_found_error(e)
         return PortStatsAPI._get_response(content)
@@ -422,8 +435,9 @@ class PortStatsAPI:
             for lst in self._stats.values():
                 lst.pop(i)
 
-    def _fetch(self, dpid, port, start, end):
-        tstamps, cols, rows = PortStats.rrd.fetch((dpid, port), start, end, 30)
+    def _fetch(self, dpid, port, start, end, n_points):
+        rrd = PortStats.rrd
+        tstamps, cols, rows = rrd.fetch((dpid, port), start, end, n_points)
         self._stats = {col: [] for col in cols}
         self._stats['timestamps'] = list(tstamps)
         for row in rows:
@@ -445,21 +459,28 @@ class PortStatsAPI:
         return Response(json_, mimetype='application/vnd.api+json')
 
 
-@app.route("/of.stats/<dpid>/<int:port>/<int:start>/<int:end>")
-def get_stats(dpid, port, start, end):
+@app.route('/of.stats/<dpid>/ports/<int:port>')
+def get_stats(dpid, port):
     """Get 30 rx and tx bytes/sec between start and end, including both.
+
+    'start' and 'end' are optional and must be submitted in the form
+    "?start=x&end=y". There can be only one of them.
 
     Args:
         dpid (str): Switch dpid.
         port (str, int): Switch port number.
-        start (int): Unix timestamp in seconds for the first stats.
-        end (int): Unix timestamp in seconds for the last stats.
+        start (int): Unix timestamp in seconds for the first stats. Defaults
+            to the start parameter of the RRD creation.
+        end (int): Unix timestamp in seconds for the last stats. Defaults to
+            now.
         n_points (int): Return n_points. May return more if there is no
             matching resolution in the RRD file. Defaults to as many points
             as possible.
     """
+    start = request.args.get('start', 'first')
+    end = request.args.get('end', 'now')
     api = PortStatsAPI()
-    return api.fetch_port(dpid, port, start, end)
+    return api.fetch_port(dpid, port, start, end, 30)
 
 
 if __name__ == "__main__":
