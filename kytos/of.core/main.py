@@ -34,18 +34,15 @@ class Main(KycoCoreNApp):
         Users shouldn't call this method directly."""
         # TODO: App information goes to app_name.json
         self.name = 'kytos/of.core'
-        self._stopper = Event()
+        self.execute_as_loop(STATS_INTERVAL)
 
     def execute(self):
         """Method to be runned once on app 'start' or in a loop.
 
         The execute method is called by the run method of KycoNApp class.
         Users shouldn't call this method directly."""
-        while not self._stopper.is_set():
-            for switch in self.controller.switches.values():
-                self._update_flow_list(switch)
-            self._stopper.wait(STATS_INTERVAL)
-        log.debug('Thread finished.')
+        for switch in self.controller.switches.values():
+            self._update_flow_list(switch)
 
     def _update_flow_list(self, switch):
         """Requests ofp_stats of the flow type"""
@@ -192,4 +189,3 @@ class Main(KycoCoreNApp):
 
     def shutdown(self):
         log.debug('Shutting down...')
-        self._stopper.set()
