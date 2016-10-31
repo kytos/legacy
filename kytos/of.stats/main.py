@@ -297,7 +297,7 @@ class PortStats(Stats):
 
 
 class AggregateStats(Stats):
-    """Deal with FlowStats message."""
+    """Deal with AggregateStats message."""
 
     def __init__(self, msg_out_buffer):
         """Initialize database."""
@@ -351,7 +351,7 @@ class FlowStats(Stats):
 
         for fs in flows_stats:
             flow = Flow.from_flow_stats(fs)
-            self._rrd.update((dpid, hash(flow)),
+            self._rrd.update((dpid, flow.id),
                              packet_count=fs.packet_count.value,
                              byte_count=fs.byte_count.value)
 
