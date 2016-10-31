@@ -1,9 +1,8 @@
 """This App is the responsible to install a drop ipv6 flow on switch setup."""
 
 import logging
-from threading import Event
 
-from flask import Flask, request
+from flask import request
 
 from kyco.core.events import KycoEvent
 from kyco.core.flow import Flow
@@ -29,9 +28,19 @@ class Main(KycoCoreNApp):
 
         The setup method is automatically called by the run method.
         Users shouldn't call this method directly."""
-        flow_manager = FlowManager(self.controller)
-        self.server = APIServer(port=5000, flow_manager=flow_manager)
-        self._stopper = Event()
+        self.execute_as_loop(STATS_INTERVAL)
+        self.flow_manager = FlowManager(self.controller)
+        self.controller.register_rest_endpoint('/<dpid>/flows',
+                                               self.retrieve_flows,
+                                               methods=['GET'])
+
+        self.controller.register_rest_endpoint('/flows',
+                                               self.retrieve_flows,
+                                               methods=['GET'])
+
+        self.controller.register_rest_endpoint('/<dpid>/flows',
+                                               self.insert_flow,
+                                               methods=['POST'])
 
     def execute(self):
         """Method to be runned once on app 'start' or in a loop.
@@ -126,38 +135,3 @@ class FlowManager(object):
             flows.append(Flow.from_flow_stats(flow_stat))
 
         return flows
-
-
-class APIServer(object):
-    """This class is responsible for starting the REST api server and listening
-    for requests"""
-
-    app = Flask(__name__)
-
-    def __init__(self, port=5000, flow_manager=None):
-        self.port = port
-        self.flow_manager = flow_manager
-
-    def start(self, debug=True):
-        """This method is responsible for starting a flask server at the given
-        port"""
-        APIServer.app.run(debug=debug)
-
-    def stop(self):
-        """This method is reponsible for stoping the flask server"""
-        server_shutdown = request.environ.get('werkzeug.server.shutdown')
-        if server_shutdown is None:
-            raise RuntimeError('Not running with the Werkzeug Server')
-        server_shutdown()
-
-    @app.route('/<dpid>/flows', methods=['GET'])
-    @app.route('/flows', methods=['GET'])
-    def retrieve_flows(self, dpid=None):
-        """docstring for retrieve_flows"""
-
-    @app.route('/<dpid>/flows', methods=['POST'])
-    def insert_flow(self, dpid=None):
-        """docstring for  create_flow"""
-        json_content = request.get_json()
-        received_flow = Flow.from_json(json_content)
-        self.flow_manager.install_new_flow(received_flow, dpid)
