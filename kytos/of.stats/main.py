@@ -36,6 +36,7 @@ class Main(KycoNApp):
                        StatsTypes.OFPST_PORT.value: PortStats(msg_out),
                        StatsTypes.OFPST_FLOW.value: FlowStats(msg_out)}
         self.execute_as_loop(STATS_INTERVAL)
+        StatsAPI.register_endpoints(self.controller)
 
     def execute(self):
         """Query all switches sequentially and then sleep before repeating."""
@@ -468,48 +469,54 @@ class StatsAPI:
             'title': 'Database not found.',
             'detail': str(exception)}}
 
+    @classmethod
+    def register_endpoints(cls, controller):
+        """Register REST API endpoints in the controller."""
+        controller.register_rest_endpoint('/stats/<dpid>/ports/<int:port>',
+                                          cls.get_port_stats, methods=['GET'])
+        controller.register_rest_endpoint('/stats/<dpid>/flows/<flow_hash>',
+                                          cls.get_flow_stats, methods=['GET'])
 
-@app.route('/of.stats/<dpid>/ports/<int:port>')
-def get_port_stats(dpid, port):
-    """Get up to 60 points of all statistics of PortStats.
+    @classmethod
+    def get_port_stats(cls, dpid, port):
+        """Get up to 60 points of all statistics of PortStats.
 
-    Includes start and end that are both optional and and must be submitted in
-    the form "?start=x&end=y".
+        Includes start and end that are both optional and and must be submitted
+        in the form "?start=x&end=y".
 
-    Args:
-        dpid (str): Switch dpid.
-        port (str, int): Switch port number.
-        start (int): Unix timestamp in seconds for the first stats. Defaults
-            to the start parameter of the RRD creation.
-        end (int): Unix timestamp in seconds for the last stats. Defaults to
-            now.
-        n_points (int): Return n_points. May return more if there is no
-            matching resolution in the RRD file. Defaults to as many points
-            as possible.
-    """
-    api = StatsAPI(PortStats.rrd)
-    index = (dpid, port)
-    return api.get_points(index)
+        Args:
+            dpid (str): Switch dpid.
+            port (str, int): Switch port number.
+            start (int): Unix timestamp in seconds for the first stats.
+                Defaults to the start parameter of the RRD creation.
+            end (int): Unix timestamp in seconds for the last stats. Defaults
+                to now.
+            n_points (int): Return n_points. May return more if there is no
+                matching resolution in the RRD file. Defaults to as many points
+                as possible.
+        """
+        api = cls(PortStats.rrd)
+        index = (dpid, port)
+        return api.get_points(index)
 
+    @classmethod
+    def get_flow_stats(cls, dpid, flow_hash):
+        """Return flow statics by its hash.
 
-@app.route('/of.stats/<dpid>/flows/<flow_hash>')
-def get_flow_stats(dpid, flow_hash):
-    """Return flow statics by its hash.
+        Includes start and end that are both optional and and must be submitted
+        in the form "?start=x&end=y".
 
-    Includes start and end that are both optional and and must be submitted in
-    the form "?start=x&end=y".
-
-    Args:
-        dpid (str): Switch dpid.
-        flow_hash (str): Flow hash.
-        start (int): Unix timestamp in seconds for the first stats. Defaults
-            to the start parameter of the RRD creation.
-        end (int): Unix timestamp in seconds for the last stats. Defaults to
-            now.
-    """
-    api = StatsAPI(FlowStats.rrd)
-    index = (dpid, flow_hash)
-    return api.get_points(index)
+        Args:
+            dpid (str): Switch dpid.
+            flow_hash (str): Flow hash.
+            start (int): Unix timestamp in seconds for the first stats.
+                Defaults to the start parameter of the RRD creation.
+            end (int): Unix timestamp in seconds for the last stats. Defaults
+                to now.
+        """
+        api = cls(FlowStats.rrd)
+        index = (dpid, flow_hash)
+        return api.get_points(index)
 
 
 if __name__ == "__main__":
