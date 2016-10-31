@@ -47,22 +47,64 @@ class Main(KycoCoreNApp):
 
         The execute method is called by the run method of KycoNApp class.
         Users shouldn't call this method directly."""
-        self.server.start()
-        while not self._stopper.is_set():
-            for switch in self.controller.switches.values():
-                self.flow_manager.dump_flows()
-            self._stopper.wait(STATS_INTERVAL)
-        log.debug('Thread finished.')
+        for dpid in self.controller.switches:
+            self.flow_manager.dump_flows(dpid)
 
     def shutdown(self):
         self.server.stop()
+
+    def retrieve_flows(self, dpid=None):
+        """
+        Retrieves all flows from a sitch identified by dpid. If no dpid has
+        been specified, returns the flows from all switches
+        """
+        flows = []
+        if dpid is not None:
+            flows.append(self.flow_manager.flows[dpid])
+        else:
+            for switch_dpid in self.flow_manager.flows:
+                flows.append(self.flow_manager.flows[switch_dpid])
+        return flows
+
+    def insert_flow(self, dpid=None):
+        """Insert a new flow to the switch identified by dpid. If no dpid has
+        been specified, install flow in all switches """
+        json_content = request.get_json()
+        received_flow = Flow.from_json(json_content)
+        if dpid is not None:
+            self.flow_manager.install_new_flow(received_flow, dpid)
+        else:
+            for switch_dpid in self.controller.switches:
+                self.flow_manager.install_new_flow(received_flow, switch_dpid)
+
+    def clear_flows(self, dpid=None):
+        """Clear flows from a switch identified by dpid. If no dpid has been
+        specified, clear all flows from all switches"""
+
+        if dpid is not None:
+            self.flow_manager.clear_flows(dpid)
+        else:
+            for switch_dpid in self.controller.switches:
+                self.flow_manager.clear_flows(switch_dpid)
+
+    def delete_flow(self, flow_id, dpid=None):
+        """
+        Deletes a flow identified by flow_id from a swith identified by dpid.
+        If no dpid has been specified, removes all flows with the given flow_id
+        from all switches
+        """
+        if dpid is not None:
+            self.flow_manager.delete_flow(flow_id, dpid)
+        else:
+            for switch_dpid in self.controller.switches:
+                self.flow_manager.delete_flow(flow_id, switch_dpid)
 
 
 class FlowManager(object):
     """This class is responsible for manipulating flows at the switches"""
     def __init__(self, controller):
         self.controller = controller
-        self.flows = []
+        self.flows = {}
 
     def install_new_flow(self, flow, dpid):
         """
@@ -102,7 +144,7 @@ class FlowManager(object):
                                            'message': flow_mod})
             self.controller.buffers.msg_out.put(event_out)
 
-    def delete_flow(self, dpid, flow_id):
+    def delete_flow(self, flow_id, dpid):
         """Removes the flow identified by id from the switch identified by
         dpid"""
         switch = self.controller.get_switch_by_dpid(dpid)
@@ -123,7 +165,10 @@ class FlowManager(object):
         if msg.body_type.value is StatsTypes.OFPST_FLOW:
             flow_stats = msg.body
             flows = self._get_flows(flow_stats)
-            self.flows = flows
+            switch_dpid = event.content['switch']
+            if self.flows[switch_dpid] is None:
+                self.flows[switch_dpid] = []
+            self.flows[switch_dpid].append(flows)
 
     def _get_flows(self, flow_stats):
         """
