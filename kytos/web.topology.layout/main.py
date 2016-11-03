@@ -27,15 +27,12 @@ class Main(KycoCoreNApp):
         self.name = 'kytos/web.topology.layout'
         self.stop_signal = False
         self.current_controller = self.controller
-        self.controller.register_rest_endpoint('/webtopo/',
+        self.controller.register_rest_endpoint('/web/topology/layouts/',
                                                self.get_topologies,
                                                methods=['GET'])
-        self.controller.register_rest_endpoint('/webtopo/<topo_name>',
-                                               self.get_topologies,
-                                               methods=['GET'])
-        self.controller.register_rest_endpoint('/webtopo/<topo_name>',
-                                               self.save_topology,
-                                               methods=['POST'])
+        self.controller.register_rest_endpoint('/web/topology/layouts/<name>',
+                                               self.topology,
+                                               methods=['GET', 'POST'])
 
     def execute(self):
         """ Do nothing, only wait for packet-in messages"""
@@ -44,21 +41,29 @@ class Main(KycoCoreNApp):
     def shutdown(self):
         self.stop_signal = True
 
-    def save_topology(self, topo_name):
+    def topology(self, name):
+        if request.method == 'POST':
+            return self.save_topology(name)
+        else:
+            return self.get_topology(name)
+
+    def save_topology(self, name):
         if not request.is_json:
             abort(400)
         topology = request.get_json()
-        with open(join(TOPOLOGY_DIR, topo_name + '.json'), 'w') as outfile:
+        with open(join(TOPOLOGY_DIR, name + '.json'), 'w') as outfile:
             json.dump(topology, outfile)
         return 'OK'
 
-    def get_topologies(self, topo_name=None):
-        if topo_name is None:
-            output = [f for f in listdir(TOPOLOGY_DIR) if isfile(join(TOPOLOGY_DIR, f))]
-        else:
-            file = join(TOPOLOGY_DIR, topo_name + '.json')
-            if not isfile(file):
-                return None
-            with open(join(TOPOLOGY_DIR, topo_name + '.json'), 'r') as outfile:
-                output = json.load(outfile)
+    def get_topology(self, name):
+        file = join(TOPOLOGY_DIR, name + '.json')
+        if not isfile(file):
+            return None
+        with open(join(TOPOLOGY_DIR, name + '.json'), 'r') as outfile:
+            output = json.load(outfile)
+        return json.dumps(output)
+
+    def get_topologies(self):
+        files = listdir(TOPOLOGY_DIR)
+        output = [f for f in files if isfile(join(TOPOLOGY_DIR, f))]
         return json.dumps(output)
