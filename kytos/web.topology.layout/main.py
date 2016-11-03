@@ -1,8 +1,8 @@
 import logging
 import json
 
-from flask import request
-from os import listdir, getcwd
+from flask import abort, request
+from os import listdir, makedirs
 from os.path import isfile, join
 
 from kyco.core.napps import KycoCoreNApp
@@ -10,6 +10,8 @@ from kyco.core.napps import KycoCoreNApp
 
 log = logging.getLogger('KycoNApp')
 
+TOPOLOGY_DIR = '/tmp/kytos/topologies/'
+makedirs(TOPOLOGY_DIR, exist_ok=True)
 
 class Main(KycoCoreNApp):
     """
@@ -42,18 +44,19 @@ class Main(KycoCoreNApp):
         self.stop_signal = True
 
     def save_topology(self, topo_name):
-        topo_dir = join(getcwd(), 'topologies')
+        if not request.is_json:
+            abort(400)
         topology = request.get_json()
-        with open(join(topo_dir, topo_name + '.json'), 'w') as outfile:
+        with open(join(TOPOLOGY_DIR, topo_name + '.json'), 'w') as outfile:
             json.dump(topology, outfile)
+        return 'OK'
 
     def get_topologies(self, topo_name=None):
-        topos = join(getcwd(), 'topologies')
         if topo_name is None:
-            output = [f for f in listdir(topos) if isfile(join(topos, f))]
+            output = [f for f in listdir(TOPOLOGY_DIR) if isfile(join(TOPOLOGY_DIR, f))]
         else:
             try:
-                with open(join(topos, topo_name + '.json'), 'r') as outfile:
+                with open(join(TOPOLOGY_DIR, topo_name + '.json'), 'r') as outfile:
                     output = json.load(outfile.read())
             except (FileNotFoundError, json.JSONDecodeError):
                 output = None
