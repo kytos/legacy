@@ -22,7 +22,6 @@ class Main(KycoCoreNApp):
         information about the hosts"""
 
         self.name = 'kytos/of.topology'
-        self.current_controller = self.controller
         self.controller.register_rest_endpoint('/topology',
                                                self.get_json_topology,
                                                methods=['GET'])
@@ -52,21 +51,23 @@ class Main(KycoCoreNApp):
         log.debug('Shutting down...')
 
     def get_json_topology(self):
-        nodes, links = {}, []
+        nodes, links = [], []
         for dpid, switch in self.controller.switches.items():
-            nodes[switch.id] = switch.as_dict()
+            nodes.append(switch.as_dict())
             for port_no, interface in switch.interfaces.items():
                 link = {'source': switch.id,
                         'target': interface.id}
-                nodes[interface.id] = interface.as_dict()
+                nodes.append(interface.as_dict())
                 links.append(link)
 
                 for endpoint, ts in interface.endpoints:
                     if type(endpoint) is HWAddress:
                         link = {'source': interface.id,
                                 'target': endpoint.value}
-                        nodes[endpoint.value] = {"class": "host",
-                                                 "id": endpoint.value}
+                        host = {"class": 'host',
+                                "name": endpoint.value,
+                                "mac": endpoint.value}
+                        nodes.append(host)
                     else:
                         link = {'source': interface.id,
                                 'target': endpoint.id}
