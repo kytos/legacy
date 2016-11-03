@@ -56,21 +56,25 @@ class Main(KycoCoreNApp):
             nodes.append(switch.as_dict())
             for port_no, interface in switch.interfaces.items():
                 link = {'source': switch.id,
-                        'target': interface.id}
+                        'target': interface.id,
+                        'type': 'interface'}
                 nodes.append(interface.as_dict())
                 links.append(link)
 
                 for endpoint, ts in interface.endpoints:
                     if type(endpoint) is HWAddress:
                         link = {'source': interface.id,
-                                'target': endpoint.value}
-                        host = {"class": 'host',
+                                'target': endpoint.value,
+                                'type': 'link'}
+                        host = {"type": 'host',
+                                "id": endpoint.value,
                                 "name": endpoint.value,
                                 "mac": endpoint.value}
                         nodes.append(host)
                     else:
                         link = {'source': interface.id,
-                                'target': endpoint.id}
+                                'target': endpoint.id,
+                                'type': 'link'}
                     links.append(link)
 
         output = {'nodes': nodes, 'links': links}
