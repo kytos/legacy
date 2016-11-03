@@ -27,14 +27,15 @@ class Main(KycoCoreNApp):
         self.name = 'kytos/web.topology.layout'
         self.stop_signal = False
         self.current_controller = self.controller
-        self.controller.register_rest_endpoint('/webtopo/', self.get_topologies,
+        self.controller.register_rest_endpoint('/webtopo/',
+                                               self.get_topologies,
+                                               methods=['GET'])
+        self.controller.register_rest_endpoint('/webtopo/<topo_name>',
+                                               self.get_topologies,
                                                methods=['GET'])
         self.controller.register_rest_endpoint('/webtopo/<topo_name>',
                                                self.save_topology,
                                                methods=['POST'])
-        self.controller.register_rest_endpoint('/webtopo/<topo_name>',
-                                               self.get_topologies,
-                                               methods=['GET'])
 
     def execute(self):
         """ Do nothing, only wait for packet-in messages"""
@@ -55,9 +56,9 @@ class Main(KycoCoreNApp):
         if topo_name is None:
             output = [f for f in listdir(TOPOLOGY_DIR) if isfile(join(TOPOLOGY_DIR, f))]
         else:
-            try:
-                with open(join(TOPOLOGY_DIR, topo_name + '.json'), 'r') as outfile:
-                    output = json.load(outfile.read())
-            except (FileNotFoundError, json.JSONDecodeError):
-                output = None
+            file = join(TOPOLOGY_DIR, topo_name + '.json')
+            if not isfile(file):
+                return None
+            with open(join(TOPOLOGY_DIR, topo_name + '.json'), 'r') as outfile:
+                output = json.load(outfile)
         return json.dumps(output)
