@@ -25,49 +25,45 @@ class Main(KycoCoreNApp):
     def setup(self):
         """Creates an empty dict to store the switches references and data"""
         self.name = 'kytos/of.lldp'
-        self.stop_signal = False
+        self.execute_as_loop(POOLING_TIME)
         # TODO: This switches object may change according to changes from #62
 
     def execute(self):
         """Implement a loop to check switches liveness"""
-        while not self.stop_signal:
-            for switch in self.controller.switches.values():
-                # Gerar lldp para cada uma das portas do switch
-                # Gerar o hash de cada um dos pacotes e armazenar
+        for switch in self.controller.switches.values():
+            # Gerar lldp para cada uma das portas do switch
+            # Gerar o hash de cada um dos pacotes e armazenar
 
-                for port in switch.features.ports:
-                    output_action = ActionOutput()
-                    output_action.port = port.port_no
+            for port in switch.features.ports:
+                output_action = ActionOutput()
+                output_action.port = port.port_no
 
-                    if port.port_no.value == 65534:
-                        continue
+                if port.port_no.value == 65534:
+                    continue
 
-                    ethernet = Ethernet()
-                    ethernet.type = 0x88cc # lldp
-                    ethernet.source = port.hw_addr
-                    ethernet.destination = '01:80:c2:00:00:0e' # lldp multicast
+                ethernet = Ethernet()
+                ethernet.type = 0x88cc # lldp
+                ethernet.source = port.hw_addr
+                ethernet.destination = '01:80:c2:00:00:0e' # lldp multicast
 
-                    lldp = LLDP()
-                    lldp.chassis_id.sub_value = DPID(switch.dpid)
-                    lldp.port_id.sub_value = port.port_no
+                lldp = LLDP()
+                lldp.chassis_id.sub_value = DPID(switch.dpid)
+                lldp.port_id.sub_value = port.port_no
 
-                    ethernet.data = lldp.pack()
+                ethernet.data = lldp.pack()
 
-                    packet_out = PacketOut()
-                    packet_out.actions.append(output_action)
-                    packet_out.data = ethernet.pack()
+                packet_out = PacketOut()
+                packet_out.actions.append(output_action)
+                packet_out.data = ethernet.pack()
 
-                    event_out = KycoEvent()
-                    event_out.name = 'kytos/of.lldp.messages.out.ofpt_packet_out'
-                    event_out.content = {'destination': switch.connection,
-                                         'message': packet_out}
-                    self.controller.buffers.msg_out.put(event_out)
+                event_out = KycoEvent()
+                event_out.name = 'kytos/of.lldp.messages.out.ofpt_packet_out'
+                event_out.content = {'destination': switch.connection,
+                                     'message': packet_out}
+                self.controller.buffers.msg_out.put(event_out)
 
-                    log.debug("Sending a LLDP PacketOut to the switch %s",
-                              switch.dpid)
-
-            # wait 1s until next check...
-            time.sleep(POOLING_TIME)
+                log.debug("Sending a LLDP PacketOut to the switch %s",
+                          switch.dpid)
 
     @listen_to('kytos/of.core.messages.in.ofpt_packet_in')
     def update_links(self, event):
@@ -119,4 +115,4 @@ class Main(KycoCoreNApp):
 #        self.controller.buffers.msg_out.put(event_out)
 
     def shutdown(self):
-        self.stop_signal = True
+        pass
