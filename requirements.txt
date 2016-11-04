@@ -1,2 +1,2 @@
-rrdtool~=0.1.5
+rrdtool>=0.1.6
 Flask~=0.11.1
