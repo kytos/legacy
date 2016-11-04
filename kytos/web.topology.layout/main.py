@@ -65,5 +65,5 @@ class Main(KycoCoreNApp):
 
     def get_topologies(self):
         files = listdir(TOPOLOGY_DIR)
-        output = [f for f in files if isfile(join(TOPOLOGY_DIR, f))]
+        output = [f.replace('.json', '') for f in files if isfile(join(TOPOLOGY_DIR, f))]
         return json.dumps(output)
