@@ -168,7 +168,8 @@ class Main(KycoCoreNApp):
                                        'destination': event.source})
         self.controller.buffers.msg_out.put(event_out)
 
-    @listen_to('kytos/of.core.messages.out.ofpt_hello')
+    @listen_to('kytos/of.core.messages.out.ofpt_hello',
+               'kytos/of.core.messages.out.ofpt_echo_reply')
     def send_features_request(self, event):
         """Send a FeaturesRequest to the switch after a Hello Message.
 
