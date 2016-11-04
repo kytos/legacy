@@ -21,9 +21,10 @@ from pyof.v0x01.controller2switch.common import (AggregateStatsRequest,
 from pyof.v0x01.controller2switch.stats_request import StatsRequest, StatsTypes
 
 #: Seconds to wait before asking for more statistics.
+#: Delete RRDs everytime this interval is changed
 STATS_INTERVAL = 30
 # STATS_INTERVAL = 1  # 1 second for testing - check RRD._get_archives()
-log = getLogger('Stats')
+log = getLogger(__name__)
 #: Avoid segmentation fault
 rrd_lock = Lock()
 
@@ -277,6 +278,14 @@ class RRD:
         # rrdtool range is different from Python's.
         return range(start + step, stop + 1, step), cols, rows
 
+    def fetch_latest(self, index):
+        """Fetch only the value for now."""
+        start = 'end-{}s'.format(STATS_INTERVAL * 3)  # to be safe
+        cols, rows = self.fetch(index, start, end='now')[1:]  # exclude tstamps
+        # TODO Understand the last rows as None.
+        latest = rows[-2] if rows[-1][0] is None else rows[-1]
+        return {col: value for col, value in zip(cols, latest)}
+
     def _get_counter(self, ds):
         return 'DS:{}:COUNTER:{}:{}:{}'.format(ds, self._TIMEOUT, self._MIN,
                                                self._MAX)
@@ -387,9 +396,9 @@ class FlowStats(Stats):
 
         for fs in flows_stats:
             flow = Flow.from_flow_stats(fs)
-            self._rrd.update((dpid, flow.id),
-                             packet_count=fs.packet_count.value,
-                             byte_count=fs.byte_count.value)
+            self.rrd.update((dpid, flow.id),
+                            packet_count=fs.packet_count.value,
+                            byte_count=fs.byte_count.value)
 
             log.debug(debug_msg, fs.table_id.value, dpid,
                       fs.packet_count.value, fs.byte_count.value)
@@ -455,10 +464,12 @@ class StatsAPI:
         Args:
             dpid (str): Switch dpid.
         """
-        index = (dpid,)
-        ports = sorted(int(bname) for bname in self._rrd.get_rrds(index))
-        content = {'ports': ports}
-        return StatsAPI._get_response(content)
+        ix = (dpid,)
+        data = {}
+        for port in self._rrd.get_rrds(ix):
+            port_ix = (dpid, port)
+            data[port] = self._rrd.fetch_latest(port_ix)
+        return StatsAPI._get_response(data)
 
     def _fetch(self, index, start, end, n_points):
         tstamps, cols, rows = self._rrd.fetch(index, start, end, n_points)
@@ -508,7 +519,7 @@ class StatsAPI:
                                           cls.get_port_stats, methods=['GET'])
         controller.register_rest_endpoint('/stats/<dpid>/flows/<flow_hash>',
                                           cls.get_flow_stats, methods=['GET'])
-        controller.register_rest_endpoint('/stats/<dpid>',
+        controller.register_rest_endpoint('/stats/<dpid>/ports',
                                           cls.get_port_list, methods=['GET'])
 
     @classmethod
