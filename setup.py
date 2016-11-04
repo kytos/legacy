@@ -9,7 +9,7 @@ import sys
 from subprocess import call
 from setuptools import setup, Command
 
-if 'VIRTUAL_ENV' in os.environ and 'TRAVIS' not in os.environ:
+if 'VIRTUAL_ENV' in os.environ:
     BASE_ENV = os.environ['VIRTUAL_ENV']
 else:
     BASE_ENV = '/'
