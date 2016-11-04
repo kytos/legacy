@@ -19,7 +19,6 @@ class Main(KycoCoreNApp):
         """Create an empty dict to store the switches references and data."""
         self.name = 'kytos/of.lldp'
         self.execute_as_loop(POOLING_TIME)
-        # TODO: This switches object may change according to changes from #62
 
     def execute(self):
         """Implement a loop to check switches liveness."""
@@ -79,8 +78,9 @@ class Main(KycoCoreNApp):
             port_no_b.unpack(lldp.port_id.sub_value.value)
             interface_b = switch_b.get_interface_by_port_no(port_no_b.value)
 
-            interface_a.update_endpoint(interface_b)
-            interface_b.update_endpoint(interface_a)
+            if interface_a is not None and interface_b is not None:
+                interface_a.update_endpoint(interface_b)
+                interface_b.update_endpoint(interface_a)
 
     def shutdown(self):
         pass
