@@ -2,6 +2,7 @@
 import json
 import time
 from abc import ABCMeta, abstractmethod
+from glob import glob
 from logging import getLogger
 from pathlib import Path
 from threading import Lock
@@ -164,6 +165,24 @@ class RRD:
             path = path / folder
         path = path / '{}.rrd'.format(basename)
         return str(path)
+
+    def get_rrds(self, index):
+        """List files inside the folder specified by *index*.
+
+        Args:
+            index (iterable): Subfolders. Like *index* of :meth:`get_rrd`
+                without the last item, for example.
+
+        Returns:
+            str iterable: Generator of rrd basenames, without *.rrd* suffix.
+                For example, return the string `1` for `folder/1.rdd`
+        """
+        path = self._DIR / self._app
+        for folder in index:
+            path = path / folder
+        preffix = str(path) + '/'
+        pattern = preffix + '*.rrd'
+        return (rrd[len(preffix):-4] for rrd in glob(pattern))
 
     def get_or_create_rrd(self, index, tstamp=None):
         """If rrd is not found, create it.
@@ -430,6 +449,17 @@ class StatsAPI:
             content = self._get_rrd_not_found_error(e)
         return StatsAPI._get_response(content)
 
+    def list_ports(self, dpid):
+        """List all ports that have statistics and their latest stats.
+
+        Args:
+            dpid (str): Switch dpid.
+        """
+        index = (dpid,)
+        ports = sorted(int(bname) for bname in self._rrd.get_rrds(index))
+        content = {'ports': ports}
+        return StatsAPI._get_response(content)
+
     def _fetch(self, index, start, end, n_points):
         tstamps, cols, rows = self._rrd.fetch(index, start, end, n_points)
         self._stats = {col: [] for col in cols}
@@ -478,6 +508,8 @@ class StatsAPI:
                                           cls.get_port_stats, methods=['GET'])
         controller.register_rest_endpoint('/stats/<dpid>/flows/<flow_hash>',
                                           cls.get_flow_stats, methods=['GET'])
+        controller.register_rest_endpoint('/stats/<dpid>',
+                                          cls.get_port_list, methods=['GET'])
 
     @classmethod
     def get_port_stats(cls, dpid, port):
@@ -500,6 +532,16 @@ class StatsAPI:
         api = cls(PortStats.rrd)
         index = (dpid, port)
         return api.get_points(index)
+
+    @classmethod
+    def get_port_list(cls, dpid):
+        """List all ports that have statistics and their latest stats.
+
+        Args:
+            dpid (str): Switch dpid.
+        """
+        api = cls(PortStats.rrd)
+        return api.list_ports(dpid)
 
     @classmethod
     def get_flow_stats(cls, dpid, flow_hash):
