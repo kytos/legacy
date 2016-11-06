@@ -280,12 +280,15 @@ class RRD:
         return range(start + step, stop + 1, step), cols, rows
 
     def fetch_latest(self, index):
-        """Fetch only the value for now."""
+        """Fetch only the value for now.
+
+        Return empty dict if there are no values recorded.
+        """
         start = 'end-{}s'.format(STATS_INTERVAL * 2)  # two rows
         cols, rows = self.fetch(index, start, end='now')[1:]  # exclude tstamps
         # Last row has higher timestamp and may be empty (time in the future)
         latest = rows[-2] if rows[-1][0] is None else rows[-1]
-        return {col: value for col, value in zip(cols, latest)}
+        return {k: v for k, v in zip(cols, latest)} if latest[0] else {}
 
     def _get_counter(self, ds):
         return 'DS:{}:COUNTER:{}:{}:{}'.format(ds, self._TIMEOUT, self._MIN,
@@ -469,8 +472,10 @@ class StatsAPI:
         data = {}
         for port in self._rrd.get_rrds(ix):
             port_ix = (dpid, port)
-            data[port] = self._rrd.fetch_latest(port_ix)
-        return StatsAPI._get_response(data)
+            latest = self._rrd.fetch_latest(port_ix)
+            if latest:  # test if dictionary is empty
+                data[port] = latest
+        return StatsAPI._get_response({'data': data})
 
     def _fetch(self, index, start, end, n_points):
         tstamps, cols, rows = self._rrd.fetch(index, start, end, n_points)
