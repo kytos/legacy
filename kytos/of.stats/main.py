@@ -395,8 +395,9 @@ class FlowStats(Stats):
 
     def listen(self, dpid, flows_stats):
         """Receive flow stats."""
-        debug_msg = 'Received flow stats from table %s of switch %s: ' \
-                    'packet_count %s, byte_count %s'
+        debug_msg = 'Received flow stats:\n' \
+                    '  Flow id %s\n' \
+                    '  table %s, switch %s, counters: packet = %s, byte = %s'
 
         for fs in flows_stats:
             flow = Flow.from_flow_stats(fs)
@@ -404,7 +405,7 @@ class FlowStats(Stats):
                             packet_count=fs.packet_count.value,
                             byte_count=fs.byte_count.value)
 
-            log.debug(debug_msg, fs.table_id.value, dpid,
+            log.debug(debug_msg, flow.id, fs.table_id.value, dpid,
                       fs.packet_count.value, fs.byte_count.value)
 
 
@@ -462,7 +463,7 @@ class StatsAPI:
             content = self._get_rrd_not_found_error(e)
         return StatsAPI._get_response(content)
 
-    def list_ports(self, dpid):
+    def list_latest(self, dpid):
         """List all ports that have statistics and their latest stats.
 
         Args:
@@ -527,6 +528,8 @@ class StatsAPI:
                                           cls.get_flow_stats, methods=['GET'])
         controller.register_rest_endpoint('/stats/<dpid>/ports',
                                           cls.get_port_list, methods=['GET'])
+        controller.register_rest_endpoint('/stats/<dpid>/flows',
+                                          cls.get_flow_list, methods=['GET'])
 
     @classmethod
     def get_port_stats(cls, dpid, port):
@@ -558,7 +561,17 @@ class StatsAPI:
             dpid (str): Switch dpid.
         """
         api = cls(PortStats.rrd)
-        return api.list_ports(dpid)
+        return api.list_latest(dpid)
+
+    @classmethod
+    def get_flow_list(cls, dpid):
+        """List all flows that have statistics and their latest stats.
+
+        Args:
+            dpid (str): Switch dpid.
+        """
+        api = cls(FlowStats.rrd)
+        return api.list_latest(dpid)
 
     @classmethod
     def get_flow_stats(cls, dpid, flow_hash):
