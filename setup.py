@@ -5,9 +5,9 @@ descriptions.
 """
 import os
 import sys
-
 from subprocess import call
-from setuptools import setup, Command
+
+from setuptools import Command, setup
 
 if 'VIRTUAL_ENV' in os.environ:
     BASE_ENV = os.environ['VIRTUAL_ENV']
@@ -32,8 +32,9 @@ class Linter(Command):
     def __init__(self, *args, **kwargs):
         """Define linters and a message about them."""
         super().__init__(*args, **kwargs)
-        self.linters = ['pep257', 'pyflakes', 'mccabe', 'isort', 'pep8',
-                        'pylint']
+        'pyflakes,isort,pycodestyle,pydocstyle,pylint,radon'.split(',')
+        self.linters = ['pyflakes', 'isort', 'pycodestyle', 'pydocstyle',
+                        'pylint', 'radon']
         self.extra_msg = 'It may take a while. For a faster version (and ' \
                          'less checks), run "quick_lint".'
 
@@ -47,13 +48,11 @@ class Linter(Command):
 
     def run(self):
         """Run pylama and radon."""
-        files = 'tests setup.py pyof'
+        files = 'setup.py kytos'
         print('running pylama with {}. {}'.format(', '.join(self.linters),
                                                   self.extra_msg))
         cmd = 'pylama -l {} {}'.format(','.join(self.linters), files)
         call(cmd, shell=True)
-        print('Low grades (<= C) for Cyclomatic Complexity:')
-        call('radon cc --min=C ' + files, shell=True)
         print('Low grades (<= C) for Maintainability Index:')
         call('radon mi --min=C ' + files, shell=True)
 
@@ -72,9 +71,7 @@ class FastLinter(Linter):
 
 
 def retrieve_apps(kytos_napps_path):
-    """
-    Retrieves the list of files within each app directory
-    """
+    """Retrieve the list of files within each app directory."""
     apps = []
     for napp_name in os.listdir("./kytos"):
         app_files = []

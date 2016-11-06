@@ -2,6 +2,7 @@
 import json
 import time
 from abc import ABCMeta, abstractmethod
+from glob import glob
 from logging import getLogger
 from pathlib import Path
 from threading import Lock
@@ -20,8 +21,10 @@ from pyof.v0x01.controller2switch.common import (AggregateStatsRequest,
 from pyof.v0x01.controller2switch.stats_request import StatsRequest, StatsTypes
 
 #: Seconds to wait before asking for more statistics.
+#: Delete RRDs everytime this interval is changed
 STATS_INTERVAL = 30
-log = getLogger('Stats')
+# STATS_INTERVAL = 1  # 1 second for testing - check RRD._get_archives()
+log = getLogger(__name__)
 #: Avoid segmentation fault
 rrd_lock = Lock()
 
@@ -164,6 +167,24 @@ class RRD:
         path = path / '{}.rrd'.format(basename)
         return str(path)
 
+    def get_rrds(self, index):
+        """List files inside the folder specified by *index*.
+
+        Args:
+            index (iterable): Subfolders. Like *index* of :meth:`get_rrd`
+                without the last item, for example.
+
+        Returns:
+            str iterable: Generator of rrd basenames, without *.rrd* suffix.
+                For example, return the string `1` for `folder/1.rdd`
+        """
+        path = self._DIR / self._app
+        for folder in index:
+            path = path / folder
+        preffix = str(path) + '/'
+        pattern = preffix + '*.rrd'
+        return (rrd[len(preffix):-4] for rrd in glob(pattern))
+
     def get_or_create_rrd(self, index, tstamp=None):
         """If rrd is not found, create it.
 
@@ -257,6 +278,14 @@ class RRD:
         # rrdtool range is different from Python's.
         return range(start + step, stop + 1, step), cols, rows
 
+    def fetch_latest(self, index):
+        """Fetch only the value for now."""
+        start = 'end-{}s'.format(STATS_INTERVAL * 3)  # to be safe
+        cols, rows = self.fetch(index, start, end='now')[1:]  # exclude tstamps
+        # TODO Understand the last rows as None.
+        latest = rows[-2] if rows[-1][0] is None else rows[-1]
+        return {col: value for col, value in zip(cols, latest)}
+
     def _get_counter(self, ds):
         return 'DS:{}:COUNTER:{}:{}:{}'.format(ds, self._TIMEOUT, self._MIN,
                                                self._MAX)
@@ -269,6 +298,7 @@ class RRD:
                       '4h', '8h', '12h', '1d', '2d', '3d', '6d', '10d', '15d'):
             averages.append('RRA:AVERAGE:{}:{}:{}'.format(self._XFF, steps,
                                                           self._PERIOD))
+        # averages = ['RRA:AVERAGE:0:1:1d']  # More samples for testing
         return averages
 
 
@@ -366,9 +396,9 @@ class FlowStats(Stats):
 
         for fs in flows_stats:
             flow = Flow.from_flow_stats(fs)
-            self._rrd.update((dpid, flow.id),
-                             packet_count=fs.packet_count.value,
-                             byte_count=fs.byte_count.value)
+            self.rrd.update((dpid, flow.id),
+                            packet_count=fs.packet_count.value,
+                            byte_count=fs.byte_count.value)
 
             log.debug(debug_msg, fs.table_id.value, dpid,
                       fs.packet_count.value, fs.byte_count.value)
@@ -428,6 +458,19 @@ class StatsAPI:
             content = self._get_rrd_not_found_error(e)
         return StatsAPI._get_response(content)
 
+    def list_ports(self, dpid):
+        """List all ports that have statistics and their latest stats.
+
+        Args:
+            dpid (str): Switch dpid.
+        """
+        ix = (dpid,)
+        data = {}
+        for port in self._rrd.get_rrds(ix):
+            port_ix = (dpid, port)
+            data[port] = self._rrd.fetch_latest(port_ix)
+        return StatsAPI._get_response(data)
+
     def _fetch(self, index, start, end, n_points):
         tstamps, cols, rows = self._rrd.fetch(index, start, end, n_points)
         self._stats = {col: [] for col in cols}
@@ -476,6 +519,8 @@ class StatsAPI:
                                           cls.get_port_stats, methods=['GET'])
         controller.register_rest_endpoint('/stats/<dpid>/flows/<flow_hash>',
                                           cls.get_flow_stats, methods=['GET'])
+        controller.register_rest_endpoint('/stats/<dpid>/ports',
+                                          cls.get_port_list, methods=['GET'])
 
     @classmethod
     def get_port_stats(cls, dpid, port):
@@ -498,6 +543,16 @@ class StatsAPI:
         api = cls(PortStats.rrd)
         index = (dpid, port)
         return api.get_points(index)
+
+    @classmethod
+    def get_port_list(cls, dpid):
+        """List all ports that have statistics and their latest stats.
+
+        Args:
+            dpid (str): Switch dpid.
+        """
+        api = cls(PortStats.rrd)
+        return api.list_ports(dpid)
 
     @classmethod
     def get_flow_stats(cls, dpid, flow_hash):
