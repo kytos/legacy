@@ -53,7 +53,8 @@ class Main(KycoNApp):
 
     def _update_stats(self, switch):
         for stats in self._stats.values():
-            stats.request(switch.connection)
+            if switch.connection is not None:
+                stats.request(switch.connection)
 
     @listen_to('kytos/of.core.messages.in.ofpt_stats_reply')
     def listener(self, event):
