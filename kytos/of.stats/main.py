@@ -281,9 +281,9 @@ class RRD:
 
     def fetch_latest(self, index):
         """Fetch only the value for now."""
-        start = 'end-{}s'.format(STATS_INTERVAL * 3)  # to be safe
+        start = 'end-{}s'.format(STATS_INTERVAL * 2)  # two rows
         cols, rows = self.fetch(index, start, end='now')[1:]  # exclude tstamps
-        # TODO Understand the last rows as None.
+        # Last row has higher timestamp and may be empty (time in the future)
         latest = rows[-2] if rows[-1][0] is None else rows[-1]
         return {col: value for col, value in zip(cols, latest)}
 
