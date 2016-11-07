@@ -1,11 +1,13 @@
 """Statistics application."""
 import json
+import time
 from abc import ABCMeta, abstractmethod
+from glob import glob
 from logging import getLogger
 from pathlib import Path
 from threading import Lock
 
-from flask import Flask, Response
+from flask import Flask, Response, request
 
 import rrdtool
 from kyco.core.events import KycoEvent
@@ -19,8 +21,10 @@ from pyof.v0x01.controller2switch.common import (AggregateStatsRequest,
 from pyof.v0x01.controller2switch.stats_request import StatsRequest, StatsTypes
 
 #: Seconds to wait before asking for more statistics.
+#: Delete RRDs everytime this interval is changed
 STATS_INTERVAL = 30
-log = getLogger('Stats')
+# STATS_INTERVAL = 1  # 1 second for testing - check RRD._get_archives()
+log = getLogger(__name__)
 #: Avoid segmentation fault
 rrd_lock = Lock()
 
@@ -35,6 +39,7 @@ class Main(KycoNApp):
                        StatsTypes.OFPST_PORT.value: PortStats(msg_out),
                        StatsTypes.OFPST_FLOW.value: FlowStats(msg_out)}
         self.execute_as_loop(STATS_INTERVAL)
+        StatsAPI.register_endpoints(self.controller)
 
     def execute(self):
         """Query all switches sequentially and then sleep before repeating."""
@@ -162,6 +167,24 @@ class RRD:
         path = path / '{}.rrd'.format(basename)
         return str(path)
 
+    def get_rrds(self, index):
+        """List files inside the folder specified by *index*.
+
+        Args:
+            index (iterable): Subfolders. Like *index* of :meth:`get_rrd`
+                without the last item, for example.
+
+        Returns:
+            str iterable: Generator of rrd basenames, without *.rrd* suffix.
+                For example, return the string `1` for `folder/1.rdd`
+        """
+        path = self._DIR / self._app
+        for folder in index:
+            path = path / folder
+        preffix = str(path) + '/'
+        pattern = preffix + '*.rrd'
+        return (rrd[len(preffix):-4] for rrd in glob(pattern))
+
     def get_or_create_rrd(self, index, tstamp=None):
         """If rrd is not found, create it.
 
@@ -195,16 +218,17 @@ class RRD:
         options = [rrd, '--start', str(tstamp), '--step', str(STATS_INTERVAL)]
         options.extend([self._get_counter(ds) for ds in self._ds])
         options.extend(self._get_archives())
-        rrdtool.create(*options)
+        with rrd_lock:
+            rrdtool.create(*options)
 
-    def fetch(self, index, start='start', end='now', n_points=None):
+    def fetch(self, index, start='first', end='now', n_points=None):
         """Fetch average values from rrd.
 
         Args:
             index (list of str): Index for the RRD database. Examples:
                 [dpid], [dpid, port_no], [dpid, table id, flow hash].
             start (str, int): Unix timestamp in seconds for the first stats.
-                Defaults to the rrd file creation start time.
+                Defaults to the first recorded sample.
             end (str, int): Unix timestamp in seconds for the last stats.
                 Defaults to current time.
             n_points (int): Number of points to return. May return more if
@@ -225,23 +249,42 @@ class RRD:
                                                                  index)
             raise FileNotFoundError(msg)
 
+        # Use integers to calculate resolution
+        if end == 'now':
+            end = int(time.time())
+        if start == 'first':
+            with rrd_lock:
+                start = rrdtool.first(rrd)
+
         # Find the best matching resolution for returning n_points.
         res_args = []
-        if n_points is not None:
+        if n_points is not None and isinstance(start, int) \
+                and isinstance(end, int):
             resolution = (end - start) // n_points
             if resolution > 0:
                 res_args.extend(['-a', '-r', '{}s'.format(resolution)])
 
         # For RRDtool to include start and end timestamps.
         if isinstance(start, int):
-            start = str(start - 1)
+            start -= 1
         if isinstance(end, int):
-            end = str(end - 1)
+            end -= 1
 
-        tstamps, cols, rows = rrdtool.fetch(rrd, 'AVERAGE', '--start', start,
-                                            '--end', end, *res_args)
+        args = [rrd, 'AVERAGE', '--start', str(start), '--end', str(end)]
+        args.extend(res_args)
+        with rrd_lock:
+            tstamps, cols, rows = rrdtool.fetch(*args)
         start, stop, step = tstamps
+        # rrdtool range is different from Python's.
         return range(start + step, stop + 1, step), cols, rows
+
+    def fetch_latest(self, index):
+        """Fetch only the value for now."""
+        start = 'end-{}s'.format(STATS_INTERVAL * 3)  # to be safe
+        cols, rows = self.fetch(index, start, end='now')[1:]  # exclude tstamps
+        # TODO Understand the last rows as None.
+        latest = rows[-2] if rows[-1][0] is None else rows[-1]
+        return {col: value for col, value in zip(cols, latest)}
 
     def _get_counter(self, ds):
         return 'DS:{}:COUNTER:{}:{}:{}'.format(ds, self._TIMEOUT, self._MIN,
@@ -255,6 +298,7 @@ class RRD:
                       '4h', '8h', '12h', '1d', '2d', '3d', '6d', '10d', '15d'):
             averages.append('RRA:AVERAGE:{}:{}:{}'.format(self._XFF, steps,
                                                           self._PERIOD))
+        # averages = ['RRA:AVERAGE:0:1:1d']  # More samples for testing
         return averages
 
 
@@ -332,10 +376,11 @@ class AggregateStats(Stats):
 class FlowStats(Stats):
     """Deal with FlowStats message."""
 
+    rrd = RRD('flows', ('packet_count', 'byte_count'))
+
     def __init__(self, msg_out_buffer):
         """Initialize database."""
         super().__init__(msg_out_buffer)
-        self._rrd = RRD('flows', ('packet_count', 'byte_count'))
 
     def request(self, conn):
         """Ask for flow stats."""
@@ -351,9 +396,9 @@ class FlowStats(Stats):
 
         for fs in flows_stats:
             flow = Flow.from_flow_stats(fs)
-            self._rrd.update((dpid, flow.id),
-                             packet_count=fs.packet_count.value,
-                             byte_count=fs.byte_count.value)
+            self.rrd.update((dpid, flow.id),
+                            packet_count=fs.packet_count.value,
+                            byte_count=fs.byte_count.value)
 
             log.debug(debug_msg, fs.table_id.value, dpid,
                       fs.packet_count.value, fs.byte_count.value)
@@ -388,20 +433,53 @@ class Description(Stats):
 app = Flask(__name__)
 
 
-class PortStatsAPI:
+class StatsAPI:
     """Class to answer REST API requests."""
 
-    def __init__(self):
-        """Initialize stats attribute."""
-        self._stats = {}
+    def __init__(self, rrd):
+        """Set the RRD to query for data.
 
-    def fetch_port(self, dpid, port, start, end):
+        Args:
+            rrd (RRD): Where to query data.
+        """
+        self._stats = {}
+        self._rrd = rrd
+
+    def get_points(self, index, n_points=30):
         """Return Flask response for port stats."""
+        start_str = request.args.get('start', 'first')
+        start = int(start_str) if start_str.isdigit() else start_str
+        end_str = request.args.get('end', 'now')
+        end = int(end_str) if end_str.isdigit() else end_str
+
         try:
-            content = self._fetch(dpid, port, start, end)
+            content = self._fetch(index, start, end, n_points)
         except FileNotFoundError as e:
-            content = PortStatsAPI._get_rrd_not_found_error(e)
-        return PortStatsAPI._get_response(content)
+            content = self._get_rrd_not_found_error(e)
+        return StatsAPI._get_response(content)
+
+    def list_ports(self, dpid):
+        """List all ports that have statistics and their latest stats.
+
+        Args:
+            dpid (str): Switch dpid.
+        """
+        ix = (dpid,)
+        data = {}
+        for port in self._rrd.get_rrds(ix):
+            port_ix = (dpid, port)
+            data[port] = self._rrd.fetch_latest(port_ix)
+        return StatsAPI._get_response(data)
+
+    def _fetch(self, index, start, end, n_points):
+        tstamps, cols, rows = self._rrd.fetch(index, start, end, n_points)
+        self._stats = {col: [] for col in cols}
+        self._stats['timestamps'] = list(tstamps)
+        for row in rows:
+            for col, value in zip(cols, row):
+                self._stats[col].append(value)
+        self._remove_null()
+        return {'data': self._stats}
 
     def _remove_null(self):
         """Remove a row if all its values are null."""
@@ -422,15 +500,10 @@ class PortStatsAPI:
             for lst in self._stats.values():
                 lst.pop(i)
 
-    def _fetch(self, dpid, port, start, end):
-        tstamps, cols, rows = PortStats.rrd.fetch((dpid, port), start, end, 30)
-        self._stats = {col: [] for col in cols}
-        self._stats['timestamps'] = list(tstamps)
-        for row in rows:
-            for col, value in zip(cols, row):
-                self._stats[col].append(value)
-        self._remove_null()
-        return {'data': self._stats}
+    @staticmethod
+    def _get_response(dct):
+        json_ = json.dumps(dct, sort_keys=True, indent=4)
+        return Response(json_, mimetype='application/vnd.api+json')
 
     @staticmethod
     def _get_rrd_not_found_error(exception):
@@ -439,27 +512,66 @@ class PortStatsAPI:
             'title': 'Database not found.',
             'detail': str(exception)}}
 
-    @staticmethod
-    def _get_response(dct):
-        json_ = json.dumps(dct, sort_keys=True, indent=4)
-        return Response(json_, mimetype='application/vnd.api+json')
+    @classmethod
+    def register_endpoints(cls, controller):
+        """Register REST API endpoints in the controller."""
+        controller.register_rest_endpoint('/stats/<dpid>/ports/<int:port>',
+                                          cls.get_port_stats, methods=['GET'])
+        controller.register_rest_endpoint('/stats/<dpid>/flows/<flow_hash>',
+                                          cls.get_flow_stats, methods=['GET'])
+        controller.register_rest_endpoint('/stats/<dpid>/ports',
+                                          cls.get_port_list, methods=['GET'])
 
+    @classmethod
+    def get_port_stats(cls, dpid, port):
+        """Get up to 60 points of all statistics of PortStats.
 
-@app.route("/of.stats/<dpid>/<int:port>/<int:start>/<int:end>")
-def get_stats(dpid, port, start, end):
-    """Get 30 rx and tx bytes/sec between start and end, including both.
+        Includes start and end that are both optional and and must be submitted
+        in the form "?start=x&end=y".
 
-    Args:
-        dpid (str): Switch dpid.
-        port (str, int): Switch port number.
-        start (int): Unix timestamp in seconds for the first stats.
-        end (int): Unix timestamp in seconds for the last stats.
-        n_points (int): Return n_points. May return more if there is no
-            matching resolution in the RRD file. Defaults to as many points
-            as possible.
-    """
-    api = PortStatsAPI()
-    return api.fetch_port(dpid, port, start, end)
+        Args:
+            dpid (str): Switch dpid.
+            port (str, int): Switch port number.
+            start (int): Unix timestamp in seconds for the first stats.
+                Defaults to the start parameter of the RRD creation.
+            end (int): Unix timestamp in seconds for the last stats. Defaults
+                to now.
+            n_points (int): Return n_points. May return more if there is no
+                matching resolution in the RRD file. Defaults to as many points
+                as possible.
+        """
+        api = cls(PortStats.rrd)
+        index = (dpid, port)
+        return api.get_points(index)
+
+    @classmethod
+    def get_port_list(cls, dpid):
+        """List all ports that have statistics and their latest stats.
+
+        Args:
+            dpid (str): Switch dpid.
+        """
+        api = cls(PortStats.rrd)
+        return api.list_ports(dpid)
+
+    @classmethod
+    def get_flow_stats(cls, dpid, flow_hash):
+        """Return flow statics by its hash.
+
+        Includes start and end that are both optional and and must be submitted
+        in the form "?start=x&end=y".
+
+        Args:
+            dpid (str): Switch dpid.
+            flow_hash (str): Flow hash.
+            start (int): Unix timestamp in seconds for the first stats.
+                Defaults to the start parameter of the RRD creation.
+            end (int): Unix timestamp in seconds for the last stats. Defaults
+                to now.
+        """
+        api = cls(FlowStats.rrd)
+        index = (dpid, flow_hash)
+        return api.get_points(index)
 
 
 if __name__ == "__main__":

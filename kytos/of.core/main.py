@@ -59,10 +59,8 @@ class Main(KycoCoreNApp):
     def handle_flow_stats_reply(self, event):
         """Handles FlowStatsReply and updates the switch list with its
         flowstats"""
-        log.debug("\n\n\n\n**** Received flow_stats!! ***\n\n\n\n")
         msg = event.content['message']
-        log.debug("Type: {} -> {} \n\n\n\n".format(msg.body_type.value,
-                                                   len(msg.body)))
+        log.debug("Received flow_stats of type {}".format(msg.body_type.value))
         if msg.body_type == StatsTypes.OFPST_FLOW:
             log.debug("OFPST_FLOW type msg")
             flows = []
@@ -164,7 +162,8 @@ class Main(KycoCoreNApp):
                                        'destination': event.source})
         self.controller.buffers.msg_out.put(event_out)
 
-    @listen_to('kytos/of.core.messages.out.ofpt_hello')
+    @listen_to('kytos/of.core.messages.out.ofpt_hello',
+               'kytos/of.core.messages.out.ofpt_echo_reply')
     def send_features_request(self, event):
         """Send a FeaturesRequest to the switch after a Hello Message.
 
