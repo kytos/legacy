@@ -1,7 +1,6 @@
 """This App is the responsible for the main OpenFlow basic operations."""
 
 from logging import getLogger
-from threading import Event
 
 from kyco.core.events import KycoEvent
 from kyco.core.flow import Flow
@@ -9,10 +8,9 @@ from kyco.core.napps import KycoCoreNApp
 from kyco.core.switch import Interface
 from kyco.utils import listen_to
 from pyof.v0x01.common.utils import new_message_from_header
-from pyof.v0x01.controller2switch.features_request import FeaturesRequest
-from pyof.v0x01.controller2switch.stats_request import (StatsRequest,
-                                                        StatsTypes)
 from pyof.v0x01.controller2switch.common import FlowStatsRequest
+from pyof.v0x01.controller2switch.features_request import FeaturesRequest
+from pyof.v0x01.controller2switch.stats_request import StatsRequest, StatsTypes
 from pyof.v0x01.symmetric.echo_reply import EchoReply
 from pyof.v0x01.symmetric.hello import Hello
 
@@ -46,18 +44,16 @@ class Main(KycoCoreNApp):
 
     def _update_flow_list(self, switch):
         """Requests ofp_stats of the flow type"""
-        log.debug("\n\n\n\n**** Requesting Update for Flow list! ***\n\n\n\n")
         body = FlowStatsRequest()  # Port.OFPP_NONE and All Tables
         req = StatsRequest(body_type=StatsTypes.OFPST_FLOW, body=body)
-        self._send_event(req, switch.connection)
-        log.debug('Flow Stats request for switch %s sent.', switch.dpid)
-
-    def _send_event(self, req, conn):
-        """Utilitary function to send an OpenFlow message to a connection"""
+        log.debug("\n\n\nTry to pack Stats Request...")
+        req.pack()
+        log.debug("Packed!\n\n")
         event = KycoEvent(
-            name='kytos/of.stats.messages.out.ofpt_stats_request',
-            content={'message': req, 'destination': conn})
+            name='kytos/of.core.messages.out.ofpt_stats_request',
+            content={'message': req, 'destination': switch.connection})
         self.controller.buffers.msg_out.put(event)
+        log.debug('Flow Stats request for switch %s sent.', switch.dpid)
 
     @listen_to('kytos/of.core.messages.in.ofpt_stats_reply')
     def handle_flow_stats_reply(self, event):
