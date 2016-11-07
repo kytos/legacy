@@ -98,7 +98,8 @@ class Main(KycoCoreNApp):
                                   address=port.hw_addr.value,
                                   port_number=port.port_no.value,
                                   switch=switch,
-                                  state=port.state.value)
+                                  state=port.state.value,
+                                  features=port.curr)
             switch.update_interface(interface)
 
         switch.update_features(features)
