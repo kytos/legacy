@@ -39,7 +39,9 @@ class Main(KycoNApp):
                        StatsTypes.OFPST_PORT.value: PortStats(msg_out),
                        StatsTypes.OFPST_FLOW.value: FlowStats(msg_out)}
         self.execute_as_loop(STATS_INTERVAL)
-        StatsAPI.register_endpoints(self.controller)
+        PortStatsAPI.switches = self.controller.switches
+        FlowStatsAPI.register_endpoints(self.controller)
+        PortStatsAPI.register_endpoints(self.controller)
 
     def execute(self):
         """Query all switches sequentially and then sleep before repeating."""
@@ -71,8 +73,14 @@ class Main(KycoNApp):
 class Stats(metaclass=ABCMeta):
     """Abstract class for Statistics implementation."""
 
+    rrd = None
+
     def __init__(self, msg_out_buffer):
-        """Store a reference to the controller's msg_out buffer."""
+        """Store a reference to the controller's msg_out buffer.
+
+        Args:
+            msg_out_buffer: Where to send events.
+        """
         self._buffer = msg_out_buffer
 
     @abstractmethod
@@ -284,24 +292,29 @@ class RRD:
 
         Return empty dict if there are no values recorded.
         """
-        start = 'end-{}s'.format(STATS_INTERVAL * 2)  # two rows
-        cols, rows = self.fetch(index, start, end='now')[1:]  # exclude tstamps
-        # Last row has higher timestamp and may be empty (time in the future)
-        latest = rows[-2] if rows[-1][0] is None else rows[-1]
-        return {k: v for k, v in zip(cols, latest)} if latest[0] else {}
+        start = 'end-{}s'.format(STATS_INTERVAL * 3)  # two rows
+        tstamps, cols, rows = self.fetch(index, start, end='now')
+        # Last rows may have future timestamp and be empty
+        latest = None
+        min_tstamp = int(time.time()) - STATS_INTERVAL * 2
+        for tstamp, row in zip(tstamps[::-1], rows[::-1]):
+            if row[0] is not None and tstamp > min_tstamp:
+                latest = row
+        return {k: v for k, v in zip(cols, latest)} if latest else {}
 
     def _get_counter(self, ds):
         return 'DS:{}:COUNTER:{}:{}:{}'.format(ds, self._TIMEOUT, self._MIN,
                                                self._MAX)
 
-    def _get_archives(self):
+    @classmethod
+    def _get_archives(cls):
         """Averaged for all Data Sources."""
         averages = []
         # One month stats for the following periods:
         for steps in ('30s', '1m', '2m', '4m', '8m', '15m', '30m', '1h', '2h',
                       '4h', '8h', '12h', '1d', '2d', '3d', '6d', '10d', '15d'):
-            averages.append('RRA:AVERAGE:{}:{}:{}'.format(self._XFF, steps,
-                                                          self._PERIOD))
+            averages.append('RRA:AVERAGE:{}:{}:{}'.format(cls._XFF, steps,
+                                                          cls._PERIOD))
         # averages = ['RRA:AVERAGE:0:1:1d']  # More samples for testing
         return averages
 
@@ -312,10 +325,6 @@ class PortStats(Stats):
     rrd = RRD('ports', [rt + 'x_' + stat for stat in
                         ('bytes', 'dropped', 'errors') for rt in 'rt'])
 
-    def __init__(self, msg_out_buffer):
-        """Initialize database."""
-        super().__init__(msg_out_buffer)
-
     def request(self, conn):
         """Ask for port stats."""
         body = PortStatsRequest(Port.OFPP_NONE)  # All ports
@@ -323,20 +332,21 @@ class PortStats(Stats):
         self._send_event(req, conn)
         log.debug('Port Stats request for switch %s sent.', conn.switch.dpid)
 
-    def listen(self, dpid, ports_stats):
+    @classmethod
+    def listen(cls, dpid, ports_stats):
         """Receive port stats."""
         debug_msg = 'Received port %s stats of switch %s: rx_bytes %s,' \
                     ' tx_bytes %s, rx_dropped %s, tx_dropped %s,' \
                     ' rx_errors %s, tx_errors %s'
 
         for ps in ports_stats:
-            self.rrd.update((dpid, ps.port_no.value),
-                            rx_bytes=ps.rx_bytes.value,
-                            tx_bytes=ps.tx_bytes.value,
-                            rx_dropped=ps.rx_dropped.value,
-                            tx_dropped=ps.tx_dropped.value,
-                            rx_errors=ps.rx_errors.value,
-                            tx_errors=ps.tx_errors.value)
+            cls.rrd.update((dpid, ps.port_no.value),
+                           rx_bytes=ps.rx_bytes.value,
+                           tx_bytes=ps.tx_bytes.value,
+                           rx_dropped=ps.rx_dropped.value,
+                           tx_dropped=ps.tx_dropped.value,
+                           rx_errors=ps.rx_errors.value,
+                           tx_errors=ps.tx_errors.value)
 
             log.debug(debug_msg, ps.port_no.value, dpid, ps.rx_bytes.value,
                       ps.tx_bytes.value, ps.rx_dropped.value,
@@ -347,10 +357,11 @@ class PortStats(Stats):
 class AggregateStats(Stats):
     """Deal with AggregateStats message."""
 
+    _rrd = RRD('aggr', ('packet_count', 'byte_count', 'flow_count'))
+
     def __init__(self, msg_out_buffer):
         """Initialize database."""
         super().__init__(msg_out_buffer)
-        self._rrd = RRD('aggr', ('packet_count', 'byte_count', 'flow_count'))
 
     def request(self, conn):
         """Ask for flow stats."""
@@ -360,7 +371,8 @@ class AggregateStats(Stats):
         log.debug('Aggregate Stats request for switch %s sent.',
                   conn.switch.dpid)
 
-    def listen(self, dpid, aggregate_stats):
+    @classmethod
+    def listen(cls, dpid, aggregate_stats):
         """Receive flow stats."""
         debug_msg = 'Received aggregate stats from switch {}:' \
                     ' packet_count {}, byte_count {}, flow_count {}'
@@ -368,10 +380,10 @@ class AggregateStats(Stats):
         for ag in aggregate_stats:
             # need to choose the _id to aggregate_stats
             # this class isn't used yet.
-            self._rrd.update((dpid,),
-                             packet_count=ag.packet_count.value,
-                             byte_count=ag.byte_count.value,
-                             flow_count=ag.flow_count.value)
+            cls.rrd.update((dpid,),
+                           packet_count=ag.packet_count.value,
+                           byte_count=ag.byte_count.value,
+                           flow_count=ag.flow_count.value)
 
             log.debug(debug_msg, dpid, ag.packet_count.value,
                       ag.byte_count.value, ag.flow_count.value)
@@ -382,10 +394,6 @@ class FlowStats(Stats):
 
     rrd = RRD('flows', ('packet_count', 'byte_count'))
 
-    def __init__(self, msg_out_buffer):
-        """Initialize database."""
-        super().__init__(msg_out_buffer)
-
     def request(self, conn):
         """Ask for flow stats."""
         body = FlowStatsRequest()  # Port.OFPP_NONE and All Tables
@@ -393,7 +401,8 @@ class FlowStats(Stats):
         self._send_event(req, conn)
         log.debug('Flow Stats request for switch %s sent.', conn.switch.dpid)
 
-    def listen(self, dpid, flows_stats):
+    @classmethod
+    def listen(cls, dpid, flows_stats):
         """Receive flow stats."""
         debug_msg = 'Received flow stats:\n' \
                     '  Flow id %s\n' \
@@ -401,9 +410,9 @@ class FlowStats(Stats):
 
         for fs in flows_stats:
             flow = Flow.from_flow_stats(fs)
-            self.rrd.update((dpid, flow.id),
-                            packet_count=fs.packet_count.value,
-                            byte_count=fs.byte_count.value)
+            cls.rrd.update((dpid, flow.id),
+                           packet_count=fs.packet_count.value,
+                           byte_count=fs.byte_count.value)
 
             log.debug(debug_msg, flow.id, fs.table_id.value, dpid,
                       fs.packet_count.value, fs.byte_count.value)
@@ -438,17 +447,14 @@ class Description(Stats):
 app = Flask(__name__)
 
 
-class StatsAPI:
+class StatsAPI(metaclass=ABCMeta):
     """Class to answer REST API requests."""
 
-    def __init__(self, rrd):
-        """Set the RRD to query for data.
+    _rrd = None
 
-        Args:
-            rrd (RRD): Where to query data.
-        """
+    def __init__(self):
+        """Initialize instance attributes."""
         self._stats = {}
-        self._rrd = rrd
 
     def get_points(self, index, n_points=30):
         """Return Flask response for port stats."""
@@ -463,20 +469,22 @@ class StatsAPI:
             content = self._get_rrd_not_found_error(e)
         return StatsAPI._get_response(content)
 
-    def list_latest(self, dpid):
+    @classmethod
+    def get_list(cls, dpid):
         """List all ports that have statistics and their latest stats.
 
         Args:
             dpid (str): Switch dpid.
+            get_port (function): Return port number from RRD basename.
         """
         ix = (dpid,)
         data = {}
-        for port in self._rrd.get_rrds(ix):
-            port_ix = (dpid, port)
-            latest = self._rrd.fetch_latest(port_ix)
+        for rrd in cls._rrd.get_rrds(ix):
+            rrd_ix = (dpid, rrd)
+            latest = cls._rrd.fetch_latest(rrd_ix)
             if latest:  # test if dictionary is empty
-                data[port] = latest
-        return StatsAPI._get_response({'data': data})
+                data[rrd] = latest
+        return data
 
     def _fetch(self, index, start, end, n_points):
         tstamps, cols, rows = self._rrd.fetch(index, start, end, n_points)
@@ -519,17 +527,25 @@ class StatsAPI:
             'title': 'Database not found.',
             'detail': str(exception)}}
 
+
+class PortStatsAPI(StatsAPI):
+    """REST API for port statistics."""
+
+    #: Controller's switches to inform link speed.
+    switches = None
+    #: key is RRD column, value is a new column name for utilization
+    #: percentage.
+    _util_cols = {'rx_bytes': 'rx_utilization',
+                  'tx_bytes': 'tx_utilization'}
+    _rrd = PortStats.rrd
+
     @classmethod
     def register_endpoints(cls, controller):
         """Register REST API endpoints in the controller."""
         controller.register_rest_endpoint('/stats/<dpid>/ports/<int:port>',
                                           cls.get_port_stats, methods=['GET'])
-        controller.register_rest_endpoint('/stats/<dpid>/flows/<flow_hash>',
-                                          cls.get_flow_stats, methods=['GET'])
         controller.register_rest_endpoint('/stats/<dpid>/ports',
-                                          cls.get_port_list, methods=['GET'])
-        controller.register_rest_endpoint('/stats/<dpid>/flows',
-                                          cls.get_flow_list, methods=['GET'])
+                                          cls.get_ports_list, methods=['GET'])
 
     @classmethod
     def get_port_stats(cls, dpid, port):
@@ -549,19 +565,52 @@ class StatsAPI:
                 matching resolution in the RRD file. Defaults to as many points
                 as possible.
         """
-        api = cls(PortStats.rrd)
         index = (dpid, port)
+        api = cls()
         return api.get_points(index)
 
     @classmethod
-    def get_port_list(cls, dpid):
+    def get_ports_list(cls, dpid):
         """List all ports that have statistics and their latest stats.
+
+        Include link utilization.
 
         Args:
             dpid (str): Switch dpid.
         """
-        api = cls(PortStats.rrd)
-        return api.list_latest(dpid)
+        rrd_data = super().get_list(dpid)
+        data = cls._add_utilization(rrd_data, dpid)
+        return cls._get_response({'data': data})
+
+    @classmethod
+    def _add_utilization(cls, rrd_data, dpid):
+        for rrd, row in rrd_data.items():
+            port = int(rrd)
+            speed = cls.switches[dpid].interfaces[port].get_speed()
+            for bytes_col, util_col in cls._util_cols.items():
+                if speed:
+                    row[util_col] = row[bytes_col] / speed / 8  # bytes/sec
+                # We may have zero bytes for a port we can't get the speed
+                elif row[bytes_col] == 0.0:
+                    row[util_col] = 0
+                else:
+                    log.warning('Speed for port %d dpid %s not found', port,
+                                dpid)
+        return rrd_data
+
+
+class FlowStatsAPI(StatsAPI):
+    """REST API for flow statistics."""
+
+    _rrd = FlowStats.rrd
+
+    @classmethod
+    def register_endpoints(cls, controller):
+        """Register REST API endpoints in the controller."""
+        controller.register_rest_endpoint('/stats/<dpid>/flows/<flow_hash>',
+                                          cls.get_flow_stats, methods=['GET'])
+        controller.register_rest_endpoint('/stats/<dpid>/flows',
+                                          cls.get_flow_list, methods=['GET'])
 
     @classmethod
     def get_flow_list(cls, dpid):
@@ -570,8 +619,8 @@ class StatsAPI:
         Args:
             dpid (str): Switch dpid.
         """
-        api = cls(FlowStats.rrd)
-        return api.list_latest(dpid)
+        data = super().get_list(dpid)
+        return cls._get_response({'data': data})
 
     @classmethod
     def get_flow_stats(cls, dpid, flow_hash):
@@ -588,8 +637,8 @@ class StatsAPI:
             end (int): Unix timestamp in seconds for the last stats. Defaults
                 to now.
         """
-        api = cls(FlowStats.rrd)
         index = (dpid, flow_hash)
+        api = cls()
         return api.get_points(index)
 
 
