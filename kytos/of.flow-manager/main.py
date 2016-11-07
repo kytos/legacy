@@ -26,15 +26,15 @@ class Main(KycoCoreNApp):
         Users shouldn't call this method directly."""
         self.execute_as_loop(STATS_INTERVAL)
         self.flow_manager = FlowManager(self.controller)
-        self.controller.register_rest_endpoint('/<dpid>/flows',
+        self.controller.register_rest_endpoint('/flow-manager/<dpid>/flows',
                                                self.retrieve_flows,
                                                methods=['GET'])
 
-        self.controller.register_rest_endpoint('/flows',
+        self.controller.register_rest_endpoint('/flow-manager/flows',
                                                self.retrieve_flows,
                                                methods=['GET'])
 
-        self.controller.register_rest_endpoint('/<dpid>/flows',
+        self.controller.register_rest_endpoint('/flow-manager/<dpid>/flows',
                                                self.insert_flow,
                                                methods=['POST'])
 
