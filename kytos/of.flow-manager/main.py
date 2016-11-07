@@ -7,11 +7,7 @@ from flask import request
 from kyco.core.events import KycoEvent
 from kyco.core.flow import Flow
 from kyco.core.napps import KycoCoreNApp
-from kyco.utils import listen_to
-from pyof.v0x01.common.flow_match import Match
-from pyof.v0x01.controller2switch.common import StatsTypes
 from pyof.v0x01.controller2switch.flow_mod import FlowModCommand
-from pyof.v0x01.controller2switch.stats_request import StatsRequest
 
 STATS_INTERVAL = 30
 log = logging.getLogger('flow_manager')
@@ -47,11 +43,9 @@ class Main(KycoCoreNApp):
 
         The execute method is called by the run method of KycoNApp class.
         Users shouldn't call this method directly."""
-        for dpid in self.controller.switches:
-            self.flow_manager.dump_flows(dpid)
 
     def shutdown(self):
-        self.server.stop()
+        log.debug("flow-manager stopping")
 
     def retrieve_flows(self, dpid=None):
         """
@@ -60,10 +54,11 @@ class Main(KycoCoreNApp):
         """
         flows = []
         if dpid is not None:
-            flows.append(self.flow_manager.flows[dpid])
+            switch = self.controller.get_switch_by_dpid(dpid)
+            flows.extend(switch.flows)
         else:
-            for switch_dpid in self.flow_manager.flows:
-                flows.append(self.flow_manager.flows[switch_dpid])
+            for switch in self.controller.switches:
+                flows.extend(switch.flows)
         return flows
 
     def insert_flow(self, dpid=None):
@@ -104,7 +99,6 @@ class FlowManager(object):
     """This class is responsible for manipulating flows at the switches"""
     def __init__(self, controller):
         self.controller = controller
-        self.flows = {}
 
     def install_new_flow(self, flow, dpid):
         """
@@ -120,23 +114,25 @@ class FlowManager(object):
                                        'message': flow_mod})
         self.controller.buffers.msg_out.put(event_out)
 
-    def dump_flows(self, dpid):
-        """Rettrieves the list of flows installed in the Switch identified by
-        dpid"""
-        switch = self.controller.get_switch_by_dpid(dpid)
-        stats_request = StatsRequest()
-        stats_request.body_type = StatsTypes.OFPST_FLOW
-        stats_request.match = Match()
-        event_out = KycoEvent(name=('kytos/of.flow-manager.messages.out.'
-                                    'ofpt_stats_request'),
-                              content={'destination': switch.connection,
-                                       'message': stats_request})
-        self.controller.buffers.msg_out.put(event_out)
+    # def dump_flows(self, dpid):
+    #     """Rettrieves the list of flows installed in the Switch identified by
+    #     dpid"""
+    #     switch = self.controller.get_switch_by_dpid(dpid)
+    #     return switch.flows
+    #     switch = self.controller.get_switch_by_dpid(dpid)
+    #     stats_request = StatsRequest()
+    #     stats_request.body_type = StatsTypes.OFPST_FLOW
+    #     stats_request.match = Match()
+    #     event_out = KycoEvent(name=('kytos/of.flow-manager.messages.out.'
+    #                                 'ofpt_stats_request'),
+    #                           content={'destination': switch.connection,
+    #                                    'message': stats_request})
+    #     self.controller.buffers.msg_out.put(event_out)
 
     def clear_flows(self, dpid):
         """Clear all flows from switch identified by dpid"""
         switch = self.controller.get_switch_by_dpid(dpid)
-        for flow in self.flows:
+        for flow in switch.flows:
             flow_mod = flow.as_flow_mod(FlowModCommand.OFPFC_DELETE)
             event_out = KycoEvent(name=('kytos/of.flow-manager.messages.out.'
                                         'ofpt_flow_mod'),
@@ -148,7 +144,7 @@ class FlowManager(object):
         """Removes the flow identified by id from the switch identified by
         dpid"""
         switch = self.controller.get_switch_by_dpid(dpid)
-        for flow in self.flows:
+        for flow in switch.flows:
             if flow.id == flow_id:
                 flow_mod = flow.as_flow_mod(FlowModCommand.OFPFC_DELETE)
                 content = {'destination': switch.connection,
@@ -158,17 +154,17 @@ class FlowManager(object):
                                       content=content)
                 self.controller.buffers.msg_out.put(event_out)
 
-    @listen_to('kytos/of.core.messages.in.ofpt_stats_reply')
-    def handle_flow_stats_reply(self, event):
-        """Handle Flow Stats messages"""
-        msg = event.content['message']
-        if msg.body_type.value is StatsTypes.OFPST_FLOW:
-            flow_stats = msg.body
-            flows = self._get_flows(flow_stats)
-            switch_dpid = event.content['switch']
-            if self.flows[switch_dpid] is None:
-                self.flows[switch_dpid] = []
-            self.flows[switch_dpid].append(flows)
+    # @listen_to('kytos/of.core.messages.in.ofpt_stats_reply')
+    # def handle_flow_stats_reply(self, event):
+    #     """Handle Flow Stats messages"""
+    #     msg = event.content['message']
+    #     if msg.body_type.value is StatsTypes.OFPST_FLOW:
+    #         flow_stats = msg.body
+    #         flows = self._get_flows(flow_stats)
+    #         switch_dpid = event.content['switch']
+    #         if self.flows[switch_dpid] is None:
+    #             self.flows[switch_dpid] = []
+    #         self.flows[switch_dpid].append(flows)
 
     def _get_flows(self, flow_stats):
         """
