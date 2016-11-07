@@ -14,7 +14,6 @@ from pyof.v0x01.controller2switch.stats_request import StatsRequest, StatsTypes
 from pyof.v0x01.symmetric.echo_reply import EchoReply
 from pyof.v0x01.symmetric.hello import Hello
 
-
 log = getLogger('Kyco')
 STATS_INTERVAL = 5
 
@@ -46,28 +45,29 @@ class Main(KycoCoreNApp):
         """Requests ofp_stats of the flow type"""
         body = FlowStatsRequest()  # Port.OFPP_NONE and All Tables
         req = StatsRequest(body_type=StatsTypes.OFPST_FLOW, body=body)
-        log.debug("\n\n\nTry to pack Stats Request...")
         req.pack()
-        log.debug("Packed!\n\n")
         event = KycoEvent(
             name='kytos/of.core.messages.out.ofpt_stats_request',
             content={'message': req, 'destination': switch.connection})
         self.controller.buffers.msg_out.put(event)
-        log.debug('Flow Stats request for switch %s sent.', switch.dpid)
 
     @listen_to('kytos/of.core.messages.in.ofpt_stats_reply')
     def handle_flow_stats_reply(self, event):
         """Handles FlowStatsReply and updates the switch list with its
         flowstats"""
         msg = event.content['message']
-        log.debug("Received flow_stats of type {}".format(msg.body_type.value))
         if msg.body_type == StatsTypes.OFPST_FLOW:
-            log.debug("OFPST_FLOW type msg")
+            switch = event.source.switch
             flows = []
             for flow_stat in msg.body:
-                flows.append(Flow.from_flow_stats(flow_stat))
-            log.debug("Flow List: {}".format(len(flows)))
-            event.source.switch.flows.extend(flows)
+                new_flow = Flow.from_flow_stats(flow_stat)
+                flow_alread_exists = False
+                for flow in switch.flows:
+                    if flow.id == new_flow.id:
+                        flow_alread_exists = True
+                if not flow_alread_exists:
+                    flows.append(new_flow)
+            switch.flows.extend(flows)
 
     @listen_to('kytos/of.core.messages.in.ofpt_features_reply')
     def handle_features_reply(self, event):
