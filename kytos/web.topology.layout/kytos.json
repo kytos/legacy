@@ -1,0 +1,12 @@
+{
+  "name": "web.topology.layout",
+  "long_description": "Store topology layouts for the web interface.",
+  "description": "Store topology layouts for the web interface.",
+  "version": "0.1.0",
+  "author": "kytos",
+  "ofversion": "1.0",
+  "dependencies": "None",
+  "license": "MIT",
+  "git": "https://github.com/kytos/kyco-core-napps.git",
+  "tags": ["topology", "web", "interface"]
+}
