@@ -26,6 +26,7 @@ class Main(KycoCoreNApp):
         Users shouldn't call this method directly."""
         self.execute_as_loop(STATS_INTERVAL)
         self.flow_manager = FlowManager(self.controller)
+        self.controller.log_websocket.register_log(log)
         self.controller.register_rest_endpoint('/flow-manager/<dpid>/flows',
                                                self.retrieve_flows,
                                                methods=['GET'])

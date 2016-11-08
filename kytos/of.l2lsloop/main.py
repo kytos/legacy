@@ -37,6 +37,7 @@ class Main(KycoCoreNApp):
         Users shouldn't call this method directly."""
         # TODO: App information goes to app_name.json
         self.name = 'kytos.l2_learning_switch'
+        self.controller.log_websocket.register_log(log)
 
     def execute(self):
         """Method to be runned once on app 'start' or in a loop.

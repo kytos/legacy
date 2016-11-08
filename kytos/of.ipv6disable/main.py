@@ -23,7 +23,7 @@ class Main(KycoCoreNApp):
 
         The setup method is automatically called by the run method.
         Users shouldn't call this method directly."""
-        pass
+        self.controller.log_websocket.register_log(log)
 
     def execute(self):
         """Method to be runned once on app 'start' or in a loop.
