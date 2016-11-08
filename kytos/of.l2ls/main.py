@@ -56,34 +56,39 @@ class Main(KycoCoreNApp):
 
         switch.update_mac_table(ethernet.source, in_port)
 
-        ports = switch.where_is_mac(ethernet.destination)
+        lldp_macs = ['01:80:c2:00:00:0e', '01:80:c2:00:00:03',
+                     '01:80:c2:00:00:00']
 
-        if ports:
-            flow_mod = FlowMod()
-            flow_mod.command = FlowModCommand.OFPFC_ADD
-            flow_mod.match = Match()
-            flow_mod.match.dl_src = ethernet.source.value
-            flow_mod.match.dl_dst = ethernet.destination.value
-            flow_mod.match.dl_type = ethernet.type
-            flow_mod.buffer_id = packet_in.buffer_id
-            flow_mod.actions.append(ActionOutput(port=ports[0]))
-            event_out = KycoEvent(name=('kytos/of.l2ls.messages.out.'
-                                        'ofpt_flow_mod'),
-                                  content={'destination': event.source,
-                                           'message': flow_mod})
-        else:
-            # Flood the packet if we haven't done it yet
-            packet_out = PacketOut()
-            packet_out.buffer_id = packet_in.buffer_id
-            packet_out.in_port = packet_in.in_port
+        # IGNORE LLDP packets
+        if ethernet.destination not in lldp_macs:
+            ports = switch.where_is_mac(ethernet.destination)
 
-            packet_out.actions.append(ActionOutput(port=Port.OFPP_FLOOD))
-            event_out = KycoEvent(name=('kytos/of.l2ls.messages.out.'
-                                        'ofpt_packet_out'),
-                                  content={'destination': event.source,
-                                           'message': packet_out})
+            if ports:
+                flow_mod = FlowMod()
+                flow_mod.command = FlowModCommand.OFPFC_ADD
+                flow_mod.match = Match()
+                flow_mod.match.dl_src = ethernet.source.value
+                flow_mod.match.dl_dst = ethernet.destination.value
+                flow_mod.match.dl_type = ethernet.type
+                flow_mod.buffer_id = packet_in.buffer_id
+                flow_mod.actions.append(ActionOutput(port=ports[0]))
+                event_out = KycoEvent(name=('kytos/of.l2ls.messages.out.'
+                                            'ofpt_flow_mod'),
+                                      content={'destination': event.source,
+                                               'message': flow_mod})
+            else:
+                # Flood the packet if we haven't done it yet
+                packet_out = PacketOut()
+                packet_out.buffer_id = packet_in.buffer_id
+                packet_out.in_port = packet_in.in_port
 
-        self.controller.buffers.msg_out.put(event_out)
+                packet_out.actions.append(ActionOutput(port=Port.OFPP_FLOOD))
+                event_out = KycoEvent(name=('kytos/of.l2ls.messages.out.'
+                                            'ofpt_packet_out'),
+                                      content={'destination': event.source,
+                                               'message': packet_out})
+
+            self.controller.buffers.msg_out.put(event_out)
 
     def shutdown(self):
         pass
