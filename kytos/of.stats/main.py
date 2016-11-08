@@ -589,7 +589,7 @@ class PortStatsAPI(StatsAPI):
             speed = cls.switches[dpid].interfaces[port].get_speed()
             if speed:
                 for bytes_col, util_col in cls._util_cols.items():
-                    row[util_col] = row[bytes_col] / speed / 8  # bytes/sec
+                    row[util_col] = row[bytes_col] / (speed / 8)  # bytes/sec
                     row['speed'] = speed
                 yield row
             else:
