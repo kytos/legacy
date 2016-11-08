@@ -61,13 +61,8 @@ class Main(KycoCoreNApp):
             flows = []
             for flow_stat in msg.body:
                 new_flow = Flow.from_flow_stats(flow_stat)
-                flow_alread_exists = False
-                for flow in switch.flows:
-                    if flow.id == new_flow.id:
-                        flow_alread_exists = True
-                if not flow_alread_exists:
-                    flows.append(new_flow)
-            switch.flows.extend(flows)
+                flows.append(new_flow)
+            switch.flows = flows
 
     @listen_to('kytos/of.core.messages.in.ofpt_features_reply')
     def handle_features_reply(self, event):

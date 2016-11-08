@@ -34,9 +34,13 @@ class Main(KycoCoreNApp):
                                                self.retrieve_flows,
                                                methods=['GET'])
 
-        self.controller.register_rest_endpoint('/flow-manager/<dpid>/flows',
+        self.controller.register_rest_endpoint('/flow-manager/<dpid>/flows-a',
                                                self.insert_flow,
                                                methods=['POST'])
+
+        self.controller.register_rest_endpoint('/flow-manager/<dpid>/<flow_id>/flows-d',
+                                               self.delete_flow,
+                                               methods=['DELETE'])
 
     def execute(self):
         """Method to be runned once on app 'start' or in a loop.
@@ -73,12 +77,16 @@ class Main(KycoCoreNApp):
         """Insert a new flow to the switch identified by dpid. If no dpid has
         been specified, install flow in all switches """
         json_content = request.get_json()
-        received_flow = Flow.from_json(json_content)
-        if dpid is not None:
-            self.flow_manager.install_new_flow(received_flow, dpid)
-        else:
-            for switch_dpid in self.controller.switches:
-                self.flow_manager.install_new_flow(received_flow, switch_dpid)
+        for json_flow in json_content['flows']:
+            received_flow = Flow.from_dict(json_flow)
+            if dpid is not None:
+                self.flow_manager.install_new_flow(received_flow, dpid)
+            else:
+                for switch_dpid in self.controller.switches:
+                    self.flow_manager.install_new_flow(received_flow,
+                                                       switch_dpid)
+
+        return json.dumps({"response": "Flow Created"}), 201
 
     def clear_flows(self, dpid=None):
         """Clear flows from a switch identified by dpid. If no dpid has been
@@ -101,6 +109,8 @@ class Main(KycoCoreNApp):
         else:
             for switch_dpid in self.controller.switches:
                 self.flow_manager.delete_flow(flow_id, switch_dpid)
+
+        return json.dumps({"response": "Flow Removed"}), 202
 
 
 class FlowManager(object):
