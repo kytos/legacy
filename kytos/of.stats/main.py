@@ -192,7 +192,7 @@ class RRD:
             path = path / folder
         preffix = str(path) + '/'
         pattern = preffix + '*.rrd'
-        return (rrd[len(preffix):-4] for rrd in glob(pattern))
+        return sorted(rrd[len(preffix):-4] for rrd in glob(pattern))
 
     def get_or_create_rrd(self, index, tstamp=None):
         """If rrd is not found, create it.
@@ -478,13 +478,11 @@ class StatsAPI(metaclass=ABCMeta):
             get_port (function): Return port number from RRD basename.
         """
         ix = (dpid,)
-        data = {}
         for rrd in cls._rrd.get_rrds(ix):
             rrd_ix = (dpid, rrd)
             latest = cls._rrd.fetch_latest(rrd_ix)
             if latest:  # test if dictionary is empty
-                data[rrd] = latest
-        return data
+                yield rrd, latest
 
     def _fetch(self, index, start, end, n_points):
         tstamps, cols, rows = self._rrd.fetch(index, start, end, n_points)
@@ -580,23 +578,23 @@ class PortStatsAPI(StatsAPI):
         """
         rrd_data = super().get_list(dpid)
         data = cls._add_utilization(rrd_data, dpid)
-        return cls._get_response({'data': data})
+        return cls._get_response({'data': list(data)})
 
     @classmethod
     def _add_utilization(cls, rrd_data, dpid):
-        for rrd, row in rrd_data.items():
+        """Calculate utilization and also add port number."""
+        for rrd, row in rrd_data:
             port = int(rrd)
+            row['port'] = port
             speed = cls.switches[dpid].interfaces[port].get_speed()
-            for bytes_col, util_col in cls._util_cols.items():
-                if speed:
+            if speed:
+                for bytes_col, util_col in cls._util_cols.items():
                     row[util_col] = row[bytes_col] / speed / 8  # bytes/sec
-                # We may have zero bytes for a port we can't get the speed
-                elif row[bytes_col] == 0.0:
-                    row[util_col] = 0
-                else:
-                    log.warning('Speed for port %d dpid %s not found', port,
-                                dpid)
-        return rrd_data
+                    row['speed'] = speed
+                yield row
+            else:
+                log.warning('Speed for port %d dpid %s not found', port,
+                            dpid)
 
 
 class FlowStatsAPI(StatsAPI):
@@ -619,8 +617,15 @@ class FlowStatsAPI(StatsAPI):
         Args:
             dpid (str): Switch dpid.
         """
-        data = super().get_list(dpid)
-        return cls._get_response({'data': data})
+        def add_flow_id(rrd_data):
+            """Add flow id (rrd basename)."""
+            for rrd, data in rrd_data:
+                data['flow_id'] = rrd
+                yield data
+
+        rrd_data = super().get_list(dpid)
+        data = add_flow_id(rrd_data)
+        return cls._get_response({'data': list(data)})
 
     @classmethod
     def get_flow_stats(cls, dpid, flow_hash):
