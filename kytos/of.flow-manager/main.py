@@ -110,6 +110,8 @@ class Main(KycoCoreNApp):
             for switch_dpid in self.controller.switches:
                 self.flow_manager.delete_flow(flow_id, switch_dpid)
 
+        return json.dumps({"response": "Flow Removed"}), 202
+
 
 class FlowManager(object):
     """This class is responsible for manipulating flows at the switches"""
