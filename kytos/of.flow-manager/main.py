@@ -34,9 +34,13 @@ class Main(KycoCoreNApp):
                                                self.retrieve_flows,
                                                methods=['GET'])
 
-        self.controller.register_rest_endpoint('/flow-manager/<dpid>/flows',
+        self.controller.register_rest_endpoint('/flow-manager/<dpid>/flows-a',
                                                self.insert_flow,
                                                methods=['POST'])
+
+        self.controller.register_rest_endpoint('/flow-manager/<dpid>/<flow_id>/flows-d',
+                                               self.delete_flow,
+                                               methods=['DELETE'])
 
     def execute(self):
         """Method to be runned once on app 'start' or in a loop.
