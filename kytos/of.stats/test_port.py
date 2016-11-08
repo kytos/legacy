@@ -26,10 +26,10 @@ class TestPortStats(unittest.TestCase):
 
     def test_speed_without_switch(self):
         """No switch in the controller."""
-        speed = PortStatsAPI.get_speed(':02', self.port)
+        speed = PortStatsAPI(':02', self.port).get_speed()
         self.assertIsNone(speed)
 
     def test_speed_without_interface(self):
         """No interface in the switch."""
-        speed = PortStatsAPI.get_speed(self.dpid, self.port + 1)
+        speed = PortStatsAPI(self.dpid, self.port + 1).get_speed()
         self.assertIsNone(speed)

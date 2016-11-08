@@ -579,7 +579,7 @@ class PortStatsAPI(StatsAPI):
 
     def get_list(self):
         """See :meth:`get_ports_list`."""
-        rrd_data = super()._get_list(self._dpid)
+        rrd_data = super().get_list(self._dpid)
         data = self._add_utilization(rrd_data)
         return self._get_response({'data': list(data)})
 
@@ -588,7 +588,7 @@ class PortStatsAPI(StatsAPI):
         index = (self._dpid, self._port)
         return super().get_points(index)
 
-    def _get_speed(self):
+    def get_speed(self):
         """Return port speed if controller has port."""
         switch = self.switches.get(self._dpid)
         if switch is None:
@@ -596,7 +596,7 @@ class PortStatsAPI(StatsAPI):
             return None
         port = switch.get_interface_by_port_no(self._port)
         if port is None:
-            log.warning('Port %d, sw %s not in controller', self._port,
+            log.warning('Port %s, sw %s not in controller', self._port,
                         self._dpid[-3:])
             return None
         return port.get_speed()
@@ -604,16 +604,16 @@ class PortStatsAPI(StatsAPI):
     def _add_utilization(self, rrd_data):
         """Calculate utilization and also add port number."""
         for rrd, row in rrd_data:
-            port = int(rrd)
-            row['port'] = port
-            speed = self._get_speed()
+            self._port = int(rrd)
+            row['port'] = self._port
+            speed = self.get_speed()
             if speed:
                 for bytes_col, util_col in self._util_cols.items():
                     row[util_col] = row[bytes_col] / (speed / 8)  # bytes/sec
                     row['speed'] = speed
                 yield row
             else:
-                log.warning('No speed port %d dpid %s', self._port,
+                log.warning('No speed port %s dpid %s', self._port,
                             self._dpid[-3:])
 
 
