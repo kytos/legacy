@@ -77,12 +77,16 @@ class Main(KycoCoreNApp):
         """Insert a new flow to the switch identified by dpid. If no dpid has
         been specified, install flow in all switches """
         json_content = request.get_json()
-        received_flow = Flow.from_json(json_content)
-        if dpid is not None:
-            self.flow_manager.install_new_flow(received_flow, dpid)
-        else:
-            for switch_dpid in self.controller.switches:
-                self.flow_manager.install_new_flow(received_flow, switch_dpid)
+        for json_flow in json_content['flows']:
+            received_flow = Flow.from_dict(json_flow)
+            if dpid is not None:
+                self.flow_manager.install_new_flow(received_flow, dpid)
+            else:
+                for switch_dpid in self.controller.switches:
+                    self.flow_manager.install_new_flow(received_flow,
+                                                       switch_dpid)
+
+        return json.dumps({"response": "Flow Created"}), 201
 
     def clear_flows(self, dpid=None):
         """Clear flows from a switch identified by dpid. If no dpid has been
