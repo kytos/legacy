@@ -530,6 +530,12 @@ class PortStatsAPI(StatsAPI):
                   'tx_bytes': 'tx_utilization'}
     _rrd = PortStats.rrd
 
+    def __init__(self, dpid, port=None):
+        """Set dpid and port."""
+        super().__init__()
+        self._dpid = dpid
+        self._port = port
+
     @classmethod
     def register_endpoints(cls, controller):
         """Register REST API endpoints in the controller."""
@@ -556,9 +562,8 @@ class PortStatsAPI(StatsAPI):
                 matching resolution in the RRD file. Defaults to as many points
                 as possible.
         """
-        index = (dpid, port)
-        api = cls()
-        return api.get_points(index)
+        api = cls(dpid, port)
+        return api.get_stats()
 
     @classmethod
     def get_ports_list(cls, dpid):
@@ -569,43 +574,59 @@ class PortStatsAPI(StatsAPI):
         Args:
             dpid (str): Switch dpid.
         """
-        rrd_data = super().get_list(dpid)
-        data = cls._add_utilization(rrd_data, dpid)
-        return cls._get_response({'data': list(data)})
+        api = cls(dpid).get_list()
+        return api
 
-    @classmethod
-    def get_speed(cls, dpid, port):
+    def get_list(self):
+        """See :meth:`get_ports_list`."""
+        rrd_data = super()._get_list(self._dpid)
+        data = self._add_utilization(rrd_data)
+        return self._get_response({'data': list(data)})
+
+    def get_stats(self):
+        """See :meth:`get_port_stats`."""
+        index = (self._dpid, self._port)
+        return super().get_points(index)
+
+    def _get_speed(self):
         """Return port speed if controller has port."""
-        switch = cls.switches.get(dpid)
+        switch = self.switches.get(self._dpid)
         if switch is None:
-            log.warning('Sw %s not in controller', dpid[-3:])
+            log.warning('Sw %s not in controller', self._dpid[-3:])
             return None
-        port_nr = switch.get_interface_by_port_no(port)
-        if port_nr is None:
-            log.warning('Port %d, sw %s not in controller', port, dpid[-3:])
+        port = switch.get_interface_by_port_no(self._port)
+        if port is None:
+            log.warning('Port %d, sw %s not in controller', self._port,
+                        self._dpid[-3:])
             return None
         return port.get_speed()
 
-    @classmethod
-    def _add_utilization(cls, rrd_data, dpid):
+    def _add_utilization(self, rrd_data):
         """Calculate utilization and also add port number."""
         for rrd, row in rrd_data:
             port = int(rrd)
             row['port'] = port
-            speed = cls.get_speed(dpid, port)
+            speed = self._get_speed()
             if speed:
-                for bytes_col, util_col in cls._util_cols.items():
+                for bytes_col, util_col in self._util_cols.items():
                     row[util_col] = row[bytes_col] / (speed / 8)  # bytes/sec
                     row['speed'] = speed
                 yield row
             else:
-                log.warning('No speed port %d dpid %s', port, dpid[-3:])
+                log.warning('No speed port %d dpid %s', self._port,
+                            self._dpid[-3:])
 
 
 class FlowStatsAPI(StatsAPI):
     """REST API for flow statistics."""
 
     _rrd = FlowStats.rrd
+
+    def __init__(self, dpid, flow=None):
+        """Set dpid and port."""
+        super().__init__()
+        self._dpid = dpid
+        self._flow = flow
 
     @classmethod
     def register_endpoints(cls, controller):
@@ -622,15 +643,8 @@ class FlowStatsAPI(StatsAPI):
         Args:
             dpid (str): Switch dpid.
         """
-        def add_flow_id(rrd_data):
-            """Add flow id (rrd basename)."""
-            for rrd, data in rrd_data:
-                data['flow_id'] = rrd
-                yield data
-
-        rrd_data = super().get_list(dpid)
-        data = add_flow_id(rrd_data)
-        return cls._get_response({'data': list(data)})
+        api = cls(dpid)
+        return api.get_list()
 
     @classmethod
     def get_flow_stats(cls, dpid, flow_hash):
@@ -647,9 +661,25 @@ class FlowStatsAPI(StatsAPI):
             end (int): Unix timestamp in seconds for the last stats. Defaults
                 to now.
         """
-        index = (dpid, flow_hash)
-        api = cls()
-        return api.get_points(index)
+        api = cls(dpid, flow_hash)
+        return api.get_stats()
+
+    def get_list(self):
+        """See :meth:`get_flow_list`."""
+        def add_flow_id(rrd_data):
+            """Add flow id (rrd basename)."""
+            for rrd, data in rrd_data:
+                data['flow_id'] = rrd
+                yield data
+
+        rrd_data = super().get_list(self._dpid)
+        data = add_flow_id(rrd_data)
+        return self._get_response({'data': list(data)})
+
+    def get_stats(self):
+        """See :meth:`get_flow_stats`."""
+        index = (self._dpid, self._flow)
+        return super().get_points(index)
 
 
 if __name__ == "__main__":
