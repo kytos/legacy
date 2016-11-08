@@ -43,7 +43,8 @@ class Main(KycoCoreNApp):
             hw_address = ethernet.source
             switch = event.source.switch
             interface = switch.get_interface_by_port_no(port_no.value)
-            if not interface.is_link_between_switches():
+
+            if interface != None and not interface.is_link_between_switches():
                 interface.update_endpoint(hw_address)
 
     def shutdown(self):
@@ -51,7 +52,7 @@ class Main(KycoCoreNApp):
         log.debug('Shutting down...')
 
     def get_json_topology(self):
-        nodes, links = [], []
+        nodes,links = [], []
         for dpid, switch in self.controller.switches.items():
             nodes.append(switch.as_dict())
             for port_no, interface in switch.interfaces.items():
@@ -70,12 +71,14 @@ class Main(KycoCoreNApp):
                                 "id": endpoint.value,
                                 "name": endpoint.value,
                                 "mac": endpoint.value}
-                        nodes.append(host)
+                        if not interface.is_link_between_switches():
+                            links.append(link)
+                            nodes.append(host)
                     else:
                         link = {'source': interface.id,
                                 'target': endpoint.id,
                                 'type': 'link'}
-                    links.append(link)
+                        links.append(link)
 
         output = {'nodes': nodes, 'links': links}
         return json.dumps(output)
