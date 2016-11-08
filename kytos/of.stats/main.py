@@ -404,18 +404,11 @@ class FlowStats(Stats):
     @classmethod
     def listen(cls, dpid, flows_stats):
         """Receive flow stats."""
-        debug_msg = 'Received flow stats:\n' \
-                    '  Flow id %s\n' \
-                    '  table %s, switch %s, counters: packet = %s, byte = %s'
-
         for fs in flows_stats:
             flow = Flow.from_flow_stats(fs)
             cls.rrd.update((dpid, flow.id),
                            packet_count=fs.packet_count.value,
                            byte_count=fs.byte_count.value)
-
-            log.debug(debug_msg, flow.id, fs.table_id.value, dpid,
-                      fs.packet_count.value, fs.byte_count.value)
 
 
 class Description(Stats):
@@ -581,20 +574,32 @@ class PortStatsAPI(StatsAPI):
         return cls._get_response({'data': list(data)})
 
     @classmethod
+    def get_speed(cls, dpid, port):
+        """Return port speed if controller has port."""
+        switch = cls.switches.get(dpid)
+        if switch is None:
+            log.warning('Sw %s not in controller', dpid[-3:])
+            return None
+        port_nr = switch.get_interface_by_port_no(port)
+        if port_nr is None:
+            log.warning('Port %d, sw %s not in controller', port, dpid[-3:])
+            return None
+        return port.get_speed()
+
+    @classmethod
     def _add_utilization(cls, rrd_data, dpid):
         """Calculate utilization and also add port number."""
         for rrd, row in rrd_data:
             port = int(rrd)
             row['port'] = port
-            speed = cls.switches[dpid].interfaces[port].get_speed()
+            speed = cls.get_speed(dpid, port)
             if speed:
                 for bytes_col, util_col in cls._util_cols.items():
                     row[util_col] = row[bytes_col] / (speed / 8)  # bytes/sec
                     row['speed'] = speed
                 yield row
             else:
-                log.warning('Speed for port %d dpid %s not found', port,
-                            dpid)
+                log.warning('No speed port %d dpid %s', port, dpid[-3:])
 
 
 class FlowStatsAPI(StatsAPI):
