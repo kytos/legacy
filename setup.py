@@ -85,13 +85,13 @@ def retrieve_apps(kytos_napps_path):
 
 
 setup(name='kyco-core-napps',
-      version='1.1.0-beta0-post1',
+      version='1.1.0b0.post1',
       description='Core Napps developed by Kytos Team',
       url='http://github.com/kytos/kyco-core-napps',
       author='Kytos Team',
       author_email='of-ng-dev@ncc.unesp.br',
       license='MIT',
-      install_requires=['python-openflow >= 1.1.0a2.post2'],
+      install_requires=['python-openflow >= 1.1.0b0.post1'],
       data_files=retrieve_apps(os.path.join(BASE_ENV,
                                             'var/lib/kytos/napps/kytos/')),
       cmdclass={
