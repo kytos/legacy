@@ -53,7 +53,7 @@ class Main(KycoCoreNApp):
         topology = request.get_json()
         with open(join(TOPOLOGY_DIR, name + '.json'), 'w') as outfile:
             json.dump(topology, outfile)
-        return 'OK'
+        return json.dumps({'response': 'Saved'}), 201
 
     def get_topology(self, name):
         file = join(TOPOLOGY_DIR, name + '.json')
