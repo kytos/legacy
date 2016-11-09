@@ -85,7 +85,7 @@ def retrieve_apps(kytos_napps_path):
 
 
 setup(name='kyco-core-napps',
-      version='1.1.0a5.dev1',
+      version='1.1.0-beta0',
       description='Core Napps developed by Kytos Team',
       url='http://github.com/kytos/kyco-core-napps',
       author='Kytos Team',
