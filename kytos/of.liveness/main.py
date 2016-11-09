@@ -28,6 +28,7 @@ class Main(KycoCoreNApp):
         self.stop_signal = False
         # TODO: This switches object may change according to changes from #62
         self.switches = self.controller.switches
+        self.controller.log_websocket.register_log(log)
 
     def execute(self):
         """Implement a loop to check switches liveness"""

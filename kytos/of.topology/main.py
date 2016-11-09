@@ -25,6 +25,7 @@ class Main(KycoCoreNApp):
         self.controller.register_rest_endpoint('/topology',
                                                self.get_json_topology,
                                                methods=['GET'])
+        self.controller.log_websocket.register_log(log)
 
     def execute(self):
         """ Do nothing, only wait for packet-in messages"""

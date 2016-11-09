@@ -32,6 +32,7 @@ class Main(KycoCoreNApp):
         # TODO: App information goes to app_name.json
         self.name = 'kytos/of.core'
         self.execute_as_loop(STATS_INTERVAL)
+        self.controller.log_websocket.register_log(log)
 
     def execute(self):
         """Method to be runned once on app 'start' or in a loop.

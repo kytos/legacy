@@ -42,6 +42,7 @@ class Main(KycoNApp):
         PortStatsAPI.switches = self.controller.switches
         FlowStatsAPI.register_endpoints(self.controller)
         PortStatsAPI.register_endpoints(self.controller)
+        self.controller.log_websocket.register_log(log)
 
     def execute(self):
         """Query all switches sequentially and then sleep before repeating."""

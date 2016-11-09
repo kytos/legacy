@@ -19,6 +19,7 @@ class Main(KycoCoreNApp):
         """Create an empty dict to store the switches references and data."""
         self.name = 'kytos/of.lldp'
         self.execute_as_loop(POOLING_TIME)
+        self.controller.log_websocket.register_log(log)
 
     def execute(self):
         """Implement a loop to check switches liveness."""
