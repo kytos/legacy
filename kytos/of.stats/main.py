@@ -39,6 +39,7 @@ class Main(KycoNApp):
                        StatsTypes.OFPST_PORT.value: PortStats(msg_out),
                        StatsTypes.OFPST_FLOW.value: FlowStats(msg_out)}
         self.execute_as_loop(STATS_INTERVAL)
+        Description.switches = self.controller.switches
         PortStatsAPI.switches = self.controller.switches
         FlowStatsAPI.register_endpoints(self.controller)
         PortStatsAPI.register_endpoints(self.controller)
@@ -415,6 +416,7 @@ class FlowStats(Stats):
 class Description(Stats):
     """Deal with Description messages."""
 
+    switches = {}
     def __init__(self, msg_out_buffer):
         """Initialize database."""
         super().__init__(msg_out_buffer)
@@ -432,6 +434,8 @@ class Description(Stats):
     def listen(self, dpid, desc):
         """Store switch description."""
         self._desc[dpid] = desc
+        switch = self.switches.get(dpid)
+        switch.update_description(desc)
         log.debug('Adding switch %s: mfr_desc = %s, hw_desc = %s,'
                   ' sw_desc = %s, serial_num = %s', dpid,
                   desc.mfr_desc, desc.hw_desc, desc.sw_desc,
