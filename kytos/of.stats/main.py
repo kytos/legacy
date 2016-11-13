@@ -35,9 +35,11 @@ class Main(KycoNApp):
     def setup(self):
         """Initialize all statistics and set their loop interval."""
         msg_out = self.controller.buffers.msg_out
-        self._stats = {StatsTypes.OFPST_PORT.value: PortStats(msg_out),
+        self._stats = {StatsTypes.OFPST_DESC.value: Description(msg_out),
+                       StatsTypes.OFPST_PORT.value: PortStats(msg_out),
                        StatsTypes.OFPST_FLOW.value: FlowStats(msg_out)}
         self.execute_as_loop(STATS_INTERVAL)
+        Description.controller = self.controller
         StatsAPI.controller = self.controller
         FlowStatsAPI.register_endpoints(self.controller)
         PortStatsAPI.register_endpoints(self.controller)
@@ -408,6 +410,36 @@ class FlowStats(Stats):
             cls.rrd.update((dpid, flow.id),
                            packet_count=fs.packet_count.value,
                            byte_count=fs.byte_count.value)
+
+
+class Description(Stats):
+    """Deal with Description messages."""
+
+    controller = {}
+
+    def __init__(self, msg_out_buffer):
+        """Initialize database."""
+        super().__init__(msg_out_buffer)
+        # Key is dpid, value is StatsReply object
+        self._desc = {}
+
+    def request(self, conn):
+        """Ask for switch description. It is done only once per switch."""
+        dpid = conn.switch.dpid
+        if dpid not in self._desc:
+            req = StatsRequest(body_type=StatsTypes.OFPST_DESC)
+            self._send_event(req, conn)
+            log.debug('Desc request for switch %s sent.', dpid)
+
+    def listen(self, dpid, desc):
+        """Store switch description."""
+        self._desc[dpid] = desc
+        switch = self.controller.get_switch_by_dpid(dpid)
+        switch.update_description(desc)
+        log.debug('Adding switch %s: mfr_desc = %s, hw_desc = %s,'
+                  ' sw_desc = %s, serial_num = %s', dpid,
+                  desc.mfr_desc, desc.hw_desc, desc.sw_desc,
+                  desc.serial_num)
 
 
 class StatsAPI(metaclass=ABCMeta):
