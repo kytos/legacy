@@ -7,7 +7,7 @@ from logging import getLogger
 from pathlib import Path
 from threading import Lock
 
-from flask import Flask, Response, request
+from flask import Response, request
 
 import rrdtool
 from kyco.core.events import KycoEvent
@@ -680,7 +680,3 @@ class FlowStatsAPI(StatsAPI):
         index = (self._dpid, self._flow)
         return super().get_points(index)
 
-
-if __name__ == "__main__":
-    app = Flask(__name__)
-    app.run()
