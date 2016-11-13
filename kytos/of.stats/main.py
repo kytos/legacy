@@ -598,7 +598,7 @@ class PortStatsAPI(StatsAPI):
     def get_speed(self):
         """Return user-defined speed. Fallback to controller's."""
         user = UserSpeed()
-        speed = user.get_speed(self._dpid)
+        speed = user.get_speed(self._dpid, self._port)
         if speed is None:
             speed = self._get_speed_from_controller()
         return speed
@@ -714,11 +714,22 @@ class UserSpeed:
         else:
             self._speed = {}
 
-    def get_speed(self, dpid):
-        """Return speed in bits/sec or None if not defined by the user."""
-        speed = self._speed.get(dpid)
-        if speed is None:
+    def get_speed(self, dpid, port=None):
+        """Return speed in bits/sec or None if not defined by the user.
+
+        Args:
+            dpid (str): Switch dpid.
+            port (int): Port number.
+        """
+        speed = None
+        switch = self._speed.get(dpid)
+        if switch is None:
             speed = self._speed.get('default')
+        else:
+            if port is None or port not in switch:
+                speed = switch.get('default')
+            else:
+                speed = switch[port]
         if speed is not None:
             speed *= 10**9
         return speed
