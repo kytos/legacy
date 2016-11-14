@@ -40,16 +40,15 @@ class Main(KycoNApp):
                        StatsTypes.OFPST_PORT.value: PortStats(msg_out),
                        StatsTypes.OFPST_FLOW.value: FlowStats(msg_out)}
         self.execute_as_loop(STATS_INTERVAL)
-        Description.switches = self.controller.switches
-        PortStatsAPI.switches = self.controller.switches
+        Description.controller = self.controller
+        StatsAPI.controller = self.controller
         FlowStatsAPI.register_endpoints(self.controller)
         PortStatsAPI.register_endpoints(self.controller)
         self.controller.log_websocket.register_log(log)
 
     def execute(self):
         """Query all switches sequentially and then sleep before repeating."""
-        switches = self.controller.switches.values()
-        for switch in switches:
+        for switch in self.controller.switches.values():
             self._update_stats(switch)
 
     def shutdown(self):
@@ -417,7 +416,11 @@ class FlowStats(Stats):
 class Description(Stats):
     """Deal with Description messages."""
 
-    switches = {}
+#<<<<<<< HEAD
+#    controller = {}
+#=======
+#    switches = {}
+#>>>>>>> develop
 
     def __init__(self, msg_out_buffer):
         """Initialize database."""
@@ -436,7 +439,7 @@ class Description(Stats):
     def listen(self, dpid, desc):
         """Store switch description."""
         self._desc[dpid] = desc
-        switch = self.switches.get(dpid)
+        switch = self.controller.get_switch_by_dpid(dpid)
         switch.update_description(desc)
         log.debug('Adding switch %s: mfr_desc = %s, hw_desc = %s,'
                   ' sw_desc = %s, serial_num = %s', dpid,
@@ -444,13 +447,11 @@ class Description(Stats):
                   desc.serial_num)
 
 
-app = Flask(__name__)
-
-
 class StatsAPI(metaclass=ABCMeta):
     """Class to answer REST API requests."""
 
     _rrd = None
+    controller = None
 
     def __init__(self):
         """Initialize instance attributes."""
@@ -529,8 +530,6 @@ class StatsAPI(metaclass=ABCMeta):
 class PortStatsAPI(StatsAPI):
     """REST API for port statistics."""
 
-    #: Controller's switches to inform link speed.
-    switches = None
     #: key is RRD column, value is a new column name for utilization
     #: percentage.
     _util_cols = {'rx_bytes': 'rx_utilization',
@@ -596,16 +595,8 @@ class PortStatsAPI(StatsAPI):
         return super().get_points(index)
 
     def get_speed(self):
-        """Return user-defined speed. Fallback to controller's."""
-        user = UserSpeed()
-        speed = user.get_speed(self._dpid, self._port)
-        if speed is None:
-            speed = self._get_speed_from_controller()
-        return speed
-
-    def _get_speed_from_controller(self):
-        """Return port speed if controller has the interface."""
-        switch = self.switches.get(self._dpid)
+        """Return port speed if controller has port."""
+        switch = self.controller.get_switch_by_dpid(self._dpid)
         if switch is None:
             log.warning('Sw %s not in controller', self._dpid[-3:])
             return None
@@ -681,15 +672,29 @@ class FlowStatsAPI(StatsAPI):
 
     def get_list(self):
         """See :meth:`get_flow_list`."""
-        def add_flow_id(rrd_data):
-            """Add flow id (rrd basename)."""
-            for rrd, data in rrd_data:
-                data['flow_id'] = rrd
-                yield data
+        def add_to_flow(rrd_data, switch):
+            """Add rrd data to flow."""
+            # rrd name is the flow id
+            for flow_id, data in rrd_data:
+                flow = switch.get_flow_by_id(flow_id)
+                if flow is None:
+                    log.warning('No flow %s in controller', flow_id[:6])
+                else:
+                    stats = {}
+                    stats['Bps'] = data['byte_count']
+                    stats['pps'] = data['packet_count']
+                    dct = flow.as_dict()
+                    dct['stats'] = stats
+                    yield dct
 
-        rrd_data = super().get_list(self._dpid)
-        data = add_flow_id(rrd_data)
-        return self._get_response({'data': list(data)})
+        switch = self.controller.get_switch_by_dpid(self._dpid)
+        if switch is None:
+            log.warning("No switch %s in controller", self._dpid[-3:])
+            data = []
+        else:
+            rrd_data = super().get_list(self._dpid)
+            data = list(add_to_flow(rrd_data, switch))
+        return self._get_response({'data': data})
 
     def get_stats(self):
         """See :meth:`get_flow_stats`."""
@@ -736,4 +741,5 @@ class UserSpeed:
 
 
 if __name__ == "__main__":
+    app = Flask(__name__)
     app.run()
