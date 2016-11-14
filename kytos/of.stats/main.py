@@ -2,7 +2,6 @@
 import json
 import time
 from abc import ABCMeta, abstractmethod
-from glob import glob
 from logging import getLogger
 from os.path import dirname
 from pathlib import Path
@@ -178,24 +177,6 @@ class RRD:
         path = path / '{}.rrd'.format(basename)
         return str(path)
 
-    def get_rrds(self, index):
-        """List files inside the folder specified by *index*.
-
-        Args:
-            index (iterable): Subfolders. Like *index* of :meth:`get_rrd`
-                without the last item, for example.
-
-        Returns:
-            str iterable: Generator of rrd basenames, without *.rrd* suffix.
-                For example, return the string `1` for `folder/1.rdd`
-        """
-        path = self._DIR / self._app
-        for folder in index:
-            path = path / folder
-        preffix = str(path) + '/'
-        pattern = preffix + '*.rrd'
-        return sorted(rrd[len(preffix):-4] for rrd in glob(pattern))
-
     def get_or_create_rrd(self, index, tstamp=None):
         """If rrd is not found, create it.
 
@@ -292,17 +273,25 @@ class RRD:
     def fetch_latest(self, index):
         """Fetch only the value for now.
 
-        Return empty dict if there are no values recorded.
+        Return zero values if there are no values recorded.
         """
         start = 'end-{}s'.format(STATS_INTERVAL * 3)  # two rows
-        tstamps, cols, rows = self.fetch(index, start, end='now')
+        try:
+            tstamps, cols, rows = self.fetch(index, start, end='now')
+        except FileNotFoundError:
+            # No RRD for port, so it will return zero values
+            pass
         # Last rows may have future timestamp and be empty
         latest = None
         min_tstamp = int(time.time()) - STATS_INTERVAL * 2
+        # Search backwards for non-null values
         for tstamp, row in zip(tstamps[::-1], rows[::-1]):
             if row[0] is not None and tstamp > min_tstamp:
                 latest = row
-        return {k: v for k, v in zip(cols, latest)} if latest else {}
+        # If no values are found, add zeros.
+        if not latest:
+            latest = [0] * len(cols)
+        return {k: v for k, v in zip(cols, latest)}
 
     def _get_counter(self, ds):
         return 'DS:{}:COUNTER:{}:{}:{}'.format(ds, self._TIMEOUT, self._MIN,
@@ -416,11 +405,7 @@ class FlowStats(Stats):
 class Description(Stats):
     """Deal with Description messages."""
 
-#<<<<<<< HEAD
-#    controller = {}
-#=======
-#    switches = {}
-#>>>>>>> develop
+    controller = {}
 
     def __init__(self, msg_out_buffer):
         """Initialize database."""
@@ -470,20 +455,19 @@ class StatsAPI(metaclass=ABCMeta):
             content = self._get_rrd_not_found_error(e)
         return StatsAPI._get_response(content)
 
-    @classmethod
-    def get_list(cls, dpid):
-        """List all ports that have statistics and their latest stats.
+    def get_latest(self, fn_items):
+        """Return latest stats for items obtained in a switch."""
+        switch = self._get_switch()
+        if switch is None:
+            data = []
+        else:
+            items = fn_items(switch)
+            data = list(self._get_latest_stats(items))
+        return self._get_response({'data': data})
 
-        Args:
-            dpid (str): Switch dpid.
-            get_port (function): Return port number from RRD basename.
-        """
-        ix = (dpid,)
-        for rrd in cls._rrd.get_rrds(ix):
-            rrd_ix = (dpid, rrd)
-            latest = cls._rrd.fetch_latest(rrd_ix)
-            if latest:  # test if dictionary is empty
-                yield rrd, latest
+    @abstractmethod
+    def _get_latest_stats(self, items):
+        pass
 
     def _fetch(self, index, start, end, n_points):
         tstamps, cols, rows = self._rrd.fetch(index, start, end, n_points)
@@ -494,6 +478,12 @@ class StatsAPI(metaclass=ABCMeta):
                 self._stats[col].append(value)
         self._remove_null()
         return {'data': self._stats}
+
+    def _get_switch(self):
+        switch = self.controller.get_switch_by_dpid(self._dpid)
+        if switch is None:
+            self.warning('Switch %s not found in controller', self._dpid[-3:])
+        return switch
 
     def _remove_null(self):
         """Remove a row if all its values are null."""
@@ -580,60 +570,50 @@ class PortStatsAPI(StatsAPI):
         Args:
             dpid (str): Switch dpid.
         """
-        api = cls(dpid).get_list()
-        return api
+        api = cls(dpid)
+        return api.get_list()
 
     def get_list(self):
         """See :meth:`get_ports_list`."""
-        rrd_data = super().get_list(self._dpid)
-        data_util = self._add_utilization(rrd_data)
-        data = self._add_to_interface(data_util)
-        return self._get_response({'data': list(data)})
+        return super().get_latest(lambda sw: (sw.interfaces[k]
+                                              for k in sorted(sw.interfaces)))
+
+    def _get_latest_stats(self, ifaces):
+        for iface in ifaces:
+            self._port = iface.port_number
+            index = (self._dpid, self._port)
+            row = self._rrd.fetch_latest(index)
+            row['port'] = self._port
+            row['name'] = iface.name
+            row['mac'] = iface.address
+            row['speed'] = self._get_speed(iface)
+            if self._add_utilization(row, iface):
+                yield row
 
     def get_stats(self):
         """See :meth:`get_port_stats`."""
         index = (self._dpid, self._port)
         return super().get_points(index)
 
-    def get_speed(self):
-        """Return port speed if controller has port."""
-        switch = self.controller.get_switch_by_dpid(self._dpid)
-        if switch is None:
-            log.warning('Sw %s not in controller', self._dpid[-3:])
-            return None
-        port = switch.get_interface_by_port_no(self._port)
-        if port is None:
-            log.warning('Port %s, sw %s not in controller', self._port,
-                        self._dpid[-3:])
-            return None
-        return port.get_speed()
+    def _get_speed(self, iface):
+        """Give priority to user-defined speed. Then, OF spec's."""
+        user = UserSpeed()
+        speed = user.get_speed(self._dpid, iface.port_number)
+        if speed is None:
+            speed = iface.get_speed()
+        return speed
 
-    def _add_utilization(self, rrd_data):
+    def _add_utilization(self, row, iface):
         """Calculate utilization and also add port number."""
-        for rrd, row in rrd_data:
-            self._port = int(rrd)
-            row['port'] = self._port
-            speed = self.get_speed()
-            if speed:
-                for bytes_col, util_col in self._util_cols.items():
-                    row[util_col] = row[bytes_col] / (speed / 8)  # bytes/sec
-                    row['speed'] = speed
-                yield row
-            else:
-                log.warning('No speed port %s dpid %s', self._port,
-                            self._dpid[-3:])
-
-    def _add_to_interface(self, rows):
-        switch = self.controller.get_switch_by_dpid(self._dpid)
-        for row in rows:
-            iface = switch.get_interface_by_port_no(row['port'])
-            if iface is not None:
-                row['name'] = iface.name
-                row['mac'] = iface.address
-                yield row
-            else:
-                log.warning('Iface %d, sw %s not in controller', row['port'],
-                            self._dpid[-3:])
+        speed = row['speed']
+        if speed is not None:
+            for bytes_col, util_col in self._util_cols.items():
+                row[util_col] = row[bytes_col] / (speed / 8)  # bytes/sec
+            return True
+        else:
+            log.warning('No speed, port %s, dpid %s', self._port,
+                        self._dpid[-3:])
+            return False
 
 
 class FlowStatsAPI(StatsAPI):
@@ -662,6 +642,8 @@ class FlowStatsAPI(StatsAPI):
         Args:
             dpid (str): Switch dpid.
         """
+        switch = cls.controller.get_switch_by_dpid(dpid)
+        log.info("Controller's flow: %s", [f.id[:3] for f in switch.flows])
         api = cls(dpid)
         return api.get_list()
 
@@ -685,34 +667,61 @@ class FlowStatsAPI(StatsAPI):
 
     def get_list(self):
         """See :meth:`get_flow_list`."""
-        def add_to_flow(rrd_data, switch):
-            """Add rrd data to flow."""
-            # rrd name is the flow id
-            for flow_id, data in rrd_data:
-                flow = switch.get_flow_by_id(flow_id)
-                if flow is None:
-                    log.warning('No flow %s, sw %s in controller', flow_id[:6],
-                                self._dpid[-3:])
-                else:
-                    stats = {}
-                    stats['Bps'] = data['byte_count']
-                    stats['pps'] = data['packet_count']
-                    dct = flow.as_dict()['flow']
-                    # Make it JS friendly
-                    dct['id'] = dct.pop('self.id')
-                    dct['stats'] = stats
-                    yield dct
+        return super().get_latest(lambda sw: sorted(sw.flows,
+                                                    key=lambda f: f.id))
 
-        switch = self.controller.get_switch_by_dpid(self._dpid)
-        if switch is None:
-            log.warning("No switch %s in controller", self._dpid[-3:])
-            data = []
-        else:
-            rrd_data = super().get_list(self._dpid)
-            data = list(add_to_flow(rrd_data, switch))
-        return self._get_response({'data': data})
+    def _get_latest_stats(self, flows):
+        for flow in flows:
+            index = (self._dpid, flow.id)
+            rrd_data = self._rrd.fetch_latest(index)
+            stats = {}
+            stats['Bps'] = rrd_data['byte_count']
+            stats['pps'] = rrd_data['packet_count']
+            dct = flow.as_dict()['flow']
+            # Make it JS friendly
+            dct['id'] = dct.pop('self.id')
+            dct['stats'] = stats
+            yield dct
 
     def get_stats(self):
         """See :meth:`get_flow_stats`."""
         index = (self._dpid, self._flow)
         return super().get_points(index)
+
+
+class UserSpeed:
+    """User-defined interface speeds.
+
+    In case there is no matching speed in OF spec or the speed is not correctly
+    detected.
+    """
+
+    _FILE = Path(dirname(__file__)) / 'user_speed.json'
+
+    def __init__(self):
+        """Load user-created file."""
+        if self._FILE.exists():
+            with self._FILE.open() as user_file:
+                self._speed = json.load(user_file)
+        else:
+            self._speed = {}
+
+    def get_speed(self, dpid, port=None):
+        """Return speed in bits/sec or None if not defined by the user.
+
+        Args:
+            dpid (str): Switch dpid.
+            port (int): Port number.
+        """
+        speed = None
+        switch = self._speed.get(dpid)
+        if switch is None:
+            speed = self._speed.get('default')
+        else:
+            if port is None or port not in switch:
+                speed = switch.get('default')
+            else:
+                speed = switch[port]
+        if speed is not None:
+            speed *= 10**9
+        return speed
