@@ -83,9 +83,10 @@ class Main(KycoCoreNApp):
                                 "id": endpoint.value,
                                 "name": endpoint.value,
                                 "mac": endpoint.value}
+                        if host not in nodes:
+                            nodes.append(host)
                         if not interface.is_link_between_switches():
                             links.append(link)
-                            nodes.append(host)
                     else:
                         link = {'source': interface.id,
                                 'target': endpoint.id,
