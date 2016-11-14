@@ -4,6 +4,7 @@ import time
 from abc import ABCMeta, abstractmethod
 from glob import glob
 from logging import getLogger
+from os.path import dirname
 from pathlib import Path
 from threading import Lock
 
@@ -417,6 +418,7 @@ class Description(Stats):
     """Deal with Description messages."""
 
     switches = {}
+
     def __init__(self, msg_out_buffer):
         """Initialize database."""
         super().__init__(msg_out_buffer)
@@ -594,7 +596,15 @@ class PortStatsAPI(StatsAPI):
         return super().get_points(index)
 
     def get_speed(self):
-        """Return port speed if controller has port."""
+        """Return user-defined speed. Fallback to controller's."""
+        user = UserSpeed()
+        speed = user.get_speed(self._dpid, self._port)
+        if speed is None:
+            speed = self._get_speed_from_controller()
+        return speed
+
+    def _get_speed_from_controller(self):
+        """Return port speed if controller has the interface."""
         switch = self.switches.get(self._dpid)
         if switch is None:
             log.warning('Sw %s not in controller', self._dpid[-3:])
@@ -685,6 +695,44 @@ class FlowStatsAPI(StatsAPI):
         """See :meth:`get_flow_stats`."""
         index = (self._dpid, self._flow)
         return super().get_points(index)
+
+
+class UserSpeed:
+    """User-defined interface speeds.
+
+    In case there is no matching speed in OF spec or the speed is not correctly
+    detected.
+    """
+
+    _FILE = Path(dirname(__file__)) / 'user_speed.json'
+
+    def __init__(self):
+        """Load user-created file."""
+        if self._FILE.exists():
+            with self._FILE.open() as user_file:
+                self._speed = json.load(user_file)
+        else:
+            self._speed = {}
+
+    def get_speed(self, dpid, port=None):
+        """Return speed in bits/sec or None if not defined by the user.
+
+        Args:
+            dpid (str): Switch dpid.
+            port (int): Port number.
+        """
+        speed = None
+        switch = self._speed.get(dpid)
+        if switch is None:
+            speed = self._speed.get('default')
+        else:
+            if port is None or port not in switch:
+                speed = switch.get('default')
+            else:
+                speed = switch[port]
+        if speed is not None:
+            speed *= 10**9
+        return speed
 
 
 if __name__ == "__main__":
