@@ -4,6 +4,7 @@ import time
 from abc import ABCMeta, abstractmethod
 from glob import glob
 from logging import getLogger
+from os.path import dirname
 from pathlib import Path
 from threading import Lock
 
@@ -415,7 +416,11 @@ class FlowStats(Stats):
 class Description(Stats):
     """Deal with Description messages."""
 
-    controller = {}
+#<<<<<<< HEAD
+#    controller = {}
+#=======
+#    switches = {}
+#>>>>>>> develop
 
     def __init__(self, msg_out_buffer):
         """Initialize database."""
@@ -695,6 +700,44 @@ class FlowStatsAPI(StatsAPI):
         """See :meth:`get_flow_stats`."""
         index = (self._dpid, self._flow)
         return super().get_points(index)
+
+
+class UserSpeed:
+    """User-defined interface speeds.
+
+    In case there is no matching speed in OF spec or the speed is not correctly
+    detected.
+    """
+
+    _FILE = Path(dirname(__file__)) / 'user_speed.json'
+
+    def __init__(self):
+        """Load user-created file."""
+        if self._FILE.exists():
+            with self._FILE.open() as user_file:
+                self._speed = json.load(user_file)
+        else:
+            self._speed = {}
+
+    def get_speed(self, dpid, port=None):
+        """Return speed in bits/sec or None if not defined by the user.
+
+        Args:
+            dpid (str): Switch dpid.
+            port (int): Port number.
+        """
+        speed = None
+        switch = self._speed.get(dpid)
+        if switch is None:
+            speed = self._speed.get('default')
+        else:
+            if port is None or port not in switch:
+                speed = switch.get('default')
+            else:
+                speed = switch[port]
+        if speed is not None:
+            speed *= 10**9
+        return speed
 
 
 if __name__ == "__main__":
