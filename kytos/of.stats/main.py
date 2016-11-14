@@ -8,7 +8,7 @@ from os.path import dirname
 from pathlib import Path
 from threading import Lock
 
-from flask import Flask, Response, request
+from flask import Response, request
 
 import rrdtool
 from kyco.core.events import KycoEvent
@@ -532,8 +532,8 @@ class PortStatsAPI(StatsAPI):
 
     #: key is RRD column, value is a new column name for utilization
     #: percentage.
-    _util_cols = {'rx_bytes': 'rx_utilization',
-                  'tx_bytes': 'tx_utilization'}
+    _util_cols = {'rx_bytes': 'rx_util',
+                  'tx_bytes': 'tx_util'}
     _rrd = PortStats.rrd
 
     def __init__(self, dpid, port=None):
@@ -586,7 +586,8 @@ class PortStatsAPI(StatsAPI):
     def get_list(self):
         """See :meth:`get_ports_list`."""
         rrd_data = super().get_list(self._dpid)
-        data = self._add_utilization(rrd_data)
+        data_util = self._add_utilization(rrd_data)
+        data = self._add_to_interface(data_util)
         return self._get_response({'data': list(data)})
 
     def get_stats(self):
@@ -620,6 +621,18 @@ class PortStatsAPI(StatsAPI):
                 yield row
             else:
                 log.warning('No speed port %s dpid %s', self._port,
+                            self._dpid[-3:])
+
+    def _add_to_interface(self, rows):
+        switch = self.controller.get_switch_by_dpid(self._dpid)
+        for row in rows:
+            iface = switch.get_interface_by_port_no(row['port'])
+            if iface is not None:
+                row['name'] = iface.name
+                row['mac'] = iface.address
+                yield row
+            else:
+                log.warning('Iface %d, sw %s not in controller', row['port'],
                             self._dpid[-3:])
 
 
@@ -678,7 +691,8 @@ class FlowStatsAPI(StatsAPI):
             for flow_id, data in rrd_data:
                 flow = switch.get_flow_by_id(flow_id)
                 if flow is None:
-                    log.warning('No flow %s in controller', flow_id[:6])
+                    log.warning('No flow %s, sw %s in controller', flow_id[:6],
+                                self._dpid[-3:])
                 else:
                     stats = {}
                     stats['Bps'] = data['byte_count']
@@ -702,46 +716,3 @@ class FlowStatsAPI(StatsAPI):
         """See :meth:`get_flow_stats`."""
         index = (self._dpid, self._flow)
         return super().get_points(index)
-
-
-class UserSpeed:
-    """User-defined interface speeds.
-
-    In case there is no matching speed in OF spec or the speed is not correctly
-    detected.
-    """
-
-    _FILE = Path(dirname(__file__)) / 'user_speed.json'
-
-    def __init__(self):
-        """Load user-created file."""
-        if self._FILE.exists():
-            with self._FILE.open() as user_file:
-                self._speed = json.load(user_file)
-        else:
-            self._speed = {}
-
-    def get_speed(self, dpid, port=None):
-        """Return speed in bits/sec or None if not defined by the user.
-
-        Args:
-            dpid (str): Switch dpid.
-            port (int): Port number.
-        """
-        speed = None
-        switch = self._speed.get(dpid)
-        if switch is None:
-            speed = self._speed.get('default')
-        else:
-            if port is None or port not in switch:
-                speed = switch.get('default')
-            else:
-                speed = switch[port]
-        if speed is not None:
-            speed *= 10**9
-        return speed
-
-
-if __name__ == "__main__":
-    app = Flask(__name__)
-    app.run()
