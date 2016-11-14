@@ -48,6 +48,17 @@ class Main(KycoCoreNApp):
             if interface != None and not interface.is_link_between_switches():
                 interface.update_endpoint(hw_address)
 
+    @listen_to('kytos/of.core.messages.in.ofpt_port_status')
+    def update_port_stats(self, event):
+        port_status = event.content['message']
+        reasons = ['CREATED','DELETED','MODIFIED']
+        dpid = event.source.switch.dpid
+        port_no = port_status.desc.port_no
+        port_name = port_status.desc.name
+        reason = reasons[port_status.reason.value]
+        msg = 'The port {} ({}) from switch {} was {}.'
+        log.debug(msg.format(port_no, port_name, dpid, reason))
+
     def shutdown(self):
         """End of the application."""
         log.debug('Shutting down...')
