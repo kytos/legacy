@@ -587,8 +587,7 @@ class PortStatsAPI(StatsAPI):
             row['name'] = iface.name
             row['mac'] = iface.address
             row['speed'] = self._get_speed(iface)
-            if self._add_utilization(row, iface):
-                yield row
+            yield self._add_utilization(row, iface)
 
     def get_stats(self):
         """See :meth:`get_port_stats`."""
@@ -606,14 +605,15 @@ class PortStatsAPI(StatsAPI):
     def _add_utilization(self, row, iface):
         """Calculate utilization and also add port number."""
         speed = row['speed']
-        if speed is not None:
-            for bytes_col, util_col in self._util_cols.items():
-                row[util_col] = row[bytes_col] / (speed / 8)  # bytes/sec
-            return True
-        else:
+        if speed is None:
+            for util_col in self._util_cols.values():
+                row[util_col] = None
             log.warning('No speed, port %s, dpid %s', self._port,
                         self._dpid[-3:])
-            return False
+        else:
+            for bytes_col, util_col in self._util_cols.items():
+                row[util_col] = row[bytes_col] / (speed / 8)  # bytes/sec
+        return row
 
 
 class FlowStatsAPI(StatsAPI):
@@ -642,8 +642,6 @@ class FlowStatsAPI(StatsAPI):
         Args:
             dpid (str): Switch dpid.
         """
-        switch = cls.controller.get_switch_by_dpid(dpid)
-        log.info("Controller's flow: %s", [f.id[:3] for f in switch.flows])
         api = cls(dpid)
         return api.get_list()
 
