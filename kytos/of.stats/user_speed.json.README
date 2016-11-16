@@ -1,2 +1,6 @@
 1. Copy the template file and remove template prefix
 2. Edit the file with Gbps values (int or float)
+  - As in the template, use double quotes for all keys, even port numbers
+     (e.g. "4": 1 instead of 4: 1)
+  - There can be a top level default value for switches not in the list
+  - There can also be a default value per switch

@@ -709,17 +709,17 @@ class UserSpeed:
 
         Args:
             dpid (str): Switch dpid.
-            port (int): Port number.
+            port (int or str): Port number.
         """
         speed = None
         switch = self._speed.get(dpid)
         if switch is None:
             speed = self._speed.get('default')
         else:
-            if port is None or port not in switch:
+            if port is None or str(port) not in switch:
                 speed = switch.get('default')
             else:
-                speed = switch[port]
+                speed = switch[str(port)]
         if speed is not None:
             speed *= 10**9
         return speed
