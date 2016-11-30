@@ -3,40 +3,70 @@ Kytos - kyco-core-napps
 
 |Tag| |Release| |License|
 
-*Kyco* is the main component of Kytos Project. Kytos Controller (Kyco)
-uses *python-openflow* library to parse low level OpenFlow messages.
+*Kyco* is the main component of Kytos Project. Kytos Controller (Kyco) uses
+*python-openflow* library to parse low level OpenFlow messages.
 
-This repository has all core network apps used by kyco.
+This repository contains all core network apps used by *Kyco*.
 
-This code is part of *Kytos* project and was developed to be used with
-*Kytos* controller.
+This code is part of *Kytos* project and was developed to be used with *Kytos*
+controller.
 
-For more information about, please visit our `Kytos web
-site <http://kytos.io/>`__.
+For more information about, please visit our `Kytos web site
+<http://kytos.io/>`__.
 
-Installing
-----------
+Overview
+--------
 
-You can install this package from source or via pip. If you have cloned
-this repository and want to install it via ``setuptools``, please run,
-from the cloned directory:
+Installation
+^^^^^^^^^^^^
 
-.. code:: shell
+You can install this package from source or via pip.
 
-    sudo python3 setup.py install
+=====================
+Installing from PyPI
+=====================
 
-Or, to install via pip, please execute:
+*Kyco-core-napps* is in PyPI, so you can easily install it via `pip3` (`pip`
+for Python 3) and also include this project in your `requirements.txt`
+
+If you do not have `pip3` you can install it on Ubuntu-base machines by
+running:
+
+.. code-block:: shell
+
+    $ sudo apt update
+    $ sudo apt install python3-pip
+
+
+Once you have `pip3`, execute:
 
 .. code:: shell
 
     sudo pip3 install kyco-core-napps
 
+=======================
+Installing source code
+=======================
+
+First you need to clone `kyco-core-napps` repository:
+
+.. code-block:: shell
+
+   $ git clone https://github.com/kytos/kyco-core-napps.git
+
+After cloning, the installation process is done by `setuptools` in the usual
+way:
+
+.. code-block:: shell
+
+   $ cd kyco-core-napps
+   $ sudo python3 setup.py install
+
 Authors
 -------
 
-This is a collaborative project between SPRACE (From São Paulo State University,
-Unesp) and Caltech (California Institute of Technology). For a complete list of
-authors, please open `AUTHORS.rst <docs/toc/AUTHORS.rst` file.
+For a complete list of authors, please open `AUTHORS.rst
+<docs/toc/AUTHORS.rst>` file.
 
 Contributing
 ------------
