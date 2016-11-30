@@ -1,12 +1,12 @@
 {
   "name": "of.stats",
-  "long_description": "Statistics application",
   "description": "Statistics application for openflow switches.",
+  "long_description": "Statistics application",
   "version": "0.1.0",
   "author": "kytos",
-  "ofversion": "1.0",
-  "dependencies": "None",
+  "ofversion": ["1.0"],
+  "dependencies": ["None"],
   "license": "MIT",
   "git": "https://github.com/kytos/kyco-core-napps.git",
-  "tags": ["statistics", "network"]
+  "tags": ["openflow", "statistics", "network"]
 }
