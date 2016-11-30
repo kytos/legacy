@@ -1,12 +1,12 @@
 {
-  "name": "of.core",
-  "long_description": "",
-  "description": "OpenFlow Core of Kytos Controller, responsible for main OpenFlow operations.",
-  "version": "0.1.1",
+  "name": "of.ipv6drop",
+  "long_description": "This NApp listen to new connected switches (``kyco/core.switches.new``) and install a flow to DROP all IPv6 packets that arrives on the switch.",
+  "description": "Install flows to DROP IPv6 packets on all switches.",
+  "version": "0.1.0",
   "author": "kytos",
-  "ofversion": "1.0",
-  "dependencies": "None",
+  "ofversion": ["1.0"],
+  "dependencies": ["python-openflow >= 1.1.0b0"],
   "license": "MIT",
   "git": "https://github.com/kytos/kyco-core-napps.git",
-  "tags": ["openflow", "core"]
+  "tags": ["openflow", "ipv6"]
 }
