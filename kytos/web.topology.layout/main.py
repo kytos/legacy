@@ -1,7 +1,7 @@
 import logging
 import json
 
-from flask import abort, request
+from flask import request
 from os import listdir, makedirs
 from os.path import isfile, join
 
@@ -49,7 +49,7 @@ class Main(KycoCoreNApp):
 
     def save_topology(self, name):
         if not request.is_json:
-            abort(400)
+            return json.dumps('{"error": "gt was not a JSON request"}'), 400
         topology = request.get_json()
         with open(join(TOPOLOGY_DIR, name + '.json'), 'w') as outfile:
             json.dump(topology, outfile)
@@ -58,7 +58,7 @@ class Main(KycoCoreNApp):
     def get_topology(self, name):
         file = join(TOPOLOGY_DIR, name + '.json')
         if not isfile(file):
-            return None
+            return json.dumps('{"error": "Topology not found"}'), 400
         with open(join(TOPOLOGY_DIR, name + '.json'), 'r') as outfile:
             output = json.load(outfile)
         return json.dumps(output)

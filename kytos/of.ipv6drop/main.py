@@ -33,7 +33,8 @@ class Main(KycoCoreNApp):
         pass
 
     @listen_to('kyco/core.switches.new')
-    def disable_ipv6(self, event):
+    def ipv6_drop(self, event):
+        """Install a flow on the switch that drop all incoming ipv6 packets."""
         switch = event.content['switch']
 
         flow_mod = FlowMod()
