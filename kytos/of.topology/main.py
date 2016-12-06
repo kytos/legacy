@@ -9,7 +9,7 @@ from pyof.foundation.network_types import Ethernet
 from kyco.core.napps import KycoCoreNApp
 from kyco.utils import listen_to
 
-log = logging.getLogger('KycoNApp')
+log = logging.getLogger('of.topology')
 
 
 class Main(KycoCoreNApp):
