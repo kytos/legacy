@@ -1,26 +1,31 @@
-import logging
+"""App responsible to update links detail and create a network topology."""
+
 import json
+import logging
+
+from pyof.foundation.basic_types import HWAddress
+from pyof.foundation.network_types import Ethernet
 
 from kyco.core.napps import KycoCoreNApp
 from kyco.utils import listen_to
-from pyof.foundation.network_types import Ethernet
-from pyof.foundation.basic_types import HWAddress
-
 
 log = logging.getLogger('KycoNApp')
 
 
 class Main(KycoCoreNApp):
-    """
+    """Main class of a KycoCoreNApp, responsible build a network topology.
+
     This app intends to update the links between machines and switches. It
     considers that if an interface is connected to another interface then this
-    is a link. If not, it must be a connection to a server
+    is a link. If not, it must be a connection to a server.
     """
 
     def setup(self):
-        """Creates an empty dict to store the switches references and the
-        information about the hosts"""
+        """Setup the app of.topology.
 
+        This setup will set the name of app, register the endpoint
+        /kytos/topology and setup the logger.
+        """
         self.name = 'kytos/of.topology'
         self.controller.register_rest_endpoint('/topology',
                                                self.get_json_topology,
@@ -28,14 +33,18 @@ class Main(KycoCoreNApp):
         self.controller.log_websocket.register_log(log)
 
     def execute(self):
-        """ Do nothing, only wait for packet-in messages"""
+        """Do nothing, only wait for packet-in messages."""
         pass
 
     @listen_to('kytos/of.core.messages.in.ofpt_packet_in')
     def update_links(self, event):
-        """
-        Main operation of the app., the one responsible for update the
-        interface endpoints.
+        """Receive a kytos event and update links interface.
+
+        Get the event kytos/of.core.messages.in.ofpt_packet_in and update
+        the interface endpoints, ignoring the LLDP packages.
+
+        Parameters:
+            event (KycoEvent): event with Ethernet packet.
         """
         ethernet = Ethernet()
         ethernet.unpack(event.message.data.value)
@@ -45,13 +54,22 @@ class Main(KycoCoreNApp):
             switch = event.source.switch
             interface = switch.get_interface_by_port_no(port_no.value)
 
-            if interface != None and not interface.is_link_between_switches():
+            if interface is not None and \
+               not interface.is_link_between_switches():
                 interface.update_endpoint(hw_address)
 
     @listen_to('kytos/of.core.messages.in.ofpt_port_status')
     def update_port_stats(self, event):
+        """Receive a Kytos event and update port.
+
+        Get the event kytos/of.core.messages.in.ofpt_port_status and update the
+        port status.
+
+        Parameters:
+            event (KycoEvent): event with port_status content.
+        """
         port_status = event.content['message']
-        reasons = ['CREATED','DELETED','MODIFIED']
+        reasons = ['CREATED', 'DELETED', 'MODIFIED']
         dpid = event.source.switch.dpid
         port_no = port_status.desc.port_no
         port_name = port_status.desc.name
@@ -64,7 +82,13 @@ class Main(KycoCoreNApp):
         log.debug('Shutting down...')
 
     def get_json_topology(self):
-        nodes,links = [], []
+        """Return a json with topology details.
+
+        Method responsible to return a json in /kytos/topology route.
+        Returns:
+            topology (string): json with topology details.
+        """
+        nodes, links = [], []
         for dpid, switch in self.controller.switches.items():
             nodes.append(switch.as_dict())
             for port_no, interface in switch.interfaces.items():
