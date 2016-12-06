@@ -1,11 +1,11 @@
 {
   "name": "of.core",
   "description": "OpenFlow Core of Kytos Controller, responsible for main OpenFlow operations.",
-  "long_description": "",
+  "long_description": "OpenFlow Core of Kytos Controller is a app responsible to handle OpenFlow basic operations such as handle hello messages, echo request/reply messages and send/receive openflow messages by network.",
   "version": "0.1.1",
   "author": "kytos",
   "ofversion": ["1.0"],
-  "dependencies": ["None"],
+  "dependencies": [],
   "license": "MIT",
   "git": "https://github.com/kytos/kyco-core-napps.git",
   "tags": ["openflow", "core"]
