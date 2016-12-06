@@ -49,12 +49,7 @@ described protocol. However, in a SDN based network is necessary to
 implement the LLDP operation in software. 
 
 1. A rule to forward any LLDP packet (ethernet type 0x88cc) to the 
-controller is installed in all switches. A rule example:
-```bash
-cookie=0x0, duration=779.804s, table=0, n_packets=153, n_bytes=6273, 
-idle_age=3, priority=65000,dl_dst=01:23:20:00:00:01,dl_type=0x88cc 
-actions=CONTROLLER:65535
-```
+controller is installed in all switches.
 
 2. The switches forward the packet to the controller encapsuled in a 
 `packet_in` message. The `packet_in` contains the original message which
@@ -66,3 +61,10 @@ stores to which switch and port it was sent.
 
 4. If a different switch forward a LLDP packet sent to another switch, 
 the controller knows that both switches are connected.
+
+Example of rule installed in switches to forward LLDP Ethernet packets:
+```bash
+cookie=0x0, duration=779.804s, table=0, n_packets=153, n_bytes=6273, 
+idle_age=3, priority=65000,dl_dst=01:23:20:00:00:01,dl_type=0x88cc 
+actions=CONTROLLER:65535
+```
