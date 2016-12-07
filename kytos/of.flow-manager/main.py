@@ -1,4 +1,4 @@
-"""This App is the responsible to install a drop ipv6 flow on switch setup."""
+"""This App is the responsible to install or remove flows from switches"""
 
 import logging
 import json
