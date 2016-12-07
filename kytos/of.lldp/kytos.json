@@ -1,0 +1,12 @@
+{
+  "name": "of.lldp",
+  "description": "App responsible by send packet with lldp protocol to network and to discover switches and hosts.",
+  "long_description": "The of.lldp app will send packet with lldp protocol to network and wait until receive a packet_in with lldp protocol.After received the message, the swiches'interfaces will update their endpoints.",
+  "version": "0.1.1",
+  "author": "kytos",
+  "ofversion": ["1.0"],
+  "dependencies": [],
+  "license": "MIT",
+  "git": "https://github.com/kytos/kyco-core-napps.git",
+  "tags": ["openflow", "lldp","network"]
+}

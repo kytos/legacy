@@ -1,13 +1,16 @@
+"""App responsible to discover new switches and hosts."""
+
 import logging
+
+from pyof.foundation.basic_types import DPID, UBInt16
+from pyof.foundation.network_types import LLDP, Ethernet
+from pyof.v0x01.common.action import ActionOutput
+from pyof.v0x01.controller2switch.packet_out import PacketOut
 
 from kyco.constants import POOLING_TIME
 from kyco.core.events import KycoEvent
 from kyco.core.napps import KycoCoreNApp
 from kyco.utils import listen_to
-from pyof.foundation.basic_types import DPID, UBInt16
-from pyof.foundation.network_types import LLDP, Ethernet
-from pyof.v0x01.common.action import ActionOutput
-from pyof.v0x01.controller2switch.packet_out import PacketOut
 
 log = logging.getLogger(__name__)
 
@@ -60,6 +63,12 @@ class Main(KycoCoreNApp):
 
     @listen_to('kytos/of.core.messages.in.ofpt_packet_in')
     def update_links(self, event):
+        """Method used to update interfaces when a Ethernet packet is received.
+
+        Args:
+            event (:class:`~kyco.core.events.KycoEvent`):
+                Event with lldp protocol.
+        """
         ethernet = Ethernet()
         ethernet.unpack(event.message.data.value)
         if ethernet.type == 0x88cc:
@@ -84,4 +93,5 @@ class Main(KycoCoreNApp):
                 interface_b.update_endpoint(interface_a)
 
     def shutdown(self):
-        pass
+        """End of the application."""
+        log.debug('Shutting down...')
