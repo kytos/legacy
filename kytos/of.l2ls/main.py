@@ -1,8 +1,7 @@
-"""This App is the responsible for the main OpenFlow basic operations."""
+"""App responsible for the main OpenFlow basic operations."""
 
 import logging
 
-# TODO: This timeout should be setup on a config file from this napp
 from kyco.core.events import KycoEvent
 from kyco.core.napps import KycoCoreNApp
 from kyco.utils import listen_to
@@ -13,35 +12,33 @@ from pyof.v0x01.common.phy_port import Port
 from pyof.v0x01.controller2switch.flow_mod import FlowMod, FlowModCommand
 from pyof.v0x01.controller2switch.packet_out import PacketOut
 
-log = logging.getLogger('KycoNApp')
+log = logging.getLogger('of.l2ls')
 
 
 class Main(KycoCoreNApp):
-    """Main class of KycoCoreNApp, responsible for the main OpenFlow basic
-    operations.
-
-    """
+    """Main class of a KycoCoreNApp, responsible for OpenFlow operations."""
 
     def setup(self):
-        """'Replaces' the 'init' method for the KycoApp subclass.
+        """App initialization (used instead of ``__init__``).
 
         The setup method is automatically called by the run method.
-        Users shouldn't call this method directly."""
-        # TODO: App information goes to app_name.json
-        self.name = 'kytos.l2_learning_switch'
+        Users shouldn't call this method directly.
+        """
         self.controller.log_websocket.register_log(log)
 
     def execute(self):
         """Method to be runned once on app 'start' or in a loop.
 
         The execute method is called by the run method of KycoNApp class.
-        Users shouldn't call this method directly."""
+        Users shouldn't call this method directly.
+        """
         pass
 
     @listen_to('kytos/of.core.messages.in.ofpt_packet_in')
     def handle_packet_in(self, event):
-        """Handle PacketIn Event by installing flows allowing communication
-        between switch ports.
+        """Handle PacketIn Event.
+
+        Install flows allowing communication between switch ports.
 
         Args:
             event (KycoPacketIn): Received Event
@@ -92,4 +89,5 @@ class Main(KycoCoreNApp):
             self.controller.buffers.msg_out.put(event_out)
 
     def shutdown(self):
+        """Too simple to have a shutdown procedure."""
         pass
