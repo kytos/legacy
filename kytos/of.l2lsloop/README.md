@@ -21,5 +21,5 @@ L2LSLOOP Operation
 ------------------
 
 In order to avoid loop at Layer 2, this application identifies duplicate
-paths between endpoints and remove one of the paths by disabling the
-port. 
+paths between endpoints and remove one of the paths by disabling one of
+the ports that are creating the loop.
