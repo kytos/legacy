@@ -1,0 +1,12 @@
+{
+  "name": "of.topology",
+  "long_description": "App responsible to update links detail and create a network topology.",
+  "description": "A simple app that update links between machines and swithes and return a json with network topology using the route /kytos/topology.",
+  "version": "0.1.1",
+  "author": "kytos",
+  "ofversion": "1.0",
+  "dependencies": [],
+  "license": "MIT",
+  "git": "https://github.com/kytos/kyco-core-napps.git",
+  "tags": ["openflow", "topology", "switches", "hosts"]
+}
