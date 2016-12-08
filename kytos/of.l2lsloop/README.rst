@@ -1,15 +1,15 @@
 Overview
 ========
 
-The _of.l2lsloop_ application is used to avoid loops at Layer 2. A loop 
-at layer 2 occurs when there is more than one path between two endpoints 
-(e.g. multiple connections between two network switches or two ports on 
-the same switch connected to each other). 
+The *of.l2lsloop* application is used to avoid loops at Layer 2. A loop
+at layer 2 occurs when there is more than one path between two endpoints
+(e.g. multiple connections between two network switches or two ports on
+the same switch connected to each other).
 
-A loop can create broadcast storms when broadcast or unicast messages 
-are forwarded by switches in every port. These messages can be 
+A loop can create broadcast storms when broadcast or unicast messages
+are forwarded by switches in every port. These messages can be
 replicated indefinitely by network switches, causing the broadcast
-storm. Since the layer 2 header does not support a time to live (TTL) 
+storm. Since the layer 2 header does not support a time to live (TTL)
 value, if a frame is sent to a looped topology, it can loop forever.
 
 It is important to cite that this application **is not** working yet.
