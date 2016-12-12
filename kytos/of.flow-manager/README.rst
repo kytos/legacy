@@ -18,20 +18,20 @@ Protocol Operation
 
 The endpoints implemented by this napp is presented in table below.
 
-+----------------------------------+----------------------------------+---------+
-| Endpoint                         | Description                      | Method  |
-+==================================+==================================+=========+
-| ``/flow-manager/dpid/flows``     | Retrieve flows from a specific   | ``GET`` |
-|                                  | Switch                           |         |
-+----------------------------------+----------------------------------+---------+
-| ``/flow-manager/flows``          | Retrieve all flows               | ``GET`` |
-+----------------------------------+----------------------------------+---------+
-| ``/flow-manager/dpid/flows-a``   | Add a flow in a specific Switch  | ``POST` |
-|                                  |                                  | `       |
-+----------------------------------+----------------------------------+---------+
-| ``/flow-manager/dpid/flow_id/flo | Delete a flow from a specific    | ``DELET |
-| ws-d``                           | Switch                           | E``     |
-+----------------------------------+----------------------------------+---------+
++----------------------------------------+----------------------------------+------------+
+| Endpoint                               | Description                      | Method     |
++========================================+==================================+============+
+| ``/flow-manager/dpid/flows``           | Retrieve flows from a specific   | ``GET``    |
+|                                        | Switch                           |            |
++----------------------------------------+----------------------------------+------------+
+| ``/flow-manager/flows``                | Retrieve all flows               | ``GET``    |
++----------------------------------------+----------------------------------+------------+
+| ``/flow-manager/dpid/flows-a``         | Add a flow in a specific Switch  | ``POST``   |
+|                                        |                                  |            |
++----------------------------------------+----------------------------------+------------+
+| ``/flow-manager/dpid/flow_id/flows-d`` | Delete a flow from a specific    | ``DELETE`` |
+|                                        | Switch                           |            |
++----------------------------------------+----------------------------------+------------+
 
 How it Works
 ------------
