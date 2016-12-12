@@ -24,7 +24,7 @@ The endpoints implemented by this napp is presented in table below.
 |       `/flow-manager/dpid/flows`       | Retrieve flows from a specific Switch |   `GET`  |
 |           `/flow-manager/flows`          |           Retrieve all flows          |   `GET`  |
 |      `/flow-manager/dpid/flows-a`      |    Add a flow in a specific Switch    |  `POST`  |
-| /flow-manager/dpid/flow_id/flows-d` |  Delete a flow from a specific Switch | `DELETE` |
+| `/flow-manager/dpid/flow_id/flows-d` |  Delete a flow from a specific Switch | `DELETE` |
 
 
 How it Works
