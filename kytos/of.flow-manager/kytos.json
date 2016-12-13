@@ -1,0 +1,13 @@
+{
+  "name": "of.flow-manager",
+  "description": "NApp that manages switches flows.",
+  "long_description": "NApp that exports a REST API to add, remove, list and clean flows from switches.",
+  "version": "0.1.1",
+  "author": "kytos",
+  "ofversion": ["1.0"],
+  "dependencies": [],
+  "license": "MIT",
+  "git": "https://github.com/kytos/kyco-core-napps.git",
+  "branch": "develop",
+  "tags": ["openflow", "core", "flow"]
+}
