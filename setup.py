@@ -9,6 +9,9 @@ from subprocess import call
 
 from setuptools import Command, setup
 
+if 'bdist_wheel' in sys.argv:
+    raise RuntimeError("This setup.py does not support wheels")
+
 if 'VIRTUAL_ENV' in os.environ:
     BASE_ENV = os.environ['VIRTUAL_ENV']
 else:
