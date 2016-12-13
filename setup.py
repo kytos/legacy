@@ -92,7 +92,7 @@ def retrieve_apps(kytos_napps_path):
 requirements = parse_requirements('requirements.txt', session=False)
 
 setup(name='kyco-core-napps',
-      version='1.1.0b1.dev0',
+      version='1.1.0b1.dev1',
       description='Core Napps developed by Kytos Team',
       url='http://github.com/kytos/kyco-core-napps',
       author='Kytos Team',
