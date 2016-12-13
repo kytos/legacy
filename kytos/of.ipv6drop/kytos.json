@@ -8,5 +8,6 @@
   "dependencies": ["python-openflow >= 1.1.0b0"],
   "license": "MIT",
   "git": "https://github.com/kytos/kyco-core-napps.git",
+  "branch": "develop",
   "tags": ["openflow", "ipv6"]
 }

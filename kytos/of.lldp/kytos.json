@@ -8,5 +8,6 @@
   "dependencies": [],
   "license": "MIT",
   "git": "https://github.com/kytos/kyco-core-napps.git",
+  "branch": "develop",
   "tags": ["openflow", "lldp","network"]
 }
