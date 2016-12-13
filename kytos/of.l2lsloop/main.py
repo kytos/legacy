@@ -1,58 +1,40 @@
-"""This App is the responsible for the main OpenFlow basic operations."""
+"""Module responsible for the main OpenFlow basic operations."""
 
 import logging
 
-from pyof.v0x01.common.action import ActionOutput
-from pyof.v0x01.common.phy_port import Port
-
-from pyof.v0x01.common.flow_match import Match
-from pyof.v0x01.common.flow_match import FlowWildCards
-
 from pyof.foundation.basic_types import Ethernet
-
-from pyof.v0x01.controller2switch.flow_mod import FlowMod
-from pyof.v0x01.controller2switch.flow_mod import FlowModCommand
-from pyof.v0x01.controller2switch.flow_mod import FlowModFlags
-
+from pyof.v0x01.common.action import ActionOutput
+from pyof.v0x01.common.flow_match import FlowWildCards, Match
+from pyof.v0x01.common.phy_port import Port
+from pyof.v0x01.controller2switch.flow_mod import FlowMod, FlowModCommand
 from pyof.v0x01.controller2switch.packet_out import PacketOut
 
 from kyco.core.events import KycoEvent
 from kyco.core.napps import KycoCoreNApp
 from kyco.utils import listen_to
 
-
 log = logging.getLogger('KycoNApp')
 
 
 class Main(KycoCoreNApp):
-    """Main class of KycoCoreNApp, responsible for the main OpenFlow basic
-    operations.
-
-    """
+    """The main class for of.l2lsloop application."""
 
     def setup(self):
-        """'Replaces' the 'init' method for the KycoApp subclass.
-
-        The setup method is automatically called by the run method.
-        Users shouldn't call this method directly."""
-        # TODO: App information goes to app_name.json
+        """Method used to setup the of.l2lsloop application."""
         self.name = 'kytos.l2_learning_switch'
         self.controller.log_websocket.register_log(log)
 
     def execute(self):
-        """Method to be runned once on app 'start' or in a loop.
-
-        The execute method is called by the run method of KycoNApp class.
-        Users shouldn't call this method directly."""
+        """Do nothing."""
         pass
 
     @listen_to('kytos/of.core.messages.in.ofpt_packet_in')
     def handle_packet_in(self, event):
-        """Handle PacketIn Event by installing flows allowing communication
-        between switch ports.
+        """Method to handle flows to allow communication between switch ports.
 
         Args:
-            event (KycoPacketIn): Received Event
+            event (:class:`~kyco.core.events.KycoEvent):
+                event with packet_in message.
         """
         log.debug("PacketIn Received")
         packet_in = event.content['message']
@@ -75,9 +57,12 @@ class Main(KycoCoreNApp):
             flow_mod.match.dl_type = ethernet.type
             flow_mod.buffer_id = packet_in.buffer_id
             flow_mod.actions.append(ActionOutput(port=ports[0]))
-            event_out = KycoEvent(name='kytos/of.l2ls.messages.out.ofpt_flow_mod',
-                                  content={'destination': event.source,
-                                           'message': flow_mod})
+
+            message_name = 'kytos/of.l2ls.messages.out.ofpt_flow_mod'
+            content = {'destination': event.source,
+                       'message': flow_mod}
+            event_out = KycoEvent(name=message_name, content=content)
+
         elif switch.should_flood(ethernet):
             # Flood the packet if we haven't done it yet
             packet_out = PacketOut()
@@ -88,9 +73,11 @@ class Main(KycoCoreNApp):
 
             switch.update_flood_table(ethernet)
 
-            event_out = KycoEvent(name='kytos/of.l2ls.messages.out.ofpt_packet_out',
-                                  content={'destination': event.source,
-                                           'message': packet_out})
+            message_name = 'kytos/of.l2ls.messages.out.ofpt_packet_out'
+            content = {'destination': event.source,
+                       'message': packet_out}
+            event_out = KycoEvent(name=message_name,
+                                  content=content)
         else:
             log.debug("Not sending flood, since that was flooded already.")
             return
@@ -98,4 +85,5 @@ class Main(KycoCoreNApp):
         self.controller.buffers.msg_out.put(event_out)
 
     def shutdown(self):
-        pass
+        """End of the application."""
+        log.debug('Shutting down...')
