@@ -7,6 +7,7 @@ import os
 import sys
 from subprocess import call
 
+from pip.req import parse_requirements
 from setuptools import Command, setup
 
 if 'bdist_wheel' in sys.argv:
@@ -87,14 +88,17 @@ def retrieve_apps(kytos_napps_path):
     return apps
 
 
+# parse_requirements() returns generator of pip.req.InstallRequirement objects
+requirements = parse_requirements('requirements.txt', session=False)
+
 setup(name='kyco-core-napps',
-      version='1.1.0b0.post1',
+      version='1.1.0b1.dev0',
       description='Core Napps developed by Kytos Team',
       url='http://github.com/kytos/kyco-core-napps',
       author='Kytos Team',
       author_email='of-ng-dev@ncc.unesp.br',
       license='MIT',
-      install_requires=['python-openflow >= 1.1.0b0.post1'],
+      install_requires=[str(ir.req) for ir in requirements],
       data_files=retrieve_apps(os.path.join(BASE_ENV,
                                             'var/lib/kytos/napps/kytos/')),
       cmdclass={
