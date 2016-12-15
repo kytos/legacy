@@ -4,19 +4,32 @@
 Overview
 ########
 
-Core Network Applications(*NApps*) is part of *Kytos* project and was
-developed to be used with `Kytos Controller <http://github.com/kytos/kyco>`__.
-This repository contain only NApps developed by Kytos community. If you want
-develop yours NApps to use with Kytos you want create your own repository too.
+Core Network Applications(*NApps*) is part of *Kytos* project and was developed
+to be used with `Kytos Controller <http://github.com/kytos/kyco>`__.  This
+repository contain only NApps developed by Kytos core team.
 
-For more information about, please visit our `Kytos web site
-<http://kytos.io/>`__.
+Beside this Napps, new applications can be developed by third-part and may not
+be maintened by the core team. But of course that we support this and we provide
+a repository infrastructure so you can upload and share your napp.
+
+So basically this is a small set of Network Apps that is installed on your
+controller by default. Here you can learn how to enable and disable them as well
+as you will learn what is each one's scope.
+
+Please, feel free to use them as a starting point and reference for your own
+Napps.
+
+.. note:: When a napps have a experimental tag means that this napps doesn't
+   working properly yet.
 
 QuickStart
 **********
 
 There are two ways to install this package, from source (if you have cloned
 this repository) or via pip.
+
+And here, basically the install process is: a) install the requirements and b)
+copy all napps to a specific folder, so the controller can load them.
 
 Installing from PyPI
 ====================
@@ -80,24 +93,17 @@ way:
 Configuring
 ***********
 
-After *Kyco-core-napps* installation, this package create a folder at
-``/var/lib/kytos/napps`` where, by default, all networks applications are
-installed and working when *Kyco* is running. For kytos NApps there are a
-folder at ``/var/lib/kytos/napps/kytos/`` with all NApps from this repository.
+After *Kyco-core-napps* installation, this package copy all core napps to
+``/var/lib/kytos/napps/kytos/`` where, by default, all networks applications are
+loaded when *Kyco* is started.
 
-.. note:: When a napps have a experimental tag means that this napps doesn't
-   working properly yet.
+Please configure your controller to point to the root of this folder
+(``/var/lib/kytos/napps/`` in order to load theses napps.
 
-Authors
-*******
-
-For a complete list of authors, please open `AUTHORS <AUTHORS.rst>`__ file.
-
-License
-*******
-
-This software is under *MIT-License*. For more information please read
-`LICENSE <LICENCE>`__ file.
+You can also feel free to move this folder to another place into your system,
+but please remember to change this on your controller config file. For more
+information please visit the section "Configuration" on the `Kyco's
+Administrator Guide <http://docs.kytos.io/kyco/administrator/#configuration>`__.
 
 .. |Experimental| image:: https://img.shields.io/badge/stability-experimental-orange.svg
 .. |Openflow| image:: https://img.shields.io/badge/Openflow-1.0.0-brightgreen.svg
