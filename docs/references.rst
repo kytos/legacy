@@ -4,9 +4,7 @@
   :hidden:
 
   index
-  administrator/index
-  developer/index
-  API Reference <kytos>
+  Core NApps <napps/index>
   get_involved
   hacking
   AUTHORS
