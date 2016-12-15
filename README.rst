@@ -1,8 +1,8 @@
 |Experimental| |Openflow| |Pypi| |Tag| |Release| |License|
 
-========
+########
 Overview
-========
+########
 
 Core Network Applications(*NApps*) is part of *Kytos* project and was
 developed to be used with `Kytos Controller <http://github.com/kytos/kyco>`__.
@@ -13,13 +13,13 @@ For more information about, please visit our `Kytos web site
 <http://kytos.io/>`__.
 
 QuickStart
-----------
+**********
 
 There are two ways to install this package, from source (if you have cloned
 this repository) or via pip.
 
 Installing from PyPI
-++++++++++++++++++++
+====================
 
 *Kyco-core-napps* is in PyPI, so you can easily install it via `pip3` (`pip`
 for Python 3) and also include this project in your `requirements.txt`
@@ -27,7 +27,7 @@ for Python 3) and also include this project in your `requirements.txt`
 If you do not have `pip3`, the procedures to install are:
 
 Ubuntu/Debian
-=============
+-------------
 
 .. code-block:: shell
 
@@ -35,7 +35,7 @@ Ubuntu/Debian
     $ sudo apt-get install python3-pip
 
 Fedora
-======
+------
 
 .. code-block:: shell
 
@@ -43,7 +43,7 @@ Fedora
     $ sudo dnf install python3-pip
 
 Centos
-======
+------
 
 .. code-block:: shell
 
@@ -61,7 +61,7 @@ After installed `pip3` you can install *Kyco-core-napps* running:
     $ sudo pip3 install kyco-core-napps
 
 Installing from source code
-+++++++++++++++++++++++++++
+===========================
 
 First you need to clone `kyco-core-napps` repository:
 
@@ -78,7 +78,7 @@ way:
    $ sudo python3 setup.py install
 
 Configuring
------------
+***********
 
 After *Kyco-core-napps* installation, this package create a folder at
 ``/var/lib/kytos/napps`` where, by default, all networks applications are
@@ -89,12 +89,12 @@ folder at ``/var/lib/kytos/napps/kytos/`` with all NApps from this repository.
    working properly yet.
 
 Authors
--------
+*******
 
 For a complete list of authors, please open `AUTHORS <AUTHORS.rst>`__ file.
 
 License
--------
+*******
 
 This software is under *MIT-License*. For more information please read
 `LICENSE <LICENCE>`__ file.
