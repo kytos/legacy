@@ -2,8 +2,8 @@
 Hacking
 #######
 
-Before reading this file, please read the :doc:`guidelines` section that
-contains the main guidelines of the project.
+.. note:: Before reading this file, please read the :doc:`guidelines` section
+    that contains the main guidelines of the project.
 
 Development Environment Setup
 *****************************
@@ -16,7 +16,7 @@ the command line (while in the repository root folder):
 
 .. code:: shell
 
-    export PYTHONPATH=`pwd`/ofp:$PYTHONPATH
+    export PYTHONPATH=`pwd`/kytos:$PYTHONPATH
 
 Remember that every time you start a new shell instance you will have to repeat
 the command above, since this is an environment variable. To have it executed
@@ -82,7 +82,7 @@ bash, then you need to run the ``workon`` command to activate the environment:
 
 .. code:: shell
 
-    workon python-openflow
+    workon kyco-core-napps
 
 See more virtualenvwrapper commands on:
 http://virtualenvwrapper.readthedocs.org/en/latest/command_ref.html
@@ -134,5 +134,5 @@ To run check the code test coverage, first run:
 
 To see the command line report run the command ``coverage report`` and, to
 generate a HTML report, run: ``coverage html`` and open the file
-**html\_cov/index.html** into your browser
-(you can run ``open html_cov/index.html``).
+**html\_cov/index.html** into your browser (you can run ``open
+html_cov/index.html``).
