@@ -15,8 +15,9 @@ historical data, and also some calculated information.
 
 The provided statistics, per switch, are the following:
 
-* **Ports/Interfaces**: bytes/sec, utilization, dropped packets/sec and errors/sec split
-  into transmission and reception; interface name, MAC address and link speed (bps);
+* **Ports/Interfaces**: bytes/sec, utilization, dropped packets/sec and
+  errors/sec split into transmission and reception; interface name, MAC address
+  and link speed (bps);
 * **Flows**: packets/sec, bytes/sec;
 
 ############
@@ -26,7 +27,7 @@ Requirements
 Besides Python packages described in *requirements.txt*,
 `rrdtool <http://www.rrdtool.org>`__ is required and must be installed by you.
 
- .. note:: Today, we are using rrd to persist this data. But in fact future
+.. note:: Today, we are using rrd to persist this data. But in fact future
     versions of this napp will allow you to choose what kind of backend you
     want to use.
 
@@ -39,13 +40,12 @@ This is a default Kytos Network Application and the installation process is
 straight forward: Just copy the ``kytos/of.stats`` directory to your napps
 directory. The default path is ``/var/lib/kytos/napps/``.
 
- .. note:: Please note that you should copy from the root of the napp (including
+.. note:: Please note that you should copy from the root of the napp (including
     the ``kyto`` folder).
 
-
-But if you are going to install the whole repository (with all napps) you don't
-have to worry about this. Because all napps will be copied into the napps folder
-during the installation process.
+If you are going to install the whole repository, with all napps, you do not
+have to worry about the above procedings, since all napps will be copied into
+the correct napps folder during the installation process.
 
 REST API
 ========
