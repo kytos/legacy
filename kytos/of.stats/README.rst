@@ -43,6 +43,10 @@ directory. The default path is ``/var/lib/kytos/napps/``.
     the ``kyto`` folder).
 
 
+But if you are going to install the whole repository (with all napps) you don't
+have to worry about this. Because all napps will be copied into the napps folder
+during the installation process.
+
 REST API
 ========
 
