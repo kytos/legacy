@@ -1,84 +1,67 @@
+########
 Overview
-========
+########
 
-The *of.stats* application collects, stores and provides statistics
-about the following data per switch:
+In order to manage a network, an administrator must have updated and reliable
+statistics about the network, in several levels of deepness, since from a
+switch port inbound and outbound traffic to the traffic of different connected
+networks.
 
-  * **Ports**: bytes/sec, utilization, dropped packets/sec and errors/sec split into transmission and reception; interface name, MAC address and link speed (bps);
-  * **Flows**: packets/sec, bytes/sec;
-  * **Description**: manufacturer, hardware, software and datapath descriptions and serial number;
+To achieve this, this Network Application collect statistical data provided by
+the switches connected to the controller. We *do not use SNMP protocol* because
+the OpenFlow protocol already provide these data. The data is stored to be
+provided later throught a REST API. This API can supply instant data,
+historical data, and also some calculated informations.
 
+The provided statistics, per switch, are the following:
+
+* **Ports**: bytes/sec, utilization, dropped packets/sec and errors/sec split
+  into transmission and reception; interface name, MAC address and link speed
+  (bps);
+* **Flows**: packets/sec, bytes/sec;
+* **Description**: manufacturer, hardware, software and datapath descriptions
+  and serial number;
+
+############
 Requirements
-------------
+############
 
-Besides Python packages in *requirements.txt*,
-`rrdtool <http://www.rrdtool.org>`__ is required.
+Besides Python packages described in *requirements.txt*,
+`rrdtool <http://www.rrdtool.org>`__ is required and must be installed by you.
 
-REST API
-========
+#####
+USAGE
+#####
 
-Port Statistics
----------------
-
--  **/kytos/stats/[*dpid*]/ports**: List all ports of the switch
-   identified by *dpid* and the latest number for each statistic type.
-   Also provide the interface name, MAC address and link speed (bps);
--  **/kytos/stats/[*dpid*]/ports/[*port*]**: Provide more numbers
-   (latest ones) for each statistic type for port *port* of switch
-   *dpid*;
--  **/kytos/stats/[*dpid*]/ports/[*port*]?start=[*start*]&end=[*end*]**:
-   Provide statistics between *start* and *end* (UNIX timestamps). If
-   **start=[*start*]&** is omitted, use the oldest entry as *start*. If
-   **&end=[*end*]** is omitted, use the time of the request as *end*.
-
-Flow Statistics
----------------
-
--  **/kytos/stats/[*dpid*]/flows**: List all flows of the switch
-   identified by *dpid*, their IDs and the latest number for each
-   statistic type;
--  **/kytos/stats/[*dpid*]/flows/[*ID*]**: Provide more numbers (latest
-   ones) for each statistic for flow *ID* of switch *dpid*.
--  **/kytos/stats/[*dpid*]/flows/[*ID*]?start=[*start*]&end=[*end*]**:
-   Provide statistics between *start* and *end* (UNIX timestamps). If
-   **start=[*start*]&** is omitted, use the oldest entry as *start*. If
-   **&end=[*end*]** is omitted, use the time of the request as *end*.
-
-Advanced
-========
-
-Overriding Link Speed
----------------------
-
+*************
+Configuration
+*************
 If you are not satisfied with the link speed provided by the OpenFlow
-specification, you can set the exact speed of your links in the file
-``user_speed.json``. To create it, follow ``user_speed.example.json``
-and the following notes: \* Speed values are in Gbps; \* Default values:
-\* They are optional, but can save a lot of typing; \* The first
-*default* will be used when *dpid* is not found in the file; \* A
-*default* value inside a *dpid* will be used for ports that are not
-specified in that *dpid*.
+specification, you can override the switch port speed information by writing
+the desired port speed in a file named **user_speed.json** on the root folder
+of this NApp. To create it, follow **user_speed.example.json** and the
+following notes:
+
+* Speed values are in Gbps;
+* Default values:
+  * They are optional, but can save a lot of typing;
+  * The first *default* will be used when dpid is not found in the file;
+  * A *default* value inside a *dpid* will be used for ports that are not specified in that dpid.
 
 There is no need to restart the controller after creating or changing
-``user_speed.json``. It is recommended to watch the controller log in
-case there is a syntax problem.
+**user_speed.json**. It is recommended to watch the controller log in case
+there is a syntax error
 
-Developers
-----------
-
-To run tests:
-
-.. code:: bash
-
-    cd kytos/of.stats
-    python -m unittest
+********************
+Non-rest interaction
+********************
 
 RRD Graphs
-----------
+==========
 
-If you want to generate graphs using RRD instead of kytos admin web ui,
-this is a quick way to do it. This example assumes you are in a
-subfolder with the desired ``rrd`` file.
+If you want to generate graphs using RRD instead of kytos admin web ui, this is
+a quick way to do it. This example assumes you are in a subfolder with the
+desired ``rrd`` file.
 
 1. First, get the **first** and **last** useful timestamps with:
 
@@ -99,3 +82,30 @@ subfolder with the desired ``rrd`` file.
 
        rrdtool graph speed.png --start [first-1] --end [last-1] \
          DEF:speed=file.rrd:rx_bytes:AVERAGE LINE2:speed#FF0000
+
+
+REST API
+========
+
+As stated on the *Overview* section, this NApp provide some statistics through
+a REST API. There are two main groups of statistics provided:
+
+* **Port Statistics**;
+* **Flow Statistics**.
+
+All endpoints provided by this NApp are GET Endpoints only, so no POSTs are
+allowed. Moreover, the endpoints are all under the url:
+*http://<api_url_domain>[:port]/kytos/**stats***.
+
+##########
+Developers
+##########
+
+If you are going to contribute on the code of this NApp, please remember to run
+the test suite prior to do a Pull Request. To run the tests run the following
+command:
+
+.. code:: bash
+
+    cd kytos/of.stats
+    python -m unittest
