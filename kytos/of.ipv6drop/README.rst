@@ -11,6 +11,6 @@ represents a new switch connected) and send to this switch a FlowMod
 message to install the DROP IPv6 flow (match ``dl_type`` == ``0x86dd``).
 
 Requirements
-------------
+============
 
 All requirements is installed using the *requirements.txt* packages.
