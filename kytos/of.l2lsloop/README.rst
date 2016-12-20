@@ -14,6 +14,21 @@ value, if a frame is sent to a looped topology, it can loop forever.
 
 It is important to cite that this application **is not** working yet.
 
+Installing
+==========
+
+This is a default Kytos Network Application and the installation process is
+straight forward: Just copy the ``kytos/of.l2lsloop`` directory to your napps
+directory. The default path is ``/var/lib/kytos/napps/``.
+
+.. note:: Please note that you must copy from the root of the napp (including
+    the ``kyto`` folder). So you will have
+    ``/var/lib/kytos/napps/kytos/of.l2lsloop`` at the end.
+
+If you are going to install the whole repository, with all napps, you do not
+have to worry about the above procedings, since all napps will be copied into
+the correct napps folder during the installation process.
+
 Advanced
 ========
 
