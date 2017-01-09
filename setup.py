@@ -10,6 +10,8 @@ from subprocess import call
 from pip.req import parse_requirements
 from setuptools import Command, setup
 
+from setuptools.command.install import install
+
 if 'bdist_wheel' in sys.argv:
     raise RuntimeError("This setup.py does not support wheels")
 
@@ -74,6 +76,18 @@ class FastLinter(Linter):
                          'Run the slower "lint" after solving these issues:'
 
 
+napps_path = os.path.join(BASE_ENV, 'var/lib/kytos/napps/')
+installed_path = napps_path + '.installed/kytos/'
+enabled_path = napps_path + 'kytos/'
+
+class Installer(install):
+    """Customized setuptools install command - prints a friendly greeting."""
+
+    def run(self):
+        """Create of_core as default napps enabled."""
+        install.run(self)
+        os.symlink(installed_path+'of_core', enabled_path+'of_core')
+
 def retrieve_apps(kytos_napps_path):
     """Retrieve the list of files within each app directory."""
     apps = []
@@ -87,15 +101,11 @@ def retrieve_apps(kytos_napps_path):
         apps.append((os.path.join(kytos_napps_path, napp_name), app_files))
     return apps
 
-
 def napps_structures():
-    napps_path = os.path.join(BASE_ENV, 'var/lib/kytos/napps/')
-    installed_path = napps_path + '.installed/kytos/'
-    enabled_path = napps_path + 'kytos/'
-
     directories = retrieve_apps(installed_path)
     directories.append((enabled_path,[]))
     return directories
+
 
 # parse_requirements() returns generator of pip.req.InstallRequirement objects
 requirements = parse_requirements('requirements.txt', session=False)
@@ -112,6 +122,7 @@ setup(name='kyco-core-napps',
       data_files=napps_structures(),
       cmdclass={
           'lint': Linter,
-          'quick_lint': FastLinter
+          'quick_lint': FastLinter,
+          'install': Installer
       },
       zip_safe=False)
