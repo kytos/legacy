@@ -87,6 +87,8 @@ class Installer(install):
         """Create of_core as default napps enabled."""
         install.run(self)
         os.symlink(installed_path+'of_core', enabled_path+'of_core')
+        open(napps_path+'__init__.py', 'w').close()
+        open(enabled_path+'__init__.py', 'w').close()
 
 def retrieve_apps(kytos_napps_path):
     """Retrieve the list of files within each app directory."""
