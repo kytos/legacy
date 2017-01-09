@@ -88,8 +88,18 @@ def retrieve_apps(kytos_napps_path):
     return apps
 
 
+def napps_structures():
+    napps_path = os.path.join(BASE_ENV, 'var/lib/kytos/napps/')
+    installed_path = napps_path + '.installed/kytos/'
+    enabled_path = napps_path + 'kytos/'
+
+    directories = retrieve_apps(installed_path)
+    directories.append((enabled_path,[]))
+    return directories
+
 # parse_requirements() returns generator of pip.req.InstallRequirement objects
 requirements = parse_requirements('requirements.txt', session=False)
+
 
 setup(name='kyco-core-napps',
       version='1.1.0b1.dev1',
@@ -99,8 +109,7 @@ setup(name='kyco-core-napps',
       author_email='of-ng-dev@ncc.unesp.br',
       license='MIT',
       install_requires=[str(ir.req) for ir in requirements],
-      data_files=retrieve_apps(os.path.join(BASE_ENV,
-                                            'var/lib/kytos/napps/kytos/')),
+      data_files=napps_structures(),
       cmdclass={
           'lint': Linter,
           'quick_lint': FastLinter
