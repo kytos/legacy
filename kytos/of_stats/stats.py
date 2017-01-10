@@ -2,6 +2,7 @@
 
 import time
 from abc import ABCMeta, abstractmethod
+from os.path import dirname
 from pathlib import Path
 
 from flask import Response, request
@@ -14,7 +15,8 @@ from pyof.v0x01.controller2switch.common import (AggregateStatsRequest,
                                                  FlowStatsRequest,
                                                  PortStatsRequest)
 from pyof.v0x01.controller2switch.stats_request import StatsRequest, StatsTypes
-from napps.kytos.of_stats.settings import log, STATS_INTERVAL, rrd_lock
+from napps.kytos.of_stats import settings
+from napps.kytos.of_stats.settings import log
 
 
 class Stats(metaclass=ABCMeta):
@@ -52,25 +54,6 @@ class RRD:
 
     It store statistics every :data:`STATS_INTERVAL`.
     """
-
-    _DIR = Path(__file__).parent / 'rrd'
-    #: If no new data is supplied for more than *_TIMEOUT* seconds,
-    #: the temperature becomes *UNKNOWN*.
-    _TIMEOUT = 2 * STATS_INTERVAL
-    #: Minimum accepted value
-    _MIN = 0
-    #: Maximum accepted value is the maximum PortStats attribute value.
-    _MAX = 2**64 - 1
-    #: The xfiles factor defines what part of a consolidation interval may be
-    #: made up from *UNKNOWN* data while the consolidated value is still
-    #: regarded as known. It is given as the ratio of allowed *UNKNOWN* PDPs
-    #: to the number of PDPs in the interval. Thus, it ranges from 0 to 1
-    #: (exclusive).
-    _XFF = '0.5'
-    #: How long to keep the data. Accepts s (seconds), m (minutes), h (hours),
-    #: d (days), w (weeks), M (months), and y (years).
-    #: Must be a multiple of consolidation steps.
-    _PERIOD = '30d'
 
     def __init__(self, app_folder, data_sources):
         """Specify a folder to store RRDs.
@@ -116,7 +99,7 @@ class RRD:
         See Also:
             :meth:`get_or_create_rrd`
         """
-        path = self._DIR / self._app
+        path = settings._DIR / self._app
         folders, basename = index[:-1], index[-1]
         for folder in folders:
             path = path / folder
@@ -153,7 +136,7 @@ class RRD:
         """
         if tstamp is None:
             tstamp = 'N'
-        options = [rrd, '--start', str(tstamp), '--step', str(STATS_INTERVAL)]
+        options = [rrd, '--start', str(tstamp), '--step', str(settings.STATS_INTERVAL)]
         options.extend([self._get_counter(ds) for ds in self._ds])
         options.extend(self._get_archives())
         with rrd_lock:
@@ -191,7 +174,7 @@ class RRD:
         if end == 'now':
             end = int(time.time())
         if start == 'first':
-            with rrd_lock:
+            with settings.rrd_lock:
                 start = rrdtool.first(rrd)
 
         # Find the best matching resolution for returning n_points.
@@ -210,7 +193,7 @@ class RRD:
 
         args = [rrd, 'AVERAGE', '--start', str(start), '--end', str(end)]
         args.extend(res_args)
-        with rrd_lock:
+        with settings.rrd_lock:
             tstamps, cols, rows = rrdtool.fetch(*args)
         start, stop, step = tstamps
         # rrdtool range is different from Python's.
@@ -221,7 +204,7 @@ class RRD:
 
         Return zero values if there are no values recorded.
         """
-        start = 'end-{}s'.format(STATS_INTERVAL * 3)  # two rows
+        start = 'end-{}s'.format(settings.STATS_INTERVAL * 3)  # two rows
         try:
             tstamps, cols, rows = self.fetch(index, start, end='now')
         except FileNotFoundError:
@@ -229,7 +212,7 @@ class RRD:
             pass
         # Last rows may have future timestamp and be empty
         latest = None
-        min_tstamp = int(time.time()) - STATS_INTERVAL * 2
+        min_tstamp = int(time.time()) - settings.STATS_INTERVAL * 2
         # Search backwards for non-null values
         for tstamp, row in zip(tstamps[::-1], rows[::-1]):
             if row[0] is not None and tstamp > min_tstamp:
@@ -240,8 +223,8 @@ class RRD:
         return {k: v for k, v in zip(cols, latest)}
 
     def _get_counter(self, ds):
-        return 'DS:{}:COUNTER:{}:{}:{}'.format(ds, self._TIMEOUT, self._MIN,
-                                               self._MAX)
+        return 'DS:{}:COUNTER:{}:{}:{}'.format(ds, settings._TIMEOUT, settings._MIN,
+                                               settings._MAX)
 
     @classmethod
     def _get_archives(cls):
@@ -250,8 +233,8 @@ class RRD:
         # One month stats for the following periods:
         for steps in ('30s', '1m', '2m', '4m', '8m', '15m', '30m', '1h', '2h',
                       '4h', '8h', '12h', '1d', '2d', '3d', '6d', '10d', '15d'):
-            averages.append('RRA:AVERAGE:{}:{}:{}'.format(cls._XFF, steps,
-                                                          cls._PERIOD))
+            averages.append('RRA:AVERAGE:{}:{}:{}'.format(settings._XFF, steps,
+                                                          settings._PERIOD))
         # averages = ['RRA:AVERAGE:0:1:1d']  # More samples for testing
         return averages
 

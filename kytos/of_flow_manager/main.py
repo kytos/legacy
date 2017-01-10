@@ -1,6 +1,5 @@
 """This App is the responsible to install or remove flows from switches"""
 
-import logging
 import json
 from flask import request
 
@@ -9,8 +8,8 @@ from kyco.core.flow import Flow
 from kyco.core.napps import KycoCoreNApp
 from pyof.v0x01.controller2switch.flow_mod import FlowModCommand
 
-STATS_INTERVAL = 30
-log = logging.getLogger('flow_manager')
+from napps.kytos.flow_manager import settings
+from napps.kytos.flow_manager.settings import log
 
 
 class Main(KycoCoreNApp):
@@ -24,7 +23,7 @@ class Main(KycoCoreNApp):
 
         The setup method is automatically called by the run method.
         Users shouldn't call this method directly."""
-        self.execute_as_loop(STATS_INTERVAL)
+        self.execute_as_loop(settings.STATS_INTERVAL)
         self.flow_manager = FlowManager(self.controller)
         self.controller.log_websocket.register_log(log)
         self.controller.register_rest_endpoint('/flow-manager/<dpid>/flows',

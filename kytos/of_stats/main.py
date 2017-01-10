@@ -4,9 +4,10 @@ from kyco.core.napps import KycoNApp
 from kyco.utils import listen_to
 from pyof.v0x01.controller2switch.stats_request import StatsRequest, StatsTypes
 
+from napps.kytos.of_stats import settings
+from napps.kytos.of_stats.settings import log
 from napps.kytos.of_stats.stats import Description, PortStats, FlowStats
 from napps.kytos.of_stats.stats_api import FlowStatsAPI, PortStatsAPI, StatsAPI
-from napps.kytos.of_stats.settings import STATS_INTERVAL, log
 
 
 class Main(KycoNApp):
@@ -18,7 +19,7 @@ class Main(KycoNApp):
         self._stats = {StatsTypes.OFPST_DESC.value: Description(msg_out),
                        StatsTypes.OFPST_PORT.value: PortStats(msg_out),
                        StatsTypes.OFPST_FLOW.value: FlowStats(msg_out)}
-        self.execute_as_loop(STATS_INTERVAL)
+        self.execute_as_loop(settings.STATS_INTERVAL)
         Description.controller = self.controller
 
         StatsAPI.controller = self.controller

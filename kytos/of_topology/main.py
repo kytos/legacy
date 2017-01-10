@@ -1,7 +1,6 @@
 """App responsible to update links detail and create a network topology."""
 
 import json
-import logging
 
 from pyof.foundation.basic_types import HWAddress
 from pyof.foundation.network_types import Ethernet
@@ -9,7 +8,8 @@ from pyof.foundation.network_types import Ethernet
 from kyco.core.napps import KycoCoreNApp
 from kyco.utils import listen_to
 
-log = logging.getLogger('of.topology')
+from napps.kytos.of_topology import settings
+from napps.kytos.of_topology.settings import log
 
 
 class Main(KycoCoreNApp):
@@ -48,7 +48,7 @@ class Main(KycoCoreNApp):
         """
         ethernet = Ethernet()
         ethernet.unpack(event.message.data.value)
-        if ethernet.type != 0x88cc:
+        if ethernet.type != settings.lldp_ethertype:
             port_no = event.message.in_port
             hw_address = ethernet.source
             switch = event.source.switch
