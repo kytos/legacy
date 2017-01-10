@@ -8,7 +8,7 @@ from flask import Response, request
 
 from pyof.v0x01.common.phy_port import Port
 from napps.kytos.of_stats import settings
-from napps.kytos.of_stats.settings import log
+log = settings.log
 from napps.kytos.of_stats.stats  import PortStats, FlowStats
 
 class StatsAPI(metaclass=ABCMeta):

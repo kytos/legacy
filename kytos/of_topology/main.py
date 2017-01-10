@@ -9,7 +9,7 @@ from kyco.core.napps import KycoCoreNApp
 from kyco.utils import listen_to
 
 from napps.kytos.of_topology import settings
-from napps.kytos.of_topology.settings import log
+log = settings.log
 
 
 class Main(KycoCoreNApp):

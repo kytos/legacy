@@ -5,7 +5,7 @@ from kyco.utils import listen_to
 from pyof.v0x01.controller2switch.stats_request import StatsRequest, StatsTypes
 
 from napps.kytos.of_stats import settings
-from napps.kytos.of_stats.settings import log
+log = settings.log
 from napps.kytos.of_stats.stats import Description, PortStats, FlowStats
 from napps.kytos.of_stats.stats_api import FlowStatsAPI, PortStatsAPI, StatsAPI
 

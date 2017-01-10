@@ -9,7 +9,7 @@ from kyco.core.events import KycoMessageInEchoReply, KycoMessageOutEchoRequest
 from kyco.utils import KycoCoreNApp, listen_to, now
 
 from napps.kytos.liveness import settings
-from napps.kytos.liveness.settings import log
+log = settings.log
 
 
 class Main(KycoCoreNApp):

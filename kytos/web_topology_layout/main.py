@@ -9,7 +9,7 @@ from flask import request
 from kyco.core.napps import KycoCoreNApp
 
 from napps.kytos.web_topology_layout import settings
-from napps.kytos.web_topology_layout.settings import log
+log = settings.log
 
 makedirs(settings.TOPOLOGY_DIR, exist_ok=True)
 

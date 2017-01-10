@@ -11,7 +11,7 @@ from kyco.core.napps import KycoCoreNApp
 from kyco.utils import listen_to
 
 from napps.kytos.of_lldp import settings
-from napps.kytos.of_lldp.settings import log
+log = settings.log
 
 
 class Main(KycoCoreNApp):

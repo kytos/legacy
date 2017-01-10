@@ -16,7 +16,7 @@ from pyof.v0x01.controller2switch.common import (AggregateStatsRequest,
                                                  PortStatsRequest)
 from pyof.v0x01.controller2switch.stats_request import StatsRequest, StatsTypes
 from napps.kytos.of_stats import settings
-from napps.kytos.of_stats.settings import log
+log = settings.log
 
 
 class Stats(metaclass=ABCMeta):

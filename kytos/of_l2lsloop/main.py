@@ -13,7 +13,7 @@ from kyco.core.napps import KycoCoreNApp
 from kyco.utils import listen_to
 
 from napps.kytos.of_l2lsloop import settings
-from napps.kytos.of_l2lsloop.settings import log
+log = settings.log
 
 
 class Main(KycoCoreNApp):

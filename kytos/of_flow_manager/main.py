@@ -9,7 +9,7 @@ from kyco.core.napps import KycoCoreNApp
 from pyof.v0x01.controller2switch.flow_mod import FlowModCommand
 
 from napps.kytos.flow_manager import settings
-from napps.kytos.flow_manager.settings import log
+log = settings.log
 
 
 class Main(KycoCoreNApp):

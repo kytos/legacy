@@ -11,7 +11,7 @@ from pyof.v0x01.controller2switch.flow_mod import FlowMod, FlowModCommand
 from pyof.v0x01.controller2switch.packet_out import PacketOut
 
 from napps.kytos.of_l2ls import settings
-from napps.kytos.of_l2ls.settings import log
+log = settings.log
 
 
 class Main(KycoCoreNApp):

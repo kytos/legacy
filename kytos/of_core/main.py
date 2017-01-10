@@ -14,7 +14,7 @@ from kyco.core.switch import Interface
 from kyco.utils import listen_to
 
 from napps.kytos.of_core import settings
-from napps.kytos.of_core.settings import log
+log = settings.log
 
 
 class Main(KycoCoreNApp):
