@@ -34,6 +34,7 @@ class Main(KycoCoreNApp):
                 output_action = ActionOutput()
                 output_action.port = port.port_no
 
+                # Avoid ports with speed == 0
                 if port.port_no.value == 65534:
                     continue
 
