@@ -24,22 +24,28 @@ else:
 NAPPS_PATHS = {
     'main': os.path.join(BASE_ENV, 'var/lib/kytos/napps')
 }
-NAPPS_PATHS['installed'] = os.path.join(NAPPS_PATHS.get('main') + '.installed')
-NAPPS_PATHS['enabled'] = os.path.join(NAPPS_PATHS.get('main') + 'kytos')
+NAPPS_PATHS['installed'] = os.path.join(NAPPS_PATHS.get('main'), '.installed')
+NAPPS_PATHS['enabled'] = os.path.join(NAPPS_PATHS.get('main'), 'kytos')
 CORE_NAPPS = ['of_core']
 
 
 def enable_core_napps():
     """Enable a NAPP by creating a symlink."""
     for napp in CORE_NAPPS:
-        src = os.path.join(NAPPS_PATHS.get('installed'), 'kytos', napp_name)
-        dst = os.path.join(NAPPS_PATHS.get('enabled'), napp_name)
+        src = os.path.join(NAPPS_PATHS.get('installed'), 'kytos', napp)
+        dst = os.path.join(NAPPS_PATHS.get('enabled'), napp)
         os.symlink(src, dst)
 
     # Create the __init__.py file for the 'napps' directory and also the
     # 'napps/kytos' directory
     open(NAPPS_PATHS.get('main')+'/__init__.py', 'w').close()
     open(NAPPS_PATHS.get('enabled')+'/__init__.py', 'w').close()
+
+
+def create_napps_base_folders():
+    for directory in NAPPS_PATHS:
+        if not os.path.exists(directory):
+            os.makedirs(directory, exist_ok=True)
 
 
 class Doctest(Command):
@@ -102,6 +108,7 @@ class InstallMode(install):
 
     def run(self):
         """Create of_core as default napps enabled."""
+        create_napps_base_folders()
         install.run(self)
 
         # Enable each defined 'CORE_NAPP'
@@ -117,6 +124,7 @@ class DevelopMode(develop):
         Instead of copying the files to the expected directories, a symlink is
         created on the system aiming the current source code.
         """
+        create_napps_base_folders()
         develop.run(self)
         origin_path = os.path.dirname(os.path.realpath(__file__))
 
