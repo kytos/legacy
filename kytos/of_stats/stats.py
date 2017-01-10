@@ -81,7 +81,7 @@ class RRD:
             tstamp = 'N'
         rrd = self.get_or_create_rrd(index)
         data = ':'.join(str(ds_values[ds]) for ds in self._ds)
-        with rrd_lock:
+        with settings.rrd_lock:
             rrdtool.update(rrd, '{}:{}'.format(tstamp, data))
 
     def get_rrd(self, index):
@@ -139,7 +139,7 @@ class RRD:
         options = [rrd, '--start', str(tstamp), '--step', str(settings.STATS_INTERVAL)]
         options.extend([self._get_counter(ds) for ds in self._ds])
         options.extend(self._get_archives())
-        with rrd_lock:
+        with settings.rrd_lock:
             rrdtool.create(*options)
 
     def fetch(self, index, start='first', end='now', n_points=None):

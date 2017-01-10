@@ -5,7 +5,8 @@ import unittest
 from pathlib import Path
 
 from unittest import mock
-from main import UserSpeed
+
+from napps.kytos.of_stats.stats_api import UserSpeed
 
 logging.basicConfig(level=logging.CRITICAL)
 

@@ -298,10 +298,10 @@ class UserSpeed:
         if switch is None:
             speed = self._speed.get('default')
         else:
-            if port is None or str(port) not in switch:
+            if port is None or port not in switch:
                 speed = switch.get('default')
             else:
-                speed = switch[str(port)]
+                speed = switch.get(port)
         if speed is not None:
             speed *= 10**9
         return speed
