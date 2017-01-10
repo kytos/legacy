@@ -99,7 +99,7 @@ class RRD:
         See Also:
             :meth:`get_or_create_rrd`
         """
-        path = settings._DIR / self._app
+        path = settings.DIR / self._app
         folders, basename = index[:-1], index[-1]
         for folder in folders:
             path = path / folder
@@ -223,8 +223,8 @@ class RRD:
         return {k: v for k, v in zip(cols, latest)}
 
     def _get_counter(self, ds):
-        return 'DS:{}:COUNTER:{}:{}:{}'.format(ds, settings._TIMEOUT, settings._MIN,
-                                               settings._MAX)
+        return 'DS:{}:COUNTER:{}:{}:{}'.format(ds, settings.TIMEOUT, settings.MIN,
+                                               settings.MAX)
 
     @classmethod
     def _get_archives(cls):
@@ -233,8 +233,8 @@ class RRD:
         # One month stats for the following periods:
         for steps in ('30s', '1m', '2m', '4m', '8m', '15m', '30m', '1h', '2h',
                       '4h', '8h', '12h', '1d', '2d', '3d', '6d', '10d', '15d'):
-            averages.append('RRA:AVERAGE:{}:{}:{}'.format(settings._XFF, steps,
-                                                          settings._PERIOD))
+            averages.append('RRA:AVERAGE:{}:{}:{}'.format(settings.XFF, steps,
+                                                          settings.PERIOD))
         # averages = ['RRA:AVERAGE:0:1:1d']  # More samples for testing
         return averages
 

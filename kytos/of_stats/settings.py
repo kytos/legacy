@@ -15,26 +15,26 @@ rrd_lock = Lock()
 
 # RRD Tool Settings
 
-_DIR = Path(__file__).parent / 'rrd'
+DIR = Path(__file__).parent / 'rrd'
 
 # If no new data is supplied for more than *_TIMEOUT* seconds,
 # the temperature becomes *UNKNOWN*.
-_TIMEOUT = 2 * STATS_INTERVAL
+TIMEOUT = 2 * STATS_INTERVAL
 
 # Minimum accepted value
-_MIN = 0
+MIN = 0
 
 # Maximum accepted value is the maximum PortStats attribute value.
-_MAX = 2 ** 64 - 1
+MAX = 2 ** 64 - 1
 
 # The xfiles factor defines what part of a consolidation interval may be
 # made up from *UNKNOWN* data while the consolidated value is still
 # regarded as known. It is given as the ratio of allowed *UNKNOWN* PDPs
 # to the number of PDPs in the interval. Thus, it ranges from 0 to 1
 # (exclusive).
-_XFF = '0.5'
+XFF = '0.5'
 
 # How long to keep the data. Accepts s (seconds), m (minutes), h (hours),
 # d (days), w (weeks), M (months), and y (years).
 # Must be a multiple of consolidation steps.
-_PERIOD = '30d'
+PERIOD = '30d'

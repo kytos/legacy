@@ -8,8 +8,11 @@ from flask import Response, request
 
 from pyof.v0x01.common.phy_port import Port
 from napps.kytos.of_stats import settings
-log = settings.log
 from napps.kytos.of_stats.stats  import PortStats, FlowStats
+
+
+log = settings.log
+
 
 class StatsAPI(metaclass=ABCMeta):
     """Class to answer REST API requests."""
