@@ -1,7 +1,7 @@
 import logging
 
 # Log Registry Type
-log = logging.getLogger('flow_manager')
+log = logging.getLogger(__name__)
 
 # Pooling frequency
 STATS_INTERVAL = 30

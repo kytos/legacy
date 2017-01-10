@@ -1,4 +1,4 @@
 import logging
 
 # Log Registry Type
-log = logging.getLogger('KycoNApp')
+log = logging.getLogger(__name__)
