@@ -11,6 +11,7 @@ from pip.req import parse_requirements
 from setuptools import Command, setup
 
 from setuptools.command.install import install
+from setuptools.command.develop import develop
 
 if 'bdist_wheel' in sys.argv:
     raise RuntimeError("This setup.py does not support wheels")
@@ -76,19 +77,37 @@ class FastLinter(Linter):
                          'Run the slower "lint" after solving these issues:'
 
 
-napps_path = os.path.join(BASE_ENV, 'var/lib/kytos/napps/')
-installed_path = napps_path + '.installed/kytos/'
-enabled_path = napps_path + 'kytos/'
+napps_path = os.path.join(BASE_ENV, 'var/lib/kytos/napps')
+installed_path = napps_path + '/.installed'
+enabled_path = napps_path + '/kytos'
 
-class Installer(install):
+
+class InstallMode(install):
     """Customized setuptools install command - prints a friendly greeting."""
 
     def run(self):
         """Create of_core as default napps enabled."""
         install.run(self)
-        os.symlink(installed_path+'of_core', enabled_path+'of_core')
-        open(napps_path+'__init__.py', 'w').close()
-        open(enabled_path+'__init__.py', 'w').close()
+        os.symlink(installed_path+'/kytos/of_core', enabled_path+'/of_core')
+        open(napps_path+'/__init__.py', 'w').close()
+        open(enabled_path+'/__init__.py', 'w').close()
+
+
+class DevelopMode(develop):
+    """Customized setuptools develop command - prints a friendly greeting."""
+
+    def run(self):
+        """Create of_core as default napps enabled."""
+        develop.run(self)
+        origin_path = os.path.dirname(os.path.realpath(__file__))
+
+        os.makedirs(enabled_path)
+        os.makedirs(napps_path+'/.installed')
+        os.symlink(origin_path+'/kytos', installed_path+'/kytos')
+        os.symlink(installed_path+'/kytos/of_core', enabled_path+'/of_core')
+        open(napps_path+'/__init__.py', 'w').close()
+        open(enabled_path+'/__init__.py', 'w').close()
+
 
 def retrieve_apps(kytos_napps_path):
     """Retrieve the list of files within each app directory."""
@@ -104,7 +123,7 @@ def retrieve_apps(kytos_napps_path):
     return apps
 
 def napps_structures():
-    directories = retrieve_apps(installed_path)
+    directories = retrieve_apps(installed_path+'/kytos')
     directories.append((enabled_path,[]))
     return directories
 
@@ -125,6 +144,7 @@ setup(name='kyco-core-napps',
       cmdclass={
           'lint': Linter,
           'quick_lint': FastLinter,
-          'install': Installer
+          'install': InstallMode,
+          'develop': DevelopMode
       },
       zip_safe=False)
