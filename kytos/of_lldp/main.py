@@ -1,18 +1,19 @@
 """App responsible to discover new switches and hosts."""
 
-import logging
-
 from pyof.foundation.basic_types import DPID, UBInt16
 from pyof.foundation.network_types import LLDP, Ethernet
 from pyof.v0x01.common.action import ActionOutput
 from pyof.v0x01.controller2switch.packet_out import PacketOut
 
-from kyco.constants import POOLING_TIME
 from kyco.core.events import KycoEvent
 from kyco.core.napps import KycoCoreNApp
 from kyco.utils import listen_to
 
-log = logging.getLogger(__name__)
+from napps.kytos.of_lldp import settings
+from napps.kytos.of_lldp import constants
+
+
+log = settings.log
 
 
 class Main(KycoCoreNApp):
@@ -21,7 +22,7 @@ class Main(KycoCoreNApp):
     def setup(self):
         """Create an empty dict to store the switches references and data."""
         self.name = 'kytos/of.lldp'
-        self.execute_as_loop(POOLING_TIME)
+        self.execute_as_loop(settings.POOLING_TIME)
         self.controller.log_websocket.register_log(log)
 
     def execute(self):
@@ -34,13 +35,14 @@ class Main(KycoCoreNApp):
                 output_action = ActionOutput()
                 output_action.port = port.port_no
 
+                # Avoid ports with speed == 0
                 if port.port_no.value == 65534:
                     continue
 
                 ethernet = Ethernet()
-                ethernet.type = 0x88cc  # lldp
+                ethernet.type = constants.LLDP_ETHERTYPE
                 ethernet.source = port.hw_addr
-                ethernet.destination = '01:80:c2:00:00:0e'  # lldp multicast
+                ethernet.destination = constants.LLDP_MULTICAST_MAC
 
                 lldp = LLDP()
                 lldp.chassis_id.sub_value = DPID(switch.dpid)

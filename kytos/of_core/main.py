@@ -1,7 +1,5 @@
 """App responsible for the main OpenFlow basic operations."""
 
-from logging import getLogger
-
 from pyof.v0x01.common.utils import new_message_from_header
 from pyof.v0x01.controller2switch.common import FlowStatsRequest
 from pyof.v0x01.controller2switch.features_request import FeaturesRequest
@@ -15,8 +13,8 @@ from kyco.core.napps import KycoCoreNApp
 from kyco.core.switch import Interface
 from kyco.utils import listen_to
 
-log = getLogger('of.core')
-STATS_INTERVAL = 5
+from napps.kytos.of_core import settings
+log = settings.log
 
 
 class Main(KycoCoreNApp):
@@ -29,7 +27,7 @@ class Main(KycoCoreNApp):
         Users shouldn't call this method directly.
         """
         self.name = 'kytos/of.core'
-        self.execute_as_loop(STATS_INTERVAL)
+        self.execute_as_loop(settings.STATS_INTERVAL)
         self.controller.log_websocket.register_log(log)
 
     def execute(self):

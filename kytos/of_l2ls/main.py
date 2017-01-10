@@ -1,7 +1,5 @@
 """App responsible for the main OpenFlow basic operations."""
 
-import logging
-
 from kyco.core.events import KycoEvent
 from kyco.core.napps import KycoCoreNApp
 from kyco.utils import listen_to
@@ -12,7 +10,8 @@ from pyof.v0x01.common.phy_port import Port
 from pyof.v0x01.controller2switch.flow_mod import FlowMod, FlowModCommand
 from pyof.v0x01.controller2switch.packet_out import PacketOut
 
-log = logging.getLogger('of.l2ls')
+from napps.kytos.of_l2ls import settings
+log = settings.log
 
 
 class Main(KycoCoreNApp):
@@ -54,11 +53,8 @@ class Main(KycoCoreNApp):
 
         switch.update_mac_table(ethernet.source, in_port)
 
-        lldp_macs = ['01:80:c2:00:00:0e', '01:80:c2:00:00:03',
-                     '01:80:c2:00:00:00']
-
         # IGNORE LLDP packets
-        if ethernet.destination not in lldp_macs:
+        if ethernet.destination not in settings.lldp_macs:
             ports = switch.where_is_mac(ethernet.destination)
 
             if ports:

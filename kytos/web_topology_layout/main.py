@@ -1,7 +1,6 @@
 """Module to manager the settings and layout of kyco web interface."""
 
 import json
-import logging
 from os import listdir, makedirs
 from os.path import isfile, join
 
@@ -9,10 +8,10 @@ from flask import request
 
 from kyco.core.napps import KycoCoreNApp
 
-log = logging.getLogger('KycoNApp')
+from napps.kytos.web_topology_layout import settings
+log = settings.log
 
-TOPOLOGY_DIR = '/tmp/kytos/topologies/'
-makedirs(TOPOLOGY_DIR, exist_ok=True)
+makedirs(settings.TOPOLOGY_DIR, exist_ok=True)
 
 
 class Main(KycoCoreNApp):
@@ -74,7 +73,7 @@ class Main(KycoCoreNApp):
         if not request.is_json:
             return json.dumps('{"error": "gt was not a JSON request"}'), 400
         topology = request.get_json()
-        with open(join(TOPOLOGY_DIR, name + '.json'), 'w') as outfile:
+        with open(join(settings.TOPOLOGY_DIR, name + '.json'), 'w') as outfile:
             json.dump(topology, outfile)
         return json.dumps({'response': 'Saved'}), 201
 
@@ -87,10 +86,10 @@ class Main(KycoCoreNApp):
         Returns:
             topology (string): topology using json format.
         """
-        file = join(TOPOLOGY_DIR, name + '.json')
+        file = join(settings.TOPOLOGY_DIR, name + '.json')
         if not isfile(file):
             return json.dumps('{"error": "Topology not found"}'), 400
-        with open(join(TOPOLOGY_DIR, name + '.json'), 'r') as outfile:
+        with open(join(settings.TOPOLOGY_DIR, name + '.json'), 'r') as outfile:
             output = json.load(outfile)
         return json.dumps(output)
 
@@ -100,10 +99,10 @@ class Main(KycoCoreNApp):
         Returns:
             topologies (string): all topologies saved using json format.
         """
-        files = listdir(TOPOLOGY_DIR)
+        files = listdir(settings.TOPOLOGY_DIR)
         output = []
         for f in files:
-            if isfile(join(TOPOLOGY_DIR, f)):
+            if isfile(join(settings.TOPOLOGY_DIR, f)):
                 output.append(f.replace('.json', ''))
 
         return json.dumps(output)

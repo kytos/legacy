@@ -1,6 +1,5 @@
 """Module responsible for the main OpenFlow basic operations."""
 
-import logging
 
 from pyof.foundation.basic_types import Ethernet
 from pyof.v0x01.common.action import ActionOutput
@@ -13,7 +12,8 @@ from kyco.core.events import KycoEvent
 from kyco.core.napps import KycoCoreNApp
 from kyco.utils import listen_to
 
-log = logging.getLogger('KycoNApp')
+from napps.kytos.of_l2lsloop import settings
+log = settings.log
 
 
 class Main(KycoCoreNApp):

@@ -10,6 +10,9 @@ from subprocess import call
 from pip.req import parse_requirements
 from setuptools import Command, setup
 
+from setuptools.command.install import install
+from setuptools.command.develop import develop
+
 if 'bdist_wheel' in sys.argv:
     raise RuntimeError("This setup.py does not support wheels")
 
@@ -17,6 +20,26 @@ if 'VIRTUAL_ENV' in os.environ:
     BASE_ENV = os.environ['VIRTUAL_ENV']
 else:
     BASE_ENV = '/'
+
+NAPPS_PATHS = {
+    'main': os.path.join(BASE_ENV, 'var/lib/kytos/napps')
+}
+NAPPS_PATHS['installed'] = os.path.join(NAPPS_PATHS.get('main') + '.installed')
+NAPPS_PATHS['enabled'] = os.path.join(NAPPS_PATHS.get('main') + 'kytos')
+CORE_NAPPS = ['of_core']
+
+
+def enable_core_napps():
+    """Enable a NAPP by creating a symlink."""
+    for napp in CORE_NAPPS:
+        src = os.path.join(NAPPS_PATHS.get('installed'), 'kytos', napp_name)
+        dst = os.path.join(NAPPS_PATHS.get('enabled'), napp_name)
+        os.symlink(src, dst)
+
+    # Create the __init__.py file for the 'napps' directory and also the
+    # 'napps/kytos' directory
+    open(NAPPS_PATHS.get('main')+'/__init__.py', 'w').close()
+    open(NAPPS_PATHS.get('enabled')+'/__init__.py', 'w').close()
 
 
 class Doctest(Command):
@@ -74,6 +97,39 @@ class FastLinter(Linter):
                          'Run the slower "lint" after solving these issues:'
 
 
+class InstallMode(install):
+    """Customized setuptools install command - prints a friendly greeting."""
+
+    def run(self):
+        """Create of_core as default napps enabled."""
+        install.run(self)
+
+        # Enable each defined 'CORE_NAPP'
+        enable_core_napps()
+
+
+class DevelopMode(develop):
+    """Customized setuptools develop command - prints a friendly greeting."""
+
+    def run(self):
+        """Install the package in a developer mode.
+
+        Instead of copying the files to the expected directories, a symlink is
+        created on the system aiming the current source code.
+        """
+        develop.run(self)
+        origin_path = os.path.dirname(os.path.realpath(__file__))
+
+        os.makedirs(NAPPS_PATHS.get('enabled'))
+        os.makedirs(NAPPS_PATHS.get('installed'))
+        src = os.path.join(origin_path, 'kytos')
+        dst = os.path.join(NAPPS_PATHS.get('installed'), 'kytos')
+        os.symlink(src, dst)
+
+        # Enable each defined 'CORE_NAPP'
+        enable_core_napps()
+
+
 def retrieve_apps(kytos_napps_path):
     """Retrieve the list of files within each app directory."""
     apps = []
@@ -88,8 +144,15 @@ def retrieve_apps(kytos_napps_path):
     return apps
 
 
+def napps_structures():
+    directories = retrieve_apps(NAPPS_PATHS.get('installed')+'/kytos')
+    directories.append((NAPPS_PATHS.get('enabled'),[]))
+    return directories
+
+
 # parse_requirements() returns generator of pip.req.InstallRequirement objects
 requirements = parse_requirements('requirements.txt', session=False)
+
 
 setup(name='kyco-core-napps',
       version='1.1.0b1.dev1',
@@ -99,10 +162,11 @@ setup(name='kyco-core-napps',
       author_email='of-ng-dev@ncc.unesp.br',
       license='MIT',
       install_requires=[str(ir.req) for ir in requirements],
-      data_files=retrieve_apps(os.path.join(BASE_ENV,
-                                            'var/lib/kytos/napps/kytos/')),
+      data_files=napps_structures(),
       cmdclass={
           'lint': Linter,
-          'quick_lint': FastLinter
+          'quick_lint': FastLinter,
+          'install': InstallMode,
+          'develop': DevelopMode
       },
       zip_safe=False)

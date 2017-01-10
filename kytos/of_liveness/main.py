@@ -1,5 +1,5 @@
 """Keep track of KycoSwitches and check their liveness"""
-import logging
+
 import time
 
 from pyof.v0x01.symmetric.echo_request import EchoRequest
@@ -8,7 +8,8 @@ from kyco.constants import POOLING_TIME
 from kyco.core.events import KycoMessageInEchoReply, KycoMessageOutEchoRequest
 from kyco.utils import KycoCoreNApp, listen_to, now
 
-log = logging.getLogger('Kyco')
+from napps.kytos.liveness import settings
+log = settings.log
 
 
 class Main(KycoCoreNApp):
