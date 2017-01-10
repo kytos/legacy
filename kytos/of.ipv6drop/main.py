@@ -1,15 +1,12 @@
 """This App is the responsible to install a drop ipv6 flow on switch setup."""
 
-import logging
-
 from kyco.core.events import KycoEvent
 from kyco.core.napps import KycoCoreNApp
 from kyco.utils import listen_to
 from pyof.v0x01.common.flow_match import Match
 from pyof.v0x01.controller2switch.flow_mod import FlowMod, FlowModCommand
 
-
-log = logging.getLogger('Kyco')
+import settings
 
 
 class Main(KycoCoreNApp):
@@ -23,7 +20,7 @@ class Main(KycoCoreNApp):
 
         The setup method is automatically called by the run method.
         Users shouldn't call this method directly."""
-        self.controller.log_websocket.register_log(log)
+        self.controller.log_websocket.register_log(settings.log)
 
     def execute(self):
         """Method to be runned once on app 'start' or in a loop.

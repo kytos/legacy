@@ -1,7 +1,5 @@
 """App responsible for the main OpenFlow basic operations."""
 
-from logging import getLogger
-
 from pyof.v0x01.common.utils import new_message_from_header
 from pyof.v0x01.controller2switch.common import FlowStatsRequest
 from pyof.v0x01.controller2switch.features_request import FeaturesRequest
@@ -15,8 +13,7 @@ from kyco.core.napps import KycoCoreNApp
 from kyco.core.switch import Interface
 from kyco.utils import listen_to
 
-log = getLogger('of.core')
-STATS_INTERVAL = 5
+import settings
 
 
 class Main(KycoCoreNApp):
@@ -29,8 +26,8 @@ class Main(KycoCoreNApp):
         Users shouldn't call this method directly.
         """
         self.name = 'kytos/of.core'
-        self.execute_as_loop(STATS_INTERVAL)
-        self.controller.log_websocket.register_log(log)
+        self.execute_as_loop(settings.STATS_INTERVAL)
+        self.controller.log_websocket.register_log(settings.log)
 
     def execute(self):
         """Method to be runned once on app 'start' or in a loop.
@@ -117,7 +114,7 @@ class Main(KycoCoreNApp):
         Args:
             event (KycoEvent): RawEvent with openflow message to be unpacked
         """
-        log.debug('RawOpenFlowMessage received by RawOFMessage handler')
+        settings.log.debug('RawOpenFlowMessage received by RawOFMessage handler')
 
         # creates an empty OpenFlow Message based on the message_type defined
         # on the unpacked header.
@@ -128,7 +125,7 @@ class Main(KycoCoreNApp):
         # The unpack will happen only to those messages with body beyond header
         if binary_data and len(binary_data) > 0:
             message.unpack(binary_data)
-        log.debug('RawOpenFlowMessage unpacked')
+        settings.log.debug('RawOpenFlowMessage unpacked')
 
         name = message.header.message_type.name.lower()
         of_event = KycoEvent(name="kytos/of.core.messages.in.{}".format(name),
@@ -147,7 +144,7 @@ class Main(KycoCoreNApp):
             event (:class:`~kyco.core.events.KycoEvent`):
                 Event with echo request in message.
         """
-        log.debug("Echo Request message read")
+        settings.log.debug("Echo Request message read")
 
         echo_request = event.content['message']
         echo_reply = EchoReply(xid=echo_request.header.xid)
@@ -167,7 +164,7 @@ class Main(KycoCoreNApp):
         Args:
             event (KycoMessageInHello): KycoMessageInHelloEvent
         """
-        log.debug('Handling kytos/of.core.messages.ofpt_hello')
+        settings.log.debug('Handling kytos/of.core.messages.ofpt_hello')
 
         # TODO: Evaluate the OpenFlow version that will be used...
         hello = Hello(xid=event.content['message'].header.xid)
@@ -189,7 +186,7 @@ class Main(KycoCoreNApp):
             event (:class:`~.kyco.core.events.KycoEvent`):
                 Event with hello message.
         """
-        log.debug('Sending a feature request after responding to a hello')
+        settings.log.debug('Sending a feature request after responding to a hello')
 
         event_out = KycoEvent(name=('kytos/of.core.messages.out.'
                                     'ofpt_features_request'),
@@ -199,4 +196,4 @@ class Main(KycoCoreNApp):
 
     def shutdown(self):
         """End of the application."""
-        log.debug('Shutting down...')
+        settings.log.debug('Shutting down...')

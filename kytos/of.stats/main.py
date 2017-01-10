@@ -2,7 +2,6 @@
 import json
 import time
 from abc import ABCMeta, abstractmethod
-from logging import getLogger
 from os.path import dirname
 from pathlib import Path
 from threading import Lock
@@ -20,11 +19,8 @@ from pyof.v0x01.controller2switch.common import (AggregateStatsRequest,
                                                  PortStatsRequest)
 from pyof.v0x01.controller2switch.stats_request import StatsRequest, StatsTypes
 
-#: Seconds to wait before asking for more statistics.
-#: Delete RRDs everytime this interval is changed
-STATS_INTERVAL = 30
-# STATS_INTERVAL = 1  # 1 second for testing - check RRD._get_archives()
-log = getLogger(__name__)
+import settings
+
 #: Avoid segmentation fault
 rrd_lock = Lock()
 
@@ -38,12 +34,12 @@ class Main(KycoNApp):
         self._stats = {StatsTypes.OFPST_DESC.value: Description(msg_out),
                        StatsTypes.OFPST_PORT.value: PortStats(msg_out),
                        StatsTypes.OFPST_FLOW.value: FlowStats(msg_out)}
-        self.execute_as_loop(STATS_INTERVAL)
+        self.execute_as_loop(settings.STATS_INTERVAL)
         Description.controller = self.controller
         StatsAPI.controller = self.controller
         FlowStatsAPI.register_endpoints(self.controller)
         PortStatsAPI.register_endpoints(self.controller)
-        self.controller.log_websocket.register_log(log)
+        self.controller.log_websocket.register_log(settings.log)
 
     def execute(self):
         """Query all switches sequentially and then sleep before repeating."""
@@ -52,7 +48,7 @@ class Main(KycoNApp):
 
     def shutdown(self):
         """End of the application."""
-        log.debug('Shutting down...')
+        settings.log.debug('Shutting down...')
 
     def _update_stats(self, switch):
         for stats in self._stats.values():
@@ -67,7 +63,7 @@ class Main(KycoNApp):
             stats = self._stats[msg.body_type.value]
             stats.listen(event.source.switch.dpid, msg.body)
         else:
-            log.debug('No listener for %s in %s.', msg.body_type.value,
+            settings.log.debug('No listener for %s in %s.', msg.body_type.value,
                       list(self._stats.keys()))
 
 
@@ -106,25 +102,6 @@ class RRD:
 
     It store statistics every :data:`STATS_INTERVAL`.
     """
-
-    _DIR = Path(__file__).parent / 'rrd'
-    #: If no new data is supplied for more than *_TIMEOUT* seconds,
-    #: the temperature becomes *UNKNOWN*.
-    _TIMEOUT = 2 * STATS_INTERVAL
-    #: Minimum accepted value
-    _MIN = 0
-    #: Maximum accepted value is the maximum PortStats attribute value.
-    _MAX = 2**64 - 1
-    #: The xfiles factor defines what part of a consolidation interval may be
-    #: made up from *UNKNOWN* data while the consolidated value is still
-    #: regarded as known. It is given as the ratio of allowed *UNKNOWN* PDPs
-    #: to the number of PDPs in the interval. Thus, it ranges from 0 to 1
-    #: (exclusive).
-    _XFF = '0.5'
-    #: How long to keep the data. Accepts s (seconds), m (minutes), h (hours),
-    #: d (days), w (weeks), M (months), and y (years).
-    #: Must be a multiple of consolidation steps.
-    _PERIOD = '30d'
 
     def __init__(self, app_folder, data_sources):
         """Specify a folder to store RRDs.
@@ -170,7 +147,7 @@ class RRD:
         See Also:
             :meth:`get_or_create_rrd`
         """
-        path = self._DIR / self._app
+        path = settings._DIR / self._app
         folders, basename = index[:-1], index[-1]
         for folder in folders:
             path = path / folder
@@ -190,7 +167,7 @@ class RRD:
 
         rrd = self.get_rrd(index)
         if not Path(rrd).exists():
-            log.debug('Creating rrd for app %s, index %s.', self._app, index)
+            settings.log.debug('Creating rrd for app %s, index %s.', self._app, index)
             parent = Path(rrd).parent
             if not parent.exists():
                 parent.mkdir(parents=True)
@@ -207,7 +184,7 @@ class RRD:
         """
         if tstamp is None:
             tstamp = 'N'
-        options = [rrd, '--start', str(tstamp), '--step', str(STATS_INTERVAL)]
+        options = [rrd, '--start', str(tstamp), '--step', str(settings.STATS_INTERVAL)]
         options.extend([self._get_counter(ds) for ds in self._ds])
         options.extend(self._get_archives())
         with rrd_lock:
@@ -275,7 +252,7 @@ class RRD:
 
         Return zero values if there are no values recorded.
         """
-        start = 'end-{}s'.format(STATS_INTERVAL * 3)  # two rows
+        start = 'end-{}s'.format(settings.STATS_INTERVAL * 3)  # two rows
         try:
             tstamps, cols, rows = self.fetch(index, start, end='now')
         except FileNotFoundError:
@@ -283,7 +260,7 @@ class RRD:
             pass
         # Last rows may have future timestamp and be empty
         latest = None
-        min_tstamp = int(time.time()) - STATS_INTERVAL * 2
+        min_tstamp = int(time.time()) - settings.STATS_INTERVAL * 2
         # Search backwards for non-null values
         for tstamp, row in zip(tstamps[::-1], rows[::-1]):
             if row[0] is not None and tstamp > min_tstamp:
@@ -294,8 +271,8 @@ class RRD:
         return {k: v for k, v in zip(cols, latest)}
 
     def _get_counter(self, ds):
-        return 'DS:{}:COUNTER:{}:{}:{}'.format(ds, self._TIMEOUT, self._MIN,
-                                               self._MAX)
+        return 'DS:{}:COUNTER:{}:{}:{}'.format(ds, settings._TIMEOUT, settings._MIN,
+                                               settings._MAX)
 
     @classmethod
     def _get_archives(cls):
@@ -304,8 +281,8 @@ class RRD:
         # One month stats for the following periods:
         for steps in ('30s', '1m', '2m', '4m', '8m', '15m', '30m', '1h', '2h',
                       '4h', '8h', '12h', '1d', '2d', '3d', '6d', '10d', '15d'):
-            averages.append('RRA:AVERAGE:{}:{}:{}'.format(cls._XFF, steps,
-                                                          cls._PERIOD))
+            averages.append('RRA:AVERAGE:{}:{}:{}'.format(settings._XFF, steps,
+                                                          settings._PERIOD))
         # averages = ['RRA:AVERAGE:0:1:1d']  # More samples for testing
         return averages
 
@@ -321,7 +298,7 @@ class PortStats(Stats):
         body = PortStatsRequest(Port.OFPP_NONE)  # All ports
         req = StatsRequest(body_type=StatsTypes.OFPST_PORT, body=body)
         self._send_event(req, conn)
-        log.debug('Port Stats request for switch %s sent.', conn.switch.dpid)
+        settings.log.debug('Port Stats request for switch %s sent.', conn.switch.dpid)
 
     @classmethod
     def listen(cls, dpid, ports_stats):
@@ -339,7 +316,7 @@ class PortStats(Stats):
                            rx_errors=ps.rx_errors.value,
                            tx_errors=ps.tx_errors.value)
 
-            log.debug(debug_msg, ps.port_no.value, dpid, ps.rx_bytes.value,
+            settings.log.debug(debug_msg, ps.port_no.value, dpid, ps.rx_bytes.value,
                       ps.tx_bytes.value, ps.rx_dropped.value,
                       ps.tx_dropped.value, ps.rx_errors.value,
                       ps.tx_errors.value)
@@ -359,7 +336,7 @@ class AggregateStats(Stats):
         body = AggregateStatsRequest()  # Port.OFPP_NONE and All Tables
         req = StatsRequest(body_type=StatsTypes.OFPST_AGGREGATE, body=body)
         self._send_event(req, conn)
-        log.debug('Aggregate Stats request for switch %s sent.',
+        settings.log.debug('Aggregate Stats request for switch %s sent.',
                   conn.switch.dpid)
 
     @classmethod
@@ -376,7 +353,7 @@ class AggregateStats(Stats):
                            byte_count=ag.byte_count.value,
                            flow_count=ag.flow_count.value)
 
-            log.debug(debug_msg, dpid, ag.packet_count.value,
+            settings.log.debug(debug_msg, dpid, ag.packet_count.value,
                       ag.byte_count.value, ag.flow_count.value)
 
 
@@ -390,7 +367,7 @@ class FlowStats(Stats):
         body = FlowStatsRequest()  # Port.OFPP_NONE and All Tables
         req = StatsRequest(body_type=StatsTypes.OFPST_FLOW, body=body)
         self._send_event(req, conn)
-        log.debug('Flow Stats request for switch %s sent.', conn.switch.dpid)
+        settings.log.debug('Flow Stats request for switch %s sent.', conn.switch.dpid)
 
     @classmethod
     def listen(cls, dpid, flows_stats):
@@ -419,14 +396,14 @@ class Description(Stats):
         if dpid not in self._desc:
             req = StatsRequest(body_type=StatsTypes.OFPST_DESC)
             self._send_event(req, conn)
-            log.debug('Desc request for switch %s sent.', dpid)
+            settings.log.debug('Desc request for switch %s sent.', dpid)
 
     def listen(self, dpid, desc):
         """Store switch description."""
         self._desc[dpid] = desc
         switch = self.controller.get_switch_by_dpid(dpid)
         switch.update_description(desc)
-        log.debug('Adding switch %s: mfr_desc = %s, hw_desc = %s,'
+        settings.log.debug('Adding switch %s: mfr_desc = %s, hw_desc = %s,'
                   ' sw_desc = %s, serial_num = %s', dpid,
                   desc.mfr_desc, desc.hw_desc, desc.sw_desc,
                   desc.serial_num)
@@ -608,7 +585,7 @@ class PortStatsAPI(StatsAPI):
         if speed is None:
             for util_col in self._util_cols.values():
                 row[util_col] = None
-            log.warning('No speed, port %s, dpid %s', self._port,
+            settings.log.warning('No speed, port %s, dpid %s', self._port,
                         self._dpid[-3:])
         else:
             for bytes_col, util_col in self._util_cols.items():

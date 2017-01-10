@@ -1,5 +1,5 @@
 """Keep track of KycoSwitches and check their liveness"""
-import logging
+
 import time
 
 from pyof.v0x01.symmetric.echo_request import EchoRequest
@@ -8,7 +8,7 @@ from kyco.constants import POOLING_TIME
 from kyco.core.events import KycoMessageInEchoReply, KycoMessageOutEchoRequest
 from kyco.utils import KycoCoreNApp, listen_to, now
 
-log = logging.getLogger('Kyco')
+import settings
 
 
 class Main(KycoCoreNApp):
@@ -28,7 +28,7 @@ class Main(KycoCoreNApp):
         self.stop_signal = False
         # TODO: This switches object may change according to changes from #62
         self.switches = self.controller.switches
-        self.controller.log_websocket.register_log(log)
+        self.controller.log_websocket.register_log(settings.log)
 
     def execute(self):
         """Implement a loop to check switches liveness"""
@@ -58,7 +58,7 @@ class Main(KycoCoreNApp):
         Args:
             event (KycoMessageInEchoReply): Echo Reply
         """
-        log.debug('EchoReply received and being processed')
+        settings.log.debug('EchoReply received and being processed')
 
         echo_reply = event.content['message']
         switch = self.switches[event.dpid]

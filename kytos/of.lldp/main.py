@@ -1,7 +1,5 @@
 """App responsible to discover new switches and hosts."""
 
-import logging
-
 from pyof.foundation.basic_types import DPID, UBInt16
 from pyof.foundation.network_types import LLDP, Ethernet
 from pyof.v0x01.common.action import ActionOutput
@@ -12,7 +10,7 @@ from kyco.core.events import KycoEvent
 from kyco.core.napps import KycoCoreNApp
 from kyco.utils import listen_to
 
-log = logging.getLogger(__name__)
+import settings
 
 
 class Main(KycoCoreNApp):
@@ -22,7 +20,7 @@ class Main(KycoCoreNApp):
         """Create an empty dict to store the switches references and data."""
         self.name = 'kytos/of.lldp'
         self.execute_as_loop(POOLING_TIME)
-        self.controller.log_websocket.register_log(log)
+        self.controller.log_websocket.register_log(settings.log)
 
     def execute(self):
         """Implement a loop to check switches liveness."""
@@ -39,9 +37,9 @@ class Main(KycoCoreNApp):
                     continue
 
                 ethernet = Ethernet()
-                ethernet.type = 0x88cc  # lldp
+                ethernet.type = settings.ether_type  # lldp
                 ethernet.source = port.hw_addr
-                ethernet.destination = '01:80:c2:00:00:0e'  # lldp multicast
+                ethernet.destination = settings.lldp_multicast
 
                 lldp = LLDP()
                 lldp.chassis_id.sub_value = DPID(switch.dpid)
@@ -59,7 +57,7 @@ class Main(KycoCoreNApp):
                                      'message': packet_out}
                 self.controller.buffers.msg_out.put(event_out)
 
-                log.debug("Sending a LLDP PacketOut to the switch %s",
+                settings.log.debug("Sending a LLDP PacketOut to the switch %s",
                           switch.dpid)
 
     @listen_to('kytos/of.core.messages.in.ofpt_packet_in')
@@ -95,4 +93,4 @@ class Main(KycoCoreNApp):
 
     def shutdown(self):
         """End of the application."""
-        log.debug('Shutting down...')
+        settings.log.debug('Shutting down...')

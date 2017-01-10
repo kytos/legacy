@@ -1,6 +1,5 @@
 """App responsible for the main OpenFlow basic operations."""
 
-import logging
 
 from kyco.core.events import KycoEvent
 from kyco.core.napps import KycoCoreNApp
@@ -12,7 +11,7 @@ from pyof.v0x01.common.phy_port import Port
 from pyof.v0x01.controller2switch.flow_mod import FlowMod, FlowModCommand
 from pyof.v0x01.controller2switch.packet_out import PacketOut
 
-log = logging.getLogger('of.l2ls')
+import settings
 
 
 class Main(KycoCoreNApp):
@@ -24,7 +23,7 @@ class Main(KycoCoreNApp):
         The setup method is automatically called by the run method.
         Users shouldn't call this method directly.
         """
-        self.controller.log_websocket.register_log(log)
+        self.controller.log_websocket.register_log(settings.log)
 
     def execute(self):
         """Method to be runned once on app 'start' or in a loop.
@@ -43,7 +42,7 @@ class Main(KycoCoreNApp):
         Args:
             event (KycoPacketIn): Received Event
         """
-        log.debug("PacketIn Received")
+        settings.log.debug("PacketIn Received")
 
         packet_in = event.content['message']
 
@@ -54,11 +53,8 @@ class Main(KycoCoreNApp):
 
         switch.update_mac_table(ethernet.source, in_port)
 
-        lldp_macs = ['01:80:c2:00:00:0e', '01:80:c2:00:00:03',
-                     '01:80:c2:00:00:00']
-
         # IGNORE LLDP packets
-        if ethernet.destination not in lldp_macs:
+        if ethernet.destination not in settings.lldp_macs:
             ports = switch.where_is_mac(ethernet.destination)
 
             if ports:

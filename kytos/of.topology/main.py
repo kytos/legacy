@@ -1,7 +1,6 @@
 """App responsible to update links detail and create a network topology."""
 
 import json
-import logging
 
 from pyof.foundation.basic_types import HWAddress
 from pyof.foundation.network_types import Ethernet
@@ -9,7 +8,7 @@ from pyof.foundation.network_types import Ethernet
 from kyco.core.napps import KycoCoreNApp
 from kyco.utils import listen_to
 
-log = logging.getLogger('of.topology')
+import settings
 
 
 class Main(KycoCoreNApp):
@@ -30,7 +29,7 @@ class Main(KycoCoreNApp):
         self.controller.register_rest_endpoint('/topology',
                                                self.get_json_topology,
                                                methods=['GET'])
-        self.controller.log_websocket.register_log(log)
+        self.controller.log_websocket.register_log(settings.log)
 
     def execute(self):
         """Do nothing, only wait for packet-in messages."""
@@ -48,7 +47,7 @@ class Main(KycoCoreNApp):
         """
         ethernet = Ethernet()
         ethernet.unpack(event.message.data.value)
-        if ethernet.type != 0x88cc:
+        if ethernet.type != settings.ether_type:
             port_no = event.message.in_port
             hw_address = ethernet.source
             switch = event.source.switch
@@ -75,11 +74,11 @@ class Main(KycoCoreNApp):
         port_name = port_status.desc.name
         reason = reasons[port_status.reason.value]
         msg = 'The port {} ({}) from switch {} was {}.'
-        log.debug(msg.format(port_no, port_name, dpid, reason))
+        settings.log.debug(msg.format(port_no, port_name, dpid, reason))
 
     def shutdown(self):
         """End of the application."""
-        log.debug('Shutting down...')
+        settings.log.debug('Shutting down...')
 
     def get_json_topology(self):
         """Return a json with topology details.

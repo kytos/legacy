@@ -1,6 +1,5 @@
 """Module responsible for the main OpenFlow basic operations."""
 
-import logging
 
 from pyof.foundation.basic_types import Ethernet
 from pyof.v0x01.common.action import ActionOutput
@@ -13,7 +12,7 @@ from kyco.core.events import KycoEvent
 from kyco.core.napps import KycoCoreNApp
 from kyco.utils import listen_to
 
-log = logging.getLogger('KycoNApp')
+import settings
 
 
 class Main(KycoCoreNApp):
@@ -22,7 +21,7 @@ class Main(KycoCoreNApp):
     def setup(self):
         """Method used to setup the of.l2lsloop application."""
         self.name = 'kytos.l2_learning_switch'
-        self.controller.log_websocket.register_log(log)
+        self.controller.log_websocket.register_log(settings.log)
 
     def execute(self):
         """Do nothing."""
@@ -36,7 +35,7 @@ class Main(KycoCoreNApp):
             event (:class:`~kyco.core.events.KycoEvent):
                 event with packet_in message.
         """
-        log.debug("PacketIn Received")
+        settings.log.debug("PacketIn Received")
         packet_in = event.content['message']
         ethernet = Ethernet()
         ethernet.unpack(packet_in.data.value)
@@ -79,11 +78,11 @@ class Main(KycoCoreNApp):
             event_out = KycoEvent(name=message_name,
                                   content=content)
         else:
-            log.debug("Not sending flood, since that was flooded already.")
+            settings.log.debug("Not sending flood, since that was flooded already.")
             return
 
         self.controller.buffers.msg_out.put(event_out)
 
     def shutdown(self):
         """End of the application."""
-        log.debug('Shutting down...')
+        settings.log.debug('Shutting down...')
