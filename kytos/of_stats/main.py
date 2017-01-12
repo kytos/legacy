@@ -15,16 +15,22 @@ class Main(KycoNApp):
 
     def setup(self):
         """Initialize all statistics and set their loop interval."""
+        self.execute_as_loop(settings.STATS_INTERVAL)
+
+        # Initialize statistics
         msg_out = self.controller.buffers.msg_out
         self._stats = {StatsTypes.OFPST_DESC.value: Description(msg_out),
                        StatsTypes.OFPST_PORT.value: PortStats(msg_out),
                        StatsTypes.OFPST_FLOW.value: FlowStats(msg_out)}
-        self.execute_as_loop(settings.STATS_INTERVAL)
-        Description.controller = self.controller
 
+        # Give Description and StatsAPI the controller
+        Description.controller = self.controller
         StatsAPI.controller = self.controller
-        FlowStatsAPI.register_endpoints(self.controller)
-        PortStatsAPI.register_endpoints(self.controller)
+
+        # Register REST endpoints
+        FlowStatsAPI.register_endpoints()
+        PortStatsAPI.register_endpoints()
+
         self.controller.log_websocket.register_log(log)
 
     def execute(self):

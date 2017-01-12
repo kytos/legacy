@@ -1,13 +1,12 @@
 """Module with Classes to handle statistics api."""
 import json
 from abc import ABCMeta, abstractmethod
-from os.path import dirname
-from pathlib import Path
 
 from flask import Response, request
 
 from napps.kytos.of_stats import settings
 from napps.kytos.of_stats.stats import FlowStats, PortStats
+from user_speed import UserSpeed
 
 
 log = settings.log
@@ -114,12 +113,13 @@ class PortStatsAPI(StatsAPI):
         self._port = port
 
     @classmethod
-    def register_endpoints(cls, controller):
+    def register_endpoints(cls):
         """Register REST API endpoints in the controller."""
-        controller.register_rest_endpoint('/stats/<dpid>/ports/<int:port>',
-                                          cls.get_port_stats, methods=['GET'])
-        controller.register_rest_endpoint('/stats/<dpid>/ports',
-                                          cls.get_ports_list, methods=['GET'])
+        cls.controller.register_rest_endpoint(
+            '/stats/<dpid>/ports/<int:port>', cls.get_port_stats,
+            methods=['GET'])
+        cls.controller.register_rest_endpoint(
+            '/stats/<dpid>/ports', cls.get_ports_list, methods=['GET'])
 
     @classmethod
     def get_port_stats(cls, dpid, port):
@@ -209,12 +209,13 @@ class FlowStatsAPI(StatsAPI):
         self._flow = flow
 
     @classmethod
-    def register_endpoints(cls, controller):
+    def register_endpoints(cls):
         """Register REST API endpoints in the controller."""
-        controller.register_rest_endpoint('/stats/<dpid>/flows/<flow_hash>',
-                                          cls.get_flow_stats, methods=['GET'])
-        controller.register_rest_endpoint('/stats/<dpid>/flows',
-                                          cls.get_flow_list, methods=['GET'])
+        cls.controller.register_rest_endpoint(
+            '/stats/<dpid>/flows/<flow_hash>', cls.get_flow_stats,
+            methods=['GET'])
+        cls.controller.register_rest_endpoint(
+            '/stats/<dpid>/flows', cls.get_flow_list, methods=['GET'])
 
     @classmethod
     def get_flow_list(cls, dpid):
@@ -266,44 +267,3 @@ class FlowStatsAPI(StatsAPI):
         """See :meth:`get_flow_stats`."""
         index = (self._dpid, self._flow)
         return super().get_points(index)
-
-
-class UserSpeed:
-    """User-defined interface speeds.
-
-    In case there is no matching speed in OF spec or the speed is not correctly
-    detected.
-    """
-
-    _FILE = Path(dirname(__file__)) / 'user_speed.json'
-
-    def __init__(self):
-        """Load user-created file."""
-        if self._FILE.exists():
-            with self._FILE.open() as user_file:
-                # print('UserSpeed', user_file.read())
-                self._speed = json.load(user_file)
-        else:
-            self._speed = {}
-
-    def get_speed(self, dpid, port=None):
-        """Return speed in bits/sec or None if not defined by the user.
-
-        Args:
-            dpid (str): Switch dpid.
-            port (int or str): Port number.
-        """
-        if not isinstance(port, str):
-            port = str(port)
-        speed = None
-        switch = self._speed.get(dpid)
-        if switch is None:
-            speed = self._speed.get('default')
-        else:
-            if port is None or port not in switch:
-                speed = switch.get('default')
-            else:
-                speed = switch.get(port)
-        if speed is not None:
-            speed *= 10**9
-        return speed
