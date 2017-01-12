@@ -1,7 +1,7 @@
-"""Settings file for the NApp kytos/of_stats"""
+"""Settings file for the NApp kytos/of_stats."""
 from logging import getLogger
-from threading import Lock
 from pathlib import Path
+from threading import Lock
 
 log = getLogger(__name__)
 

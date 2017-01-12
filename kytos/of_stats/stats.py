@@ -1,11 +1,7 @@
 """Module with Classes to handle statistics."""
-
 import time
 from abc import ABCMeta, abstractmethod
-from os.path import dirname
 from pathlib import Path
-
-from flask import Response, request
 
 import rrdtool
 from kyco.core.events import KycoEvent
@@ -15,7 +11,9 @@ from pyof.v0x01.controller2switch.common import (AggregateStatsRequest,
                                                  FlowStatsRequest,
                                                  PortStatsRequest)
 from pyof.v0x01.controller2switch.stats_request import StatsRequest, StatsTypes
-from napps.kytos.of_stats import settings
+
+from . import settings
+
 log = settings.log
 
 
@@ -134,10 +132,16 @@ class RRD:
             tstamp (str, int): Unix timestamp in seconds for RRD creation.
                 Defaults to now.
         """
+        def get_counter(ds):
+            """Return a DS for rrd creation."""
+            return 'DS:{}:COUNTER:{}:{}:{}'.format(ds, settings.TIMEOUT,
+                                                   settings.MIN, settings.MAX)
+
         if tstamp is None:
             tstamp = 'N'
-        options = [rrd, '--start', str(tstamp), '--step', str(settings.STATS_INTERVAL)]
-        options.extend([self._get_counter(ds) for ds in self._ds])
+        options = [rrd, '--start', str(tstamp), '--step',
+                   str(settings.STATS_INTERVAL)]
+        options.extend([get_counter(ds) for ds in self._ds])
         options.extend(self._get_archives())
         with settings.rrd_lock:
             rrdtool.create(*options)
@@ -221,10 +225,6 @@ class RRD:
         if not latest:
             latest = [0] * len(cols)
         return {k: v for k, v in zip(cols, latest)}
-
-    def _get_counter(self, ds):
-        return 'DS:{}:COUNTER:{}:{}:{}'.format(ds, settings.TIMEOUT, settings.MIN,
-                                               settings.MAX)
 
     @classmethod
     def _get_archives(cls):

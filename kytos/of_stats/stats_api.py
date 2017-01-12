@@ -6,9 +6,8 @@ from pathlib import Path
 
 from flask import Response, request
 
-from pyof.v0x01.common.phy_port import Port
 from napps.kytos.of_stats import settings
-from napps.kytos.of_stats.stats  import PortStats, FlowStats
+from napps.kytos.of_stats.stats import FlowStats, PortStats
 
 
 log = settings.log
@@ -282,6 +281,7 @@ class UserSpeed:
         """Load user-created file."""
         if self._FILE.exists():
             with self._FILE.open() as user_file:
+                # print('UserSpeed', user_file.read())
                 self._speed = json.load(user_file)
         else:
             self._speed = {}
@@ -293,6 +293,8 @@ class UserSpeed:
             dpid (str): Switch dpid.
             port (int or str): Port number.
         """
+        if not isinstance(port, str):
+            port = str(port)
         speed = None
         switch = self._speed.get(dpid)
         if switch is None:

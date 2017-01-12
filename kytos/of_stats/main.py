@@ -1,13 +1,11 @@
 """Statistics application."""
-from flask import request
 from kyco.core.napps import KycoNApp
 from kyco.utils import listen_to
-from pyof.v0x01.controller2switch.stats_request import StatsRequest, StatsTypes
+from pyof.v0x01.controller2switch.stats_request import StatsTypes
 
 from napps.kytos.of_stats import settings
-from napps.kytos.of_stats.stats import Description, PortStats, FlowStats
+from napps.kytos.of_stats.stats import Description, FlowStats, PortStats
 from napps.kytos.of_stats.stats_api import FlowStatsAPI, PortStatsAPI, StatsAPI
-
 
 log = settings.log
 
