@@ -5,13 +5,14 @@ descriptions.
 """
 import os
 import sys
+from os import listdir
+from os.path import isdir, isfile, join
 from subprocess import call
 
 from pip.req import parse_requirements
 from setuptools import Command, setup
-
-from setuptools.command.install import install
 from setuptools.command.develop import develop
+from setuptools.command.install import install
 
 if 'bdist_wheel' in sys.argv:
     raise RuntimeError("This setup.py does not support wheels")
@@ -22,18 +23,18 @@ else:
     BASE_ENV = '/'
 
 NAPPS_PATHS = {
-    'main': os.path.join(BASE_ENV, 'var/lib/kytos/napps')
+    'main': join(BASE_ENV, 'var/lib/kytos/napps')
 }
-NAPPS_PATHS['installed'] = os.path.join(NAPPS_PATHS.get('main'), '.installed')
-NAPPS_PATHS['enabled'] = os.path.join(NAPPS_PATHS.get('main'), 'kytos')
+NAPPS_PATHS['installed'] = join(NAPPS_PATHS.get('main'), '.installed')
+NAPPS_PATHS['enabled'] = join(NAPPS_PATHS.get('main'), 'kytos')
 CORE_NAPPS = ['of_core']
 
 
 def enable_core_napps():
     """Enable a NAPP by creating a symlink."""
     for napp in CORE_NAPPS:
-        src = os.path.join(NAPPS_PATHS.get('installed'), 'kytos', napp)
-        dst = os.path.join(NAPPS_PATHS.get('enabled'), napp)
+        src = join(NAPPS_PATHS.get('installed'), 'kytos', napp)
+        dst = join(NAPPS_PATHS.get('enabled'), napp)
         os.symlink(src, dst)
 
     # Create the __init__.py file for the 'napps' directory and also the
@@ -130,8 +131,8 @@ class DevelopMode(develop):
 
         os.makedirs(NAPPS_PATHS.get('enabled'))
         os.makedirs(NAPPS_PATHS.get('installed'))
-        src = os.path.join(origin_path, 'kytos')
-        dst = os.path.join(NAPPS_PATHS.get('installed'), 'kytos')
+        src = join(origin_path, 'kytos')
+        dst = join(NAPPS_PATHS.get('installed'), 'kytos')
         os.symlink(src, dst)
 
         # Enable each defined 'CORE_NAPP'
@@ -141,20 +142,22 @@ class DevelopMode(develop):
 def retrieve_apps(kytos_napps_path):
     """Retrieve the list of files within each app directory."""
     apps = []
-    for napp_name in os.listdir("./kytos"):
+    parent = "./kytos"
+    napp_names = (f for f in listdir(parent) if isdir(join(parent, f)))
+    for napp_name in napp_names:
         app_files = []
-        app_path = os.path.join("./kytos", napp_name)
-        for file_name in os.listdir(app_path):
-            file_path = os.path.join(app_path, file_name)
-            if os.path.isfile(file_path):  # Only select files
+        app_path = join(parent, napp_name)
+        for file_name in listdir(app_path):
+            file_path = join(app_path, file_name)
+            if isfile(file_path):  # Only select files
                 app_files.append(file_path)
-        apps.append((os.path.join(kytos_napps_path, napp_name), app_files))
+        apps.append((join(kytos_napps_path, napp_name), app_files))
     return apps
 
 
 def napps_structures():
     directories = retrieve_apps(NAPPS_PATHS.get('installed')+'/kytos')
-    directories.append((NAPPS_PATHS.get('enabled'),[]))
+    directories.append((NAPPS_PATHS.get('enabled'), []))
     return directories
 
 
