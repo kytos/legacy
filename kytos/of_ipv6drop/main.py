@@ -6,7 +6,7 @@ from kyco.utils import listen_to
 from pyof.v0x01.common.flow_match import Match
 from pyof.v0x01.controller2switch.flow_mod import FlowMod, FlowModCommand
 
-from napps.kytos.ipv6drop import settings
+from napps.kytos.of_ipv6drop import settings
 log = settings.log
 
 
