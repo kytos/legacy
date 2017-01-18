@@ -78,19 +78,27 @@ class Main(KycoCoreNApp):
             lldp.unpack(ethernet.data.value)
 
             dpid = DPID()
-            dpid.unpack(lldp.chassis_id.sub_value.value)
+            if lldp.chassis_id.sub_value.value != b'':
+                dpid.unpack(lldp.chassis_id.sub_value.value)
 
-            port_no_b = UBInt16()
-
-            switch_a = event.source.switch
             port_no_a = event.message.in_port
-            interface_a = switch_a.get_interface_by_port_no(port_no_a.value)
+            switch_a = event.source.switch
+            if switch_a:
+                interface_a = switch_a.get_interface_by_port_no(
+                    port_no_a.value)
+
+            if len(lldp.port_id.sub_value.value) > 0:
+                port_no_b = UBInt16()
+                port_no_b.unpack(lldp.port_id.sub_value.value)
+            else:
+                port_no_b = None
 
             switch_b = self.controller.get_switch_by_dpid(dpid.value)
-            port_no_b.unpack(lldp.port_id.sub_value.value)
-            interface_b = switch_b.get_interface_by_port_no(port_no_b.value)
+            if switch_b and port_no_b:
+                interface_b = switch_b.get_interface_by_port_no(
+                    port_no_b.value)
 
-            if interface_a is not None and interface_b is not None:
+            if switch_a and switch_b and interface_a and interface_b:
                 interface_a.update_endpoint(interface_b)
                 interface_b.update_endpoint(interface_a)
 
