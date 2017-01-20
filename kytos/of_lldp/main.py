@@ -71,34 +71,34 @@ class Main(KycoCoreNApp):
             event (:class:`~kyco.core.events.KycoEvent`):
                 Event with lldp protocol.
         """
-        ethernet = Ethernet()
-        ethernet.unpack(event.message.data.value)
-        if ethernet.type == 0x88cc:
-            lldp = LLDP()
-            lldp.unpack(ethernet.data.value)
+        def get_interface(port_no, switch):
+            """Return the interface of `switch` by port number or None."""
+            if port_no and switch:
+                return switch.get_interface_by_port_no(port_no.value)
+            else:
+                return None
 
-            dpid = DPID()
-            if lldp.chassis_id.sub_value.value != b'':
-                dpid.unpack(lldp.chassis_id.sub_value.value)
+        def unpack_non_empty(data, cls):
+            """Return an object of class `cls` and unpack if non-empty data."""
+            obj = cls()
+            if data.value:
+                obj.unpack(data.value)
+            return obj
+
+        ethernet = unpack_non_empty(event.message.data, Ethernet)
+        if ethernet.type == 0x88cc:
+            lldp = unpack_non_empty(ethernet.data, LLDP)
+            dpid = unpack_non_empty(lldp.chassis_id.sub_value, DPID)
 
             port_no_a = event.message.in_port
             switch_a = event.source.switch
-            if switch_a:
-                interface_a = switch_a.get_interface_by_port_no(
-                    port_no_a.value)
+            interface_a = get_interface(port_no_a, switch_a)
 
-            if len(lldp.port_id.sub_value.value) > 0:
-                port_no_b = UBInt16()
-                port_no_b.unpack(lldp.port_id.sub_value.value)
-            else:
-                port_no_b = None
-
+            port_no_b = unpack_non_empty(lldp.port_id.sub_value, UBInt16)
             switch_b = self.controller.get_switch_by_dpid(dpid.value)
-            if switch_b and port_no_b:
-                interface_b = switch_b.get_interface_by_port_no(
-                    port_no_b.value)
+            interface_b = get_interface(port_no_b, switch_b)
 
-            if switch_a and switch_b and interface_a and interface_b:
+            if interface_a and interface_b:
                 interface_a.update_endpoint(interface_b)
                 interface_b.update_endpoint(interface_a)
 
