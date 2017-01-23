@@ -71,26 +71,34 @@ class Main(KycoCoreNApp):
             event (:class:`~kyco.core.events.KycoEvent`):
                 Event with lldp protocol.
         """
-        ethernet = Ethernet()
-        ethernet.unpack(event.message.data.value)
+        def get_interface(port_no, switch):
+            """Return the interface of `switch` by port number or None."""
+            if port_no and switch:
+                return switch.get_interface_by_port_no(port_no.value)
+            else:
+                return None
+
+        def unpack_non_empty(data, cls):
+            """Return an object of class `cls` and unpack if non-empty data."""
+            obj = cls()
+            if data.value:
+                obj.unpack(data.value)
+            return obj
+
+        ethernet = unpack_non_empty(event.message.data, Ethernet)
         if ethernet.type == 0x88cc:
-            lldp = LLDP()
-            lldp.unpack(ethernet.data.value)
+            lldp = unpack_non_empty(ethernet.data, LLDP)
+            dpid = unpack_non_empty(lldp.chassis_id.sub_value, DPID)
 
-            dpid = DPID()
-            dpid.unpack(lldp.chassis_id.sub_value.value)
-
-            port_no_b = UBInt16()
-
-            switch_a = event.source.switch
             port_no_a = event.message.in_port
-            interface_a = switch_a.get_interface_by_port_no(port_no_a.value)
+            switch_a = event.source.switch
+            interface_a = get_interface(port_no_a, switch_a)
 
+            port_no_b = unpack_non_empty(lldp.port_id.sub_value, UBInt16)
             switch_b = self.controller.get_switch_by_dpid(dpid.value)
-            port_no_b.unpack(lldp.port_id.sub_value.value)
-            interface_b = switch_b.get_interface_by_port_no(port_no_b.value)
+            interface_b = get_interface(port_no_b, switch_b)
 
-            if interface_a is not None and interface_b is not None:
+            if interface_a and interface_b:
                 interface_a.update_endpoint(interface_b)
                 interface_b.update_endpoint(interface_a)
 

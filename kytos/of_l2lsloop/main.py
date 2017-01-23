@@ -1,7 +1,7 @@
 """Module responsible for the main OpenFlow basic operations."""
 
 
-from pyof.foundation.basic_types import Ethernet
+from pyof.foundation.network_types import Ethernet
 from pyof.v0x01.common.action import ActionOutput
 from pyof.v0x01.common.flow_match import FlowWildCards, Match
 from pyof.v0x01.common.phy_port import Port

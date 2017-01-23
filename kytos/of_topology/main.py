@@ -8,7 +8,7 @@ from pyof.foundation.network_types import Ethernet
 from kyco.core.napps import KycoCoreNApp
 from kyco.utils import listen_to
 
-from napps.kytos.of_topology import settings
+from napps.kytos.of_topology import constants, settings
 log = settings.log
 
 
