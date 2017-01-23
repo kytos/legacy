@@ -5,13 +5,14 @@ descriptions.
 """
 import os
 import sys
+from os import listdir
+from os.path import isdir, isfile
 from subprocess import call
 
 from pip.req import parse_requirements
 from setuptools import Command, setup
-
-from setuptools.command.install import install
 from setuptools.command.develop import develop
+from setuptools.command.install import install
 
 if 'bdist_wheel' in sys.argv:
     raise RuntimeError("This setup.py does not support wheels")
@@ -141,12 +142,14 @@ class DevelopMode(develop):
 def retrieve_apps(kytos_napps_path):
     """Retrieve the list of files within each app directory."""
     apps = []
-    for napp_name in os.listdir("./kytos"):
+    parent = "./kytos"
+    napp_names = (f for f in listdir(parent) if isdir(os.path.join(parent, f)))
+    for napp_name in napp_names:
         app_files = []
-        app_path = os.path.join("./kytos", napp_name)
-        for file_name in os.listdir(app_path):
+        app_path = os.path.join(parent, napp_name)
+        for file_name in listdir(app_path):
             file_path = os.path.join(app_path, file_name)
-            if os.path.isfile(file_path):  # Only select files
+            if isfile(file_path):  # Only select files
                 app_files.append(file_path)
         apps.append((os.path.join(kytos_napps_path, napp_name), app_files))
     return apps
@@ -154,7 +157,7 @@ def retrieve_apps(kytos_napps_path):
 
 def napps_structures():
     directories = retrieve_apps(NAPPS_PATHS.get('installed')+'/kytos')
-    directories.append((NAPPS_PATHS.get('enabled'),[]))
+    directories.append((NAPPS_PATHS.get('enabled'), []))
     return directories
 
 

@@ -5,7 +5,8 @@ from tempfile import mkstemp
 # The pylint rule below conflicts with isort
 from unittest.mock import patch
 
-from main import RRD, STATS_INTERVAL
+from napps.kytos.of_stats.settings import STATS_INTERVAL
+from napps.kytos.of_stats.stats import RRD
 
 
 class TestRRD(unittest.TestCase):

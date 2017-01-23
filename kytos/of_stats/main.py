@@ -1,13 +1,11 @@
 """Statistics application."""
-from flask import request
 from kyco.core.napps import KycoNApp
 from kyco.utils import listen_to
-from pyof.v0x01.controller2switch.stats_request import StatsRequest, StatsTypes
+from pyof.v0x01.controller2switch.stats_request import StatsTypes
 
 from napps.kytos.of_stats import settings
-from napps.kytos.of_stats.stats import Description, PortStats, FlowStats
+from napps.kytos.of_stats.stats import Description, FlowStats, PortStats
 from napps.kytos.of_stats.stats_api import FlowStatsAPI, PortStatsAPI, StatsAPI
-
 
 log = settings.log
 
@@ -17,16 +15,22 @@ class Main(KycoNApp):
 
     def setup(self):
         """Initialize all statistics and set their loop interval."""
+        self.execute_as_loop(settings.STATS_INTERVAL)
+
+        # Initialize statistics
         msg_out = self.controller.buffers.msg_out
         self._stats = {StatsTypes.OFPST_DESC.value: Description(msg_out),
                        StatsTypes.OFPST_PORT.value: PortStats(msg_out),
                        StatsTypes.OFPST_FLOW.value: FlowStats(msg_out)}
-        self.execute_as_loop(settings.STATS_INTERVAL)
-        Description.controller = self.controller
 
+        # Give Description and StatsAPI the controller
+        Description.controller = self.controller
         StatsAPI.controller = self.controller
-        FlowStatsAPI.register_endpoints(self.controller)
-        PortStatsAPI.register_endpoints(self.controller)
+
+        # Register REST endpoints
+        FlowStatsAPI.register_endpoints()
+        PortStatsAPI.register_endpoints()
+
         self.controller.log_websocket.register_log(log)
 
     def execute(self):

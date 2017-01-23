@@ -1,5 +1,5 @@
 # Linters
-pylama>=7.1.0
-pylama-pylint>=2.2.1
+pylama>=7.3.3
+pylama_pylint>=3.0.1
 isort>=4.2.5
 radon>=1.4.2
