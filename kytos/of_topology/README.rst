@@ -1,8 +1,22 @@
 Overview
 ========
 
-The **of.topology** is a app responsible to update links between
-machines and switches, and build a network topology.
+The **of.topology** is an app responsible to update links 
+between machines and network devices (i.e. switches and 
+routers) and them update the current state of the network 
+topology. This application depends of another application, 
+called **of.lldp**, since it makes use of lldp packets to 
+discover links between network devices. 
+
+This application listen for two kinds of packets in. The 
+first one is lldp packets which carry information regarding 
+the sender, such as port number, mac address, switch id and 
+interface. The other packet that this application listen for 
+is port status open flow messages. When a packet of this 
+kind is received, the application identify which kind of 
+change the packet is warning (i.e. created, deleted or 
+modified). In both cases, the application returns a Json file 
+with all updated changes identified.
 
 Requirements
 ============
