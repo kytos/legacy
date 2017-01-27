@@ -6,7 +6,7 @@ from flask import Response, request
 
 from napps.kytos.of_stats import settings
 from napps.kytos.of_stats.stats import FlowStats, PortStats
-from user_speed import UserSpeed
+from napps.kytos.of_stats.user_speed import UserSpeed
 
 
 log = settings.log
