@@ -8,50 +8,45 @@ deployed with *Kyco* by default.
 *******
 of.core
 *******
-.. include:: ../../kytos/of.core/README.rst
+.. include:: ../../napps/kytos/of_core/README.rst
 
 ***************
 of.flow-manager
 ***************
-.. include:: ../../kytos/of.flow-manager/README.rst
+.. include:: ../../napps/kytos/of_flow_manager/README.rst
 
 ***********
 of.ipv6drop
 ***********
-.. include:: ../../kytos/of.ipv6drop/README.rst
+.. include:: ../../napps/kytos/of_ipv6drop/README.rst
 
 *******
 of.l2ls
 *******
-.. include:: ../../kytos/of.l2ls/README.rst
+.. include:: ../../napps/kytos/of_l2ls/README.rst
 
 ***********
 of.l2lsloop
 ***********
-.. include:: ../../kytos/of.l2lsloop/README.rst
-
-***********
-of.liveness
-***********
-.. include:: ../../kytos/of.liveness/README.rst
+.. include:: ../../napps/kytos/of_l2lsloop/README.rst
 
 *******
 of.lldp
 *******
-.. include:: ../../kytos/of.lldp/README.rst
+.. include:: ../../napps/kytos/of_lldp/README.rst
 
 ********
 of.stats
 ********
-.. include:: ../../kytos/of.stats/README.rst
+.. include:: ../../napps/kytos/of_stats/README.rst
 
 ***********
 of.topology
 ***********
-.. include:: ../../kytos/of.topology/README.rst
+.. include:: ../../napps/kytos/of_topology/README.rst
 
 *******************
 web.topology.layout
 *******************
-.. include:: ../../kytos/web.topology.layout/README.rst
+.. include:: ../../napps/kytos/web_topology_layout/README.rst
 
