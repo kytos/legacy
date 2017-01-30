@@ -4,10 +4,11 @@ Overview
 The **of.l2ls** application is used in basic operations of switches. It
 implements the algorithm known as L2 Learning Switch, which aims to
 figure out which host is attached to which port. 
-The switch keeps a table that maps which hardware address (mac) can be reached
-by which port. Initially this table is empty, so the first step, when a host
-tries to send a packet to another host the **of.l2ls** adds the first entry that
-points to the source host. Next, the switch sends the packet to all ports, 
+The switch keeps a table that stores a tuple containing the mac address 
+(hardware address) and port number. So, the switch can forward the 
+packets directly to the destination host. Initially this table is empty, so 
+the first step, when a host tries to send a packet to another host, is to add 
+an entry pointing to the source host. Next, the switch sends the packet to all ports, 
 except to the port of the source host. The destination host will answer to that 
 packet and once the packet is received, the switch adds an entry to the table
 mapping the mac address of the destination host to a port.
