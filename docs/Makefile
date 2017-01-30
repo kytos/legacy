@@ -61,7 +61,7 @@ clean:
 
 .PHONY: html
 html:
-	sphinx-apidoc -o . ../kytos/ -d10 -M
+	sphinx-apidoc -o . ../napps/ -d10 -M
 	sed -i "/Submodules/,+1d" *.rst
 	sed -i "/Subpackages/,+1d" *.rst
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
@@ -70,7 +70,7 @@ html:
 
 .PHONY: dirhtml
 dirhtml:
-	sphinx-apidoc -o . ../kytos/ -d10 -M
+	sphinx-apidoc -o . ../napps/ -d10 -M
 	sed -i "/Submodules/,+1d" *.rst
 	sed -i "/Subpackages/,+1d" *.rst
 	$(SPHINXBUILD) -b dirhtml $(ALLSPHINXOPTS) $(BUILDDIR)/dirhtml
@@ -242,9 +242,9 @@ dummy:
 	@echo "Build finished. Dummy builder generates no files."
 
 livehtml:
-	sphinx-apidoc -o . ../kytos/ -d10 -M
+	sphinx-apidoc -o . ../napps/ -d10 -M
 	sed -i "/Submodules/,+1d" *.rst
 	sed -i "/Subpackages/,+1d" *.rst
-	sphinx-autobuild -b dirhtml $(ALLSPHINXOPTS) $(BUILDDIR)/dirhtml -z ../kytos
+	sphinx-autobuild -b dirhtml $(ALLSPHINXOPTS) $(BUILDDIR)/dirhtml -z ../napps
 	@echo
 	@echo "Build finished. The HTML pages are in $(BUILDDIR)/dirhtml."
