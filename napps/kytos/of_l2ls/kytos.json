@@ -1,5 +1,5 @@
 {
-  "name": "of.l2ls",
+  "name": "of_l2ls",
   "description": "An L2 learning switch application for OpenFlow switches.",
   "long_description": "A small, simple and basic application that implements an L2 learning switch. With this app, you will be able to ping machines and learn the basics about an napp.",
   "version": "0.1.1",
