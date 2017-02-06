@@ -1,5 +1,5 @@
 {
-  "name": "of.ipv6drop",
+  "name": "of_ipv6drop",
   "long_description": "This NApp listen to new connected switches (``kyco/core.switches.new``) and install a flow to DROP all IPv6 packets that arrives on the switch.",
   "description": "Install flows to DROP IPv6 packets on all switches.",
   "version": "0.1.0",
