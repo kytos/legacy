@@ -1,13 +1,11 @@
 {
-  "name": "of_ipv6drop",
-  "long_description": "This NApp listen to new connected switches (``kyco/core.switches.new``) and install a flow to DROP all IPv6 packets that arrives on the switch.",
-  "description": "Install flows to DROP IPv6 packets on all switches.",
-  "version": "0.1.0",
   "author": "kytos",
-  "ofversion": ["1.0"],
-  "dependencies": ["python-openflow >= 1.1.0b0"],
+  "name": "of_ipv6drop",
+  "description": "Install flows to DROP IPv6 packets on all switches.",
+  "long_description": "This NApp listen to new connected switches (``kyco/core.switches.new``) and install a flow to DROP all IPv6 packets that arrives on the switch.",
+  "version": "0.1.0",
+  "napp_dependencies": [],
   "license": "MIT",
-  "git": "https://github.com/kytos/kyco-core-napps.git",
-  "branch": "develop",
+  "url": "https://github.com/kytos/kyco-core-napps",
   "tags": ["openflow", "ipv6"]
 }
