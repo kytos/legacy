@@ -82,7 +82,12 @@ class Main(KycoCoreNApp):
             """Return an object of class `cls` and unpack if non-empty data."""
             obj = cls()
             if data.value:
-                obj.unpack(data.value)
+                value = data.value
+                if isinstance(value,str):
+                    value = value.encode('utf-8')
+                if isinstance(value, int):
+                    value = bytes(value)
+                obj.unpack(value)
             return obj
 
         ethernet = unpack_non_empty(event.message.data, Ethernet)
