@@ -87,7 +87,10 @@ class StatsAPI(metaclass=ABCMeta):
     @staticmethod
     def _get_response(dct):
         json_ = json.dumps(dct, sort_keys=True, indent=4)
-        return Response(json_, mimetype='application/vnd.api+json')
+        # It should be application/vnd.api+json because it follows
+        # http://jsonapi.org/format/. However, Firefox doesn't display it and
+        # show a download window.
+        return Response(json_, mimetype='application/json')
 
     @staticmethod
     def _get_rrd_not_found_error(exception):
