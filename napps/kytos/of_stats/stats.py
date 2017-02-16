@@ -120,7 +120,8 @@ class RRD:
             log.debug('Creating rrd for app %s, index %s.', self._app, index)
             parent = Path(rrd).parent
             if not parent.exists():
-                parent.mkdir(parents=True)
+                # We may have concurrency problems creating a folder
+                parent.mkdir(parents=True, exist_ok=True)
             self.create_rrd(rrd, tstamp)
         return rrd
 

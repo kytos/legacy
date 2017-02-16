@@ -62,7 +62,7 @@ class StatsAPI(metaclass=ABCMeta):
     def _get_switch(self):
         switch = self.controller.get_switch_by_dpid(self._dpid)
         if switch is None:
-            self.warning('Switch %s not found in controller', self._dpid[-3:])
+            log.warning('Switch %s not found in controller', self._dpid[-3:])
         return switch
 
     def _remove_null(self):
