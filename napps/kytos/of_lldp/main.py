@@ -83,15 +83,14 @@ class Main(KycoCoreNApp):
             obj = cls()
             if data.value:
                 value = data.value
-                if isinstance(value,str):
-                    value = value.encode('utf-8')
-                if isinstance(value, int):
-                    value = bytes(value)
-                obj.unpack(value)
+                if isinstance(value, (str, int)):
+                    obj = cls(value)
+                else:
+                    obj.unpack(value)
             return obj
 
         ethernet = unpack_non_empty(event.message.data, Ethernet)
-        if ethernet.type == 0x88cc:
+        if ethernet.type == constants.LLDP_ETHERTYPE:
             lldp = unpack_non_empty(ethernet.data, LLDP)
             dpid = unpack_non_empty(lldp.chassis_id.sub_value, DPID)
 
