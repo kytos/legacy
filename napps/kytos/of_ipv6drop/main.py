@@ -1,4 +1,4 @@
-"""This App is the responsible to install a drop ipv6 flow on switch setup."""
+"""NApp responsible for installing a DROP ipv6 flow on switch setup."""
 
 from kyco.core.events import KycoEvent
 from kyco.core.napps import KycoCoreNApp
@@ -7,27 +7,27 @@ from pyof.v0x01.common.flow_match import Match
 from pyof.v0x01.controller2switch.flow_mod import FlowMod, FlowModCommand
 
 from napps.kytos.of_ipv6drop import settings
+
 log = settings.log
 
 
 class Main(KycoCoreNApp):
-    """Main class of KycoCoreNApp, responsible for the main OpenFlow basic
-    operations.
-
-    """
+    """Main class of of_ipv6drop NApp."""
 
     def setup(self):
-        """'Replaces' the 'init' method for the KycoApp subclass.
+        """Replace the 'init' method for the KycoApp subclass.
 
         The setup method is automatically called by the run method.
-        Users shouldn't call this method directly."""
+        Users shouldn't call this method directly.
+        """
         self.controller.log_websocket.register_log(log)
 
     def execute(self):
         """Method to be runned once on app 'start' or in a loop.
 
         The execute method is called by the run method of KycoNApp class.
-        Users shouldn't call this method directly."""
+        Users shouldn't call this method directly.
+        """
         pass
 
     @listen_to('kyco/core.switches.new')
@@ -46,4 +46,5 @@ class Main(KycoCoreNApp):
         self.controller.buffers.msg_out.put(event_out)
 
     def shutdown(self):
+        """End of the application."""
         pass

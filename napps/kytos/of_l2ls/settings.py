@@ -1,3 +1,4 @@
+"""Settings for the of_l2ls NApp."""
 import logging
 
 # Log Registry Type

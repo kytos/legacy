@@ -1,17 +1,14 @@
-"""App responsible to discover new switches and hosts."""
+"""NApp responsible to discover new switches and hosts."""
 
+from kyco.core.events import KycoEvent
+from kyco.core.napps import KycoCoreNApp
+from kyco.utils import listen_to
 from pyof.foundation.basic_types import DPID, UBInt16
 from pyof.foundation.network_types import LLDP, Ethernet
 from pyof.v0x01.common.action import ActionOutput
 from pyof.v0x01.controller2switch.packet_out import PacketOut
 
-from kyco.core.events import KycoEvent
-from kyco.core.napps import KycoCoreNApp
-from kyco.utils import listen_to
-
-from napps.kytos.of_lldp import settings
-from napps.kytos.of_lldp import constants
-
+from napps.kytos.of_lldp import constants, settings
 
 log = settings.log
 

@@ -1,4 +1,4 @@
-"""This App is the responsible to install or remove flows from switches"""
+"""NApp responsible for installing or removing flows on the switches."""
 
 import json
 from flask import request
@@ -9,55 +9,51 @@ from kyco.core.napps import KycoCoreNApp
 from pyof.v0x01.controller2switch.flow_mod import FlowModCommand
 
 from napps.kytos.of_flow_manager import settings
+
 log = settings.log
 
 
 class Main(KycoCoreNApp):
-    """Main class of KycoCoreNApp, responsible for the main OpenFlow basic
-    operations.
-
-    """
+    """Main class of of_stats NApp."""
 
     def setup(self):
-        """'Replaces' the 'init' method for the KycoApp subclass.
+        """Replace the 'init' method for the KycoApp subclass.
 
         The setup method is automatically called by the run method.
-        Users shouldn't call this method directly."""
+        Users shouldn't call this method directly.
+        """
         self.execute_as_loop(settings.STATS_INTERVAL)
         self.flow_manager = FlowManager(self.controller)
         self.controller.log_websocket.register_log(log)
-        self.controller.register_rest_endpoint('/flow-manager/<dpid>/flows',
-                                               self.retrieve_flows,
-                                               methods=['GET'])
-
-        self.controller.register_rest_endpoint('/flow-manager/flows',
-                                               self.retrieve_flows,
-                                               methods=['GET'])
-
-        self.controller.register_rest_endpoint('/flow-manager/<dpid>/flows-a',
-                                               self.insert_flow,
-                                               methods=['POST'])
-
-        self.controller.register_rest_endpoint('/flow-manager/<dpid>/<flow_id>/flows-d',
-                                               self.delete_flow,
-                                               methods=['DELETE'])
+        endpoints = [('/flow-manager/<dpid>/flows', self.retrieve_flows,
+                      ['GET']),
+                     ('/flow-manager/flows', self.retrieve_flows,
+                      ['GET']),
+                     ('/flow-manager/<dpid>/flows-a', self.insert_flow,
+                      ['POST']),
+                     ('/flow-manager/<dpid>/<flow_id>/flows-d',
+                      self.delete_flow, ['DELETE'])]
+        for endpoint in endpoints:
+            self.controller.register_rest_endpoint(*endpoint)
 
     def execute(self):
         """Method to be runned once on app 'start' or in a loop.
 
         The execute method is called by the run method of KycoNApp class.
-        Users shouldn't call this method directly."""
+        Users shouldn't call this method directly.
+        """
+        pass
 
     def shutdown(self):
+        """Shutdown routine of the NApp."""
         log.debug("flow-manager stopping")
 
     def retrieve_flows(self, dpid=None):
-        """
-        Retrieves all flows from a sitch identified by dpid. If no dpid has
-        been specified, returns the flows from all switches
+        """Retrieve all flows from a sitch identified by dpid.
+
+        If no dpid has been specified, returns the flows from all switches.
         """
         switch_flows = {}
-        # TODO: Not efficient. Need to be reviewed
         if dpid is not None:
             switch = self.controller.get_switch_by_dpid(dpid)
             flows = []
@@ -74,8 +70,10 @@ class Main(KycoCoreNApp):
         return json.dumps(switch_flows)
 
     def insert_flow(self, dpid=None):
-        """Insert a new flow to the switch identified by dpid. If no dpid has
-        been specified, install flow in all switches """
+        """Insert a new flow to the switch identified by dpid.
+
+        If no dpid has been specified, install flow in all switches.
+        """
         json_content = request.get_json()
         for json_flow in json_content['flows']:
             received_flow = Flow.from_dict(json_flow)
@@ -89,9 +87,10 @@ class Main(KycoCoreNApp):
         return json.dumps({"response": "Flow Created"}), 201
 
     def clear_flows(self, dpid=None):
-        """Clear flows from a switch identified by dpid. If no dpid has been
-        specified, clear all flows from all switches"""
+        """Clear flows from a switch identified by dpid.
 
+        If no dpid has been specified, clear all flows from all switches.
+        """
         if dpid is not None:
             self.flow_manager.clear_flows(dpid)
         else:
@@ -99,10 +98,10 @@ class Main(KycoCoreNApp):
                 self.flow_manager.clear_flows(switch_dpid)
 
     def delete_flow(self, flow_id, dpid=None):
-        """
-        Deletes a flow identified by flow_id from a swith identified by dpid.
+        """Delete a flow from a switch identified by flow_id and dpid.
+
         If no dpid has been specified, removes all flows with the given flow_id
-        from all switches
+        from all switches.
         """
         if dpid is not None:
             self.flow_manager.delete_flow(flow_id, dpid)
@@ -114,14 +113,17 @@ class Main(KycoCoreNApp):
 
 
 class FlowManager(object):
-    """This class is responsible for manipulating flows at the switches"""
+    """Class responsible for manipulating flows at the switches."""
+
     def __init__(self, controller):
+        """Init method."""
         self.controller = controller
 
     def install_new_flow(self, flow, dpid):
-        """
+        """Create a new flow_mod message.
+
         This method is responsible for creating a new flow_mod message from
-        the Flow object received
+        the Flow object received.
         """
         switch = self.controller.get_switch_by_dpid(dpid)
         flow_mod = flow.as_flow_mod(FlowModCommand.OFPFC_ADD)
@@ -133,7 +135,7 @@ class FlowManager(object):
         self.controller.buffers.msg_out.put(event_out)
 
     def clear_flows(self, dpid):
-        """Clear all flows from switch identified by dpid"""
+        """Clear all flows from switch identified by dpid."""
         switch = self.controller.get_switch_by_dpid(dpid)
         for flow in switch.flows:
             flow_mod = flow.as_flow_mod(FlowModCommand.OFPFC_DELETE)
@@ -144,8 +146,7 @@ class FlowManager(object):
             self.controller.buffers.msg_out.put(event_out)
 
     def delete_flow(self, flow_id, dpid):
-        """Removes the flow identified by id from the switch identified by
-        dpid"""
+        """Remove a flow from a switch identified by id and dpid."""
         switch = self.controller.get_switch_by_dpid(dpid)
         for flow in switch.flows:
             if flow.id == flow_id:
@@ -157,10 +158,11 @@ class FlowManager(object):
                                       content=content)
                 self.controller.buffers.msg_out.put(event_out)
 
-    def _get_flows(self, flow_stats):
-        """
-        Creates a list of flows from the body of a flow_stats_reply
-        message
+    @staticmethod
+    def _get_flows(flow_stats):
+        """Create a lista of flows.
+
+        Creates a list of flows from the body of a flow_stats_reply message.
         """
         flows = []
         for flow_stat in flow_stats:

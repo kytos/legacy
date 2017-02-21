@@ -1,4 +1,4 @@
-"""Module to manager the settings and layout of kyco web interface."""
+"""Module to manage settings and layout of kyco web interface."""
 
 import json
 from os import listdir, makedirs
@@ -9,6 +9,7 @@ from flask import request
 from kyco.core.napps import KycoCoreNApp
 
 from napps.kytos.web_topology_layout import settings
+
 log = settings.log
 
 makedirs(settings.TOPOLOGY_DIR, exist_ok=True)
@@ -59,7 +60,8 @@ class Main(KycoCoreNApp):
         else:
             return self.get_topology(name)
 
-    def save_topology(self, name):
+    @staticmethod
+    def save_topology(name):
         """Save a topology layout in a file.
 
         This method get a json topology from request and puts this in a file.
@@ -77,7 +79,8 @@ class Main(KycoCoreNApp):
             json.dump(topology, outfile)
         return json.dumps({'response': 'Saved'}), 201
 
-    def get_topology(self, name):
+    @staticmethod
+    def get_topology(name):
         """Method to read and return a topology from json file.
 
         Paramters:
@@ -93,7 +96,8 @@ class Main(KycoCoreNApp):
             output = json.load(outfile)
         return json.dumps(output)
 
-    def get_topologies(self):
+    @staticmethod
+    def get_topologies():
         """Method used to returns all topologies.
 
         Returns:
@@ -101,8 +105,8 @@ class Main(KycoCoreNApp):
         """
         files = listdir(settings.TOPOLOGY_DIR)
         output = []
-        for f in files:
-            if isfile(join(settings.TOPOLOGY_DIR, f)):
-                output.append(f.replace('.json', ''))
+        for filename in files:
+            if isfile(join(settings.TOPOLOGY_DIR, filename)):
+                output.append(filename.replace('.json', ''))
 
         return json.dumps(output)

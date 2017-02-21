@@ -1,3 +1,4 @@
+"""Module settings."""
 import logging
 
 # Log Registry Type

@@ -1,4 +1,4 @@
-"""App responsible for the main OpenFlow basic operations."""
+"""NApp that solve the L2 Learning Switch algorithm."""
 
 from kyco.core.events import KycoEvent
 from kyco.core.napps import KycoCoreNApp
