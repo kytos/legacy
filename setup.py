@@ -47,7 +47,7 @@ class Linter(Command):
     @staticmethod
     def lint():
         """Run pylama and radon."""
-        files = 'tests setup.py pyof'
+        files = 'tests setup.py napps'
         print('Pylama is running. It may take several seconds...')
         cmd = 'pylama {}'.format(files)
         try:
