@@ -5,15 +5,15 @@ from flask import request
 
 from kyco.core.events import KycoEvent
 from kyco.core.flow import Flow
-from kyco.core.napps import KycoCoreNApp
+from kyco.core.napps import KycoNApp
 from pyof.v0x01.controller2switch.flow_mod import FlowModCommand
 
 from napps.kytos.of_flow_manager import settings
 log = settings.log
 
 
-class Main(KycoCoreNApp):
-    """Main class of KycoCoreNApp, responsible for the main OpenFlow basic
+class Main(KycoNApp):
+    """Main class of KycoNApp, responsible for the main OpenFlow basic
     operations.
 
     """

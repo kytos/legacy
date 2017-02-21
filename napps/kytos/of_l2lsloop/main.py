@@ -9,14 +9,14 @@ from pyof.v0x01.controller2switch.flow_mod import FlowMod, FlowModCommand
 from pyof.v0x01.controller2switch.packet_out import PacketOut
 
 from kyco.core.events import KycoEvent
-from kyco.core.napps import KycoCoreNApp
+from kyco.core.napps import KycoNApp
 from kyco.utils import listen_to
 
 from napps.kytos.of_l2lsloop import settings
 log = settings.log
 
 
-class Main(KycoCoreNApp):
+class Main(KycoNApp):
     """The main class for of.l2lsloop application."""
 
     def setup(self):

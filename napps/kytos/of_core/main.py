@@ -9,7 +9,7 @@ from pyof.v0x01.symmetric.hello import Hello
 
 from kyco.core.events import KycoEvent
 from kyco.core.flow import Flow
-from kyco.core.napps import KycoCoreNApp
+from kyco.core.napps import KycoNApp
 from kyco.core.switch import Interface
 from kyco.utils import listen_to
 
@@ -17,8 +17,8 @@ from napps.kytos.of_core import settings
 log = settings.log
 
 
-class Main(KycoCoreNApp):
-    """Main class of KycoCoreNapp responsible to OpenFlow basic operations."""
+class Main(KycoNApp):
+    """Main class of the NApp responsible for OpenFlow basic operations."""
 
     def setup(self):
         """App initialization (used instead of ``__init__``).

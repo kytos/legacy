@@ -1,7 +1,7 @@
 """App responsible for the main OpenFlow basic operations."""
 
 from kyco.core.events import KycoEvent
-from kyco.core.napps import KycoCoreNApp
+from kyco.core.napps import KycoNApp
 from kyco.utils import listen_to
 from pyof.foundation.network_types import Ethernet
 from pyof.v0x01.common.action import ActionOutput
@@ -14,8 +14,8 @@ from napps.kytos.of_l2ls import settings
 log = settings.log
 
 
-class Main(KycoCoreNApp):
-    """Main class of a KycoCoreNApp, responsible for OpenFlow operations."""
+class Main(KycoNApp):
+    """Main class of a KycoNApp, responsible for OpenFlow operations."""
 
     def setup(self):
         """App initialization (used instead of ``__init__``).

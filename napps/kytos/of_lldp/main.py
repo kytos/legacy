@@ -6,7 +6,7 @@ from pyof.v0x01.common.action import ActionOutput
 from pyof.v0x01.controller2switch.packet_out import PacketOut
 
 from kyco.core.events import KycoEvent
-from kyco.core.napps import KycoCoreNApp
+from kyco.core.napps import KycoNApp
 from kyco.utils import listen_to
 
 from napps.kytos.of_lldp import settings
@@ -16,7 +16,7 @@ from napps.kytos.of_lldp import constants
 log = settings.log
 
 
-class Main(KycoCoreNApp):
+class Main(KycoNApp):
     """Main lldp app class."""
 
     def setup(self):

@@ -1,7 +1,7 @@
 """This App is the responsible to install a drop ipv6 flow on switch setup."""
 
 from kyco.core.events import KycoEvent
-from kyco.core.napps import KycoCoreNApp
+from kyco.core.napps import KycoNApp
 from kyco.utils import listen_to
 from pyof.v0x01.common.flow_match import Match
 from pyof.v0x01.controller2switch.flow_mod import FlowMod, FlowModCommand
@@ -10,8 +10,8 @@ from napps.kytos.of_ipv6drop import settings
 log = settings.log
 
 
-class Main(KycoCoreNApp):
-    """Main class of KycoCoreNApp, responsible for the main OpenFlow basic
+class Main(KycoNApp):
+    """Main class of KycoNApp, responsible for the main OpenFlow basic
     operations.
 
     """
