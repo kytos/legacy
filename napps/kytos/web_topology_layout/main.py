@@ -23,12 +23,12 @@ class Main(KycoCoreNApp):
     """
 
     def setup(self):
-        """Method used to create the web.topology.layout routes.
+        """Method used to create the web_topology_layout routes.
 
         This method will register the routes ['kytos/web/topology/layouts/',
         'web/topology/layouts/<name>'] to save and recover topologies.
         """
-        self.name = 'kytos/web.topology.layout'
+        self.name = 'kytos/web_topology_layout'
         self.current_controller = self.controller
         self.controller.register_rest_endpoint('/web/topology/layouts/',
                                                self.get_topologies,

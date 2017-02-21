@@ -26,7 +26,7 @@ class Main(KycoCoreNApp):
         The setup method is automatically called by the run method.
         Users shouldn't call this method directly.
         """
-        self.name = 'kytos/of.core'
+        self.name = 'kytos/of_core'
         self.execute_as_loop(settings.STATS_INTERVAL)
         self.controller.log_websocket.register_log(log)
 
@@ -50,11 +50,11 @@ class Main(KycoCoreNApp):
         req = StatsRequest(body_type=StatsTypes.OFPST_FLOW, body=body)
         req.pack()
         event = KycoEvent(
-            name='kytos/of.core.messages.out.ofpt_stats_request',
+            name='kytos/of_core.messages.out.ofpt_stats_request',
             content={'message': req, 'destination': switch.connection})
         self.controller.buffers.msg_out.put(event)
 
-    @listen_to('kytos/of.core.messages.in.ofpt_stats_reply')
+    @listen_to('kytos/of_core.messages.in.ofpt_stats_reply')
     def handle_flow_stats_reply(self, event):
         """Handle flow stats reply message.
 
@@ -73,9 +73,9 @@ class Main(KycoCoreNApp):
                 flows.append(new_flow)
             switch.flows = flows
 
-    @listen_to('kytos/of.core.messages.in.ofpt_features_reply')
+    @listen_to('kytos/of_core.messages.in.ofpt_features_reply')
     def handle_features_reply(self, event):
-        """Handle received kytos/of.core.messages.in.ofpt_features_reply event.
+        """Handle received kytos/of_core.messages.in.ofpt_features_reply event.
 
         Reads the KycoEvent with features reply message sent by the client,
         save this data and sends three new messages to the client:
@@ -129,12 +129,12 @@ class Main(KycoCoreNApp):
         log.debug('RawOpenFlowMessage unpacked')
 
         name = message.header.message_type.name.lower()
-        of_event = KycoEvent(name="kytos/of.core.messages.in.{}".format(name),
+        of_event = KycoEvent(name="kytos/of_core.messages.in.{}".format(name),
                              content={'message': message,
                                       'source': event.source})
         self.controller.buffers.msg_in.put(of_event)
 
-    @listen_to('kytos/of.core.messages.in.ofpt_echo_request')
+    @listen_to('kytos/of_core.messages.in.ofpt_echo_request')
     def handle_echo_request(self, event):
         """Handle Echo Request Messages.
 
@@ -149,13 +149,13 @@ class Main(KycoCoreNApp):
 
         echo_request = event.content['message']
         echo_reply = EchoReply(xid=echo_request.header.xid)
-        event_out = KycoEvent(name=('kytos/of.core.messages.out.'
+        event_out = KycoEvent(name=('kytos/of_core.messages.out.'
                                     'ofpt_echo_reply'),
                               content={'message': echo_reply,
                                        'destination': event.source})
         self.controller.buffers.msg_out.put(event_out)
 
-    @listen_to('kytos/of.core.messages.in.ofpt_hello')
+    @listen_to('kytos/of_core.messages.in.ofpt_hello')
     def handle_openflow_in_hello(self, event):
         """Handle hello messages.
 
@@ -165,17 +165,17 @@ class Main(KycoCoreNApp):
         Args:
             event (KycoMessageInHello): KycoMessageInHelloEvent
         """
-        log.debug('Handling kytos/of.core.messages.ofpt_hello')
+        log.debug('Handling kytos/of_core.messages.ofpt_hello')
 
         # TODO: Evaluate the OpenFlow version that will be used...
         hello = Hello(xid=event.content['message'].header.xid)
-        event_out = KycoEvent(name='kytos/of.core.messages.out.ofpt_hello',
+        event_out = KycoEvent(name='kytos/of_core.messages.out.ofpt_hello',
                               content={'message': hello,
                                        'destination': event.source})
         self.controller.buffers.msg_out.put(event_out)
 
-    @listen_to('kytos/of.core.messages.out.ofpt_hello',
-               'kytos/of.core.messages.out.ofpt_echo_reply')
+    @listen_to('kytos/of_core.messages.out.ofpt_hello',
+               'kytos/of_core.messages.out.ofpt_echo_reply')
     def send_features_request(self, event):
         """Send a feature request to the switch after a hello Message.
 
@@ -189,7 +189,7 @@ class Main(KycoCoreNApp):
         """
         log.debug('Sending a feature request after responding to a hello')
 
-        event_out = KycoEvent(name=('kytos/of.core.messages.out.'
+        event_out = KycoEvent(name=('kytos/of_core.messages.out.'
                                     'ofpt_features_request'),
                               content={'message': FeaturesRequest(),
                                        'destination': event.destination})

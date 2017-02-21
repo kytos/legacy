@@ -39,7 +39,7 @@ class Main(KycoCoreNApp):
         flow_mod.command = FlowModCommand.OFPFC_ADD
         flow_mod.match = Match()
         flow_mod.match.dl_type = 0x86dd  # ipv6
-        event_out = KycoEvent(name=('kytos/of.ipv6disable.messages.out.'
+        event_out = KycoEvent(name=('kytos/of_ipv6disable.messages.out.'
                                     'ofpt_flow_mod'),
                               content={'destination': switch.connection,
                                        'message': flow_mod})
