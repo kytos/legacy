@@ -176,11 +176,7 @@ class RRD:
             raise FileNotFoundError(msg)
 
         # Use integers to calculate resolution
-        if end == 'now':
-            end = int(time.time())
-        if start == 'first':
-            with settings.rrd_lock:
-                start = rrdtool.first(rrd)
+        start, end = self._calc_start_end(start, end, rrd)
 
         # Find the best matching resolution for returning n_points.
         res_args = []
@@ -190,12 +186,6 @@ class RRD:
             if resolution > 0:
                 res_args.extend(['-a', '-r', '{}s'.format(resolution)])
 
-        # For RRDtool to include start and end timestamps.
-        if isinstance(start, int):
-            start -= 1
-        if isinstance(end, int):
-            end -= 1
-
         args = [rrd, 'AVERAGE', '--start', str(start), '--end', str(end)]
         args.extend(res_args)
         with settings.rrd_lock:
@@ -203,6 +193,24 @@ class RRD:
         start, stop, step = tstamps
         # rrdtool range is different from Python's.
         return range(start + step, stop + 1, step), cols, rows
+
+    @staticmethod
+    def _calc_start_end(start, end, rrd):
+        """Calculate start and end values for fetch command."""
+        # Use integers to calculate resolution
+        if end == 'now':
+            end = int(time.time())
+        if start == 'first':
+            with settings.rrd_lock:
+                start = rrdtool.first(rrd)
+
+        # For RRDtool to include start and end timestamps.
+        if isinstance(start, int):
+            start -= 1
+        if isinstance(end, int):
+            end -= 1
+
+        return start, end
 
     def fetch_latest(self, index):
         """Fetch only the value for now.
