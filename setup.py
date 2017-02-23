@@ -83,7 +83,6 @@ class Test(TestCommand):
         except CalledProcessError as e:
             print("FAILED: please, fix the doc's error(s) above.")
             sys.exit(e.returncode)
-        Linter.lint()
 
 
 class KytosInstall:
