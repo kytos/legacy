@@ -2,8 +2,7 @@
 import logging
 import unittest
 from pathlib import Path
-
-from unittest.mock import mock_open, patch
+from unittest.mock import mock_open, patch  # noqa (isort conflict)
 
 from napps.kytos.of_stats.user_speed import UserSpeed
 
