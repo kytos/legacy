@@ -6,7 +6,7 @@ from os.path import isfile, join
 
 from flask import request
 
-from kyco.core.napps import KycoCoreNApp
+from kyco.core.napps import KycoNApp
 
 from napps.kytos.web_topology_layout import settings
 log = settings.log
@@ -14,7 +14,7 @@ log = settings.log
 makedirs(settings.TOPOLOGY_DIR, exist_ok=True)
 
 
-class Main(KycoCoreNApp):
+class Main(KycoNApp):
     """Main class for Web Topology Layout application.
 
     This app intends to update the links between machines and switches. It

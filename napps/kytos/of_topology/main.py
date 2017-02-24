@@ -5,15 +5,15 @@ import json
 from pyof.foundation.basic_types import HWAddress
 from pyof.foundation.network_types import Ethernet
 
-from kyco.core.napps import KycoCoreNApp
+from kyco.core.napps import KycoNApp
 from kyco.utils import listen_to
 
 from napps.kytos.of_topology import constants, settings
 log = settings.log
 
 
-class Main(KycoCoreNApp):
-    """Main class of a KycoCoreNApp, responsible build a network topology.
+class Main(KycoNApp):
+    """Main class of a KycoNApp, responsible build a network topology.
 
     This app intends to update the links between machines and switches. It
     considers that if an interface is connected to another interface then this
