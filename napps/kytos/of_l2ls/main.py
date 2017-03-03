@@ -1,7 +1,7 @@
 """NApp that solve the L2 Learning Switch algorithm."""
 
 from kyco.core.events import KycoEvent
-from kyco.core.napps import KycoCoreNApp
+from kyco.core.napps import KycoNApp
 from kyco.utils import listen_to
 from pyof.foundation.network_types import Ethernet
 from pyof.v0x01.common.action import ActionOutput
@@ -14,8 +14,8 @@ from napps.kytos.of_l2ls import settings
 log = settings.log
 
 
-class Main(KycoCoreNApp):
-    """Main class of a KycoCoreNApp, responsible for OpenFlow operations."""
+class Main(KycoNApp):
+    """Main class of a KycoNApp, responsible for OpenFlow operations."""
 
     def setup(self):
         """App initialization (used instead of ``__init__``).
@@ -33,7 +33,7 @@ class Main(KycoCoreNApp):
         """
         pass
 
-    @listen_to('kytos/of.core.messages.in.ofpt_packet_in')
+    @listen_to('kytos/of_core.messages.in.ofpt_packet_in')
     def handle_packet_in(self, event):
         """Handle PacketIn Event.
 
@@ -66,7 +66,7 @@ class Main(KycoCoreNApp):
                 flow_mod.match.dl_type = ethernet.type
                 flow_mod.buffer_id = packet_in.buffer_id
                 flow_mod.actions.append(ActionOutput(port=ports[0]))
-                event_out = KycoEvent(name=('kytos/of.l2ls.messages.out.'
+                event_out = KycoEvent(name=('kytos/of_l2ls.messages.out.'
                                             'ofpt_flow_mod'),
                                       content={'destination': event.source,
                                                'message': flow_mod})
@@ -77,7 +77,7 @@ class Main(KycoCoreNApp):
                 packet_out.in_port = packet_in.in_port
 
                 packet_out.actions.append(ActionOutput(port=Port.OFPP_FLOOD))
-                event_out = KycoEvent(name=('kytos/of.l2ls.messages.out.'
+                event_out = KycoEvent(name=('kytos/of_l2ls.messages.out.'
                                             'ofpt_packet_out'),
                                       content={'destination': event.source,
                                                'message': packet_out})

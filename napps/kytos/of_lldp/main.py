@@ -1,7 +1,7 @@
 """NApp responsible to discover new switches and hosts."""
 
 from kyco.core.events import KycoEvent
-from kyco.core.napps import KycoCoreNApp
+from kyco.core.napps import KycoNApp
 from kyco.utils import listen_to
 from pyof.foundation.basic_types import DPID, UBInt16
 from pyof.foundation.network_types import LLDP, Ethernet
@@ -13,12 +13,12 @@ from napps.kytos.of_lldp import constants, settings
 log = settings.log
 
 
-class Main(KycoCoreNApp):
+class Main(KycoNApp):
     """Main lldp app class."""
 
     def setup(self):
         """Create an empty dict to store the switches references and data."""
-        self.name = 'kytos/of.lldp'
+        self.name = 'kytos/of_lldp'
         self.execute_as_loop(settings.POOLING_TIME)
         self.controller.log_websocket.register_log(log)
 
@@ -52,7 +52,7 @@ class Main(KycoCoreNApp):
                 packet_out.data = ethernet.pack()
 
                 event_out = KycoEvent()
-                event_out.name = 'kytos/of.lldp.messages.out.ofpt_packet_out'
+                event_out.name = 'kytos/of_lldp.messages.out.ofpt_packet_out'
                 event_out.content = {'destination': switch.connection,
                                      'message': packet_out}
                 self.controller.buffers.msg_out.put(event_out)
@@ -60,7 +60,7 @@ class Main(KycoCoreNApp):
                 log.debug("Sending a LLDP PacketOut to the switch %s",
                           switch.dpid)
 
-    @listen_to('kytos/of.core.messages.in.ofpt_packet_in')
+    @listen_to('kytos/of_core.messages.in.ofpt_packet_in')
     def update_links(self, event):
         """Method used to update interfaces when a Ethernet packet is received.
 

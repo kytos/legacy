@@ -1,7 +1,7 @@
 """NApp responsible for installing a DROP ipv6 flow on switch setup."""
 
 from kyco.core.events import KycoEvent
-from kyco.core.napps import KycoCoreNApp
+from kyco.core.napps import KycoNApp
 from kyco.utils import listen_to
 from pyof.v0x01.common.flow_match import Match
 from pyof.v0x01.controller2switch.flow_mod import FlowMod, FlowModCommand
@@ -11,7 +11,7 @@ from napps.kytos.of_ipv6drop import settings
 log = settings.log
 
 
-class Main(KycoCoreNApp):
+class Main(KycoNApp):
     """Main class of of_ipv6drop NApp."""
 
     def setup(self):
@@ -39,7 +39,7 @@ class Main(KycoCoreNApp):
         flow_mod.command = FlowModCommand.OFPFC_ADD
         flow_mod.match = Match()
         flow_mod.match.dl_type = 0x86dd  # ipv6
-        event_out = KycoEvent(name=('kytos/of.ipv6disable.messages.out.'
+        event_out = KycoEvent(name=('kytos/of_ipv6disable.messages.out.'
                                     'ofpt_flow_mod'),
                               content={'destination': switch.connection,
                                        'message': flow_mod})
