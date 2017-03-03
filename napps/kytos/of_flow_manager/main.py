@@ -126,7 +126,7 @@ class FlowManager(object):
         switch = self.controller.get_switch_by_dpid(dpid)
         flow_mod = flow.as_flow_mod(FlowModCommand.OFPFC_ADD)
 
-        event_out = KycoEvent(name=('kytos/of.flow-manager.messages.out.'
+        event_out = KycoEvent(name=('kytos/of_flow-manager.messages.out.'
                                     'ofpt_flow_mod'),
                               content={'destination': switch.connection,
                                        'message': flow_mod})
@@ -137,7 +137,7 @@ class FlowManager(object):
         switch = self.controller.get_switch_by_dpid(dpid)
         for flow in switch.flows:
             flow_mod = flow.as_flow_mod(FlowModCommand.OFPFC_DELETE)
-            event_out = KycoEvent(name=('kytos/of.flow-manager.messages.out.'
+            event_out = KycoEvent(name=('kytos/of_flow-manager.messages.out.'
                                         'ofpt_flow_mod'),
                                   content={'destination': switch.connection,
                                            'message': flow_mod})
@@ -152,7 +152,7 @@ class FlowManager(object):
                 flow_mod = flow.as_flow_mod(FlowModCommand.OFPFC_DELETE)
                 content = {'destination': switch.connection,
                            'message': flow_mod}
-                event_out = KycoEvent(name=('kytos/of.flow-manager.'
+                event_out = KycoEvent(name=('kytos/of_flow-manager.'
                                             'messages.out.ofpt_flow_mod'),
                                       content=content)
                 self.controller.buffers.msg_out.put(event_out)

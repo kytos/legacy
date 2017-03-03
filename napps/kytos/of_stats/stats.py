@@ -42,7 +42,7 @@ class Stats(metaclass=ABCMeta):
 
     def _send_event(self, req, conn):
         event = KycoEvent(
-            name='kytos/of.stats.messages.out.ofpt_stats_request',
+            name='kytos/of_stats.messages.out.ofpt_stats_request',
             content={'message': req, 'destination': conn})
         self._buffer.put(event)
 

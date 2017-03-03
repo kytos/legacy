@@ -33,7 +33,7 @@ class Main(KycoNApp):
         """
         pass
 
-    @listen_to('kytos/of.core.messages.in.ofpt_packet_in')
+    @listen_to('kytos/of_core.messages.in.ofpt_packet_in')
     def handle_packet_in(self, event):
         """Handle PacketIn Event.
 
@@ -66,7 +66,7 @@ class Main(KycoNApp):
                 flow_mod.match.dl_type = ethernet.type
                 flow_mod.buffer_id = packet_in.buffer_id
                 flow_mod.actions.append(ActionOutput(port=ports[0]))
-                event_out = KycoEvent(name=('kytos/of.l2ls.messages.out.'
+                event_out = KycoEvent(name=('kytos/of_l2ls.messages.out.'
                                             'ofpt_flow_mod'),
                                       content={'destination': event.source,
                                                'message': flow_mod})
@@ -77,7 +77,7 @@ class Main(KycoNApp):
                 packet_out.in_port = packet_in.in_port
 
                 packet_out.actions.append(ActionOutput(port=Port.OFPP_FLOOD))
-                event_out = KycoEvent(name=('kytos/of.l2ls.messages.out.'
+                event_out = KycoEvent(name=('kytos/of_l2ls.messages.out.'
                                             'ofpt_packet_out'),
                                       content={'destination': event.source,
                                                'message': packet_out})

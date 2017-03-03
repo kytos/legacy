@@ -26,7 +26,7 @@ class Main(KycoNApp):
         This setup will set the name of app, register the endpoint
         /kytos/topology and setup the logger.
         """
-        self.name = 'kytos/of.topology'
+        self.name = 'kytos/of_topology'
         self.controller.register_rest_endpoint('/topology',
                                                self.get_json_topology,
                                                methods=['GET'])
@@ -36,11 +36,11 @@ class Main(KycoNApp):
         """Do nothing, only wait for packet-in messages."""
         pass
 
-    @listen_to('kytos/of.core.messages.in.ofpt_packet_in')
+    @listen_to('kytos/of_core.messages.in.ofpt_packet_in')
     def update_links(self, event):
         """Receive a kytos event and update links interface.
 
-        Get the event kytos/of.core.messages.in.ofpt_packet_in and update
+        Get the event kytos/of_core.messages.in.ofpt_packet_in and update
         the interface endpoints, ignoring the LLDP packages.
 
         Parameters:
@@ -58,11 +58,11 @@ class Main(KycoNApp):
                not interface.is_link_between_switches():
                 interface.update_endpoint(hw_address)
 
-    @listen_to('kytos/of.core.messages.in.ofpt_port_status')
+    @listen_to('kytos/of_core.messages.in.ofpt_port_status')
     def update_port_stats(self, event):
         """Receive a Kytos event and update port.
 
-        Get the event kytos/of.core.messages.in.ofpt_port_status and update the
+        Get the event kytos/of_core.messages.in.ofpt_port_status and update the
         port status.
 
         Parameters:

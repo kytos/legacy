@@ -28,7 +28,7 @@ class Main(KycoNApp):
         """Do nothing."""
         pass
 
-    @listen_to('kytos/of.core.messages.in.ofpt_packet_in')
+    @listen_to('kytos/of_core.messages.in.ofpt_packet_in')
     def handle_packet_in(self, event):
         """Method to handle flows to allow communication between switch ports.
 
@@ -58,7 +58,7 @@ class Main(KycoNApp):
             flow_mod.buffer_id = packet_in.buffer_id
             flow_mod.actions.append(ActionOutput(port=ports[0]))
 
-            message_name = 'kytos/of.l2ls.messages.out.ofpt_flow_mod'
+            message_name = 'kytos/of_l2ls.messages.out.ofpt_flow_mod'
             content = {'destination': event.source,
                        'message': flow_mod}
             event_out = KycoEvent(name=message_name, content=content)
@@ -73,7 +73,7 @@ class Main(KycoNApp):
 
             switch.update_flood_table(ethernet)
 
-            message_name = 'kytos/of.l2ls.messages.out.ofpt_packet_out'
+            message_name = 'kytos/of_l2ls.messages.out.ofpt_packet_out'
             content = {'destination': event.source,
                        'message': packet_out}
             event_out = KycoEvent(name=message_name,
