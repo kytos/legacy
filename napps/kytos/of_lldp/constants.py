@@ -1,3 +1,4 @@
+"""Constants for the of_lldp NApp."""
 # LLDP Ethernet type
 LLDP_ETHERTYPE = 0x88cc
 

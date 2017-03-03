@@ -1,3 +1,4 @@
+"""Settings from of_flow_manager NApp."""
 import logging
 
 # Log Registry Type

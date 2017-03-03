@@ -2,8 +2,7 @@
 import os
 import unittest
 from tempfile import mkstemp
-# The pylint rule below conflicts with isort
-from unittest.mock import patch
+from unittest.mock import patch  # noqa (isort conflict)
 
 from napps.kytos.of_stats.settings import STATS_INTERVAL
 from napps.kytos.of_stats.stats import RRD

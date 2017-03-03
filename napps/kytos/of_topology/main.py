@@ -1,14 +1,14 @@
-"""App responsible to update links detail and create a network topology."""
+"""NApp responsible to update links detail and create a network topology."""
 
 import json
 
+from kyco.core.napps import KycoNApp
+from kyco.utils import listen_to
 from pyof.foundation.basic_types import HWAddress
 from pyof.foundation.network_types import Ethernet
 
-from kyco.core.napps import KycoNApp
-from kyco.utils import listen_to
-
 from napps.kytos.of_topology import constants, settings
+
 log = settings.log
 
 
@@ -36,8 +36,9 @@ class Main(KycoNApp):
         """Do nothing, only wait for packet-in messages."""
         pass
 
+    @staticmethod
     @listen_to('kytos/of_core.messages.in.ofpt_packet_in')
-    def update_links(self, event):
+    def update_links(event):
         """Receive a kytos event and update links interface.
 
         Get the event kytos/of_core.messages.in.ofpt_packet_in and update
@@ -58,8 +59,9 @@ class Main(KycoNApp):
                not interface.is_link_between_switches():
                 interface.update_endpoint(hw_address)
 
+    @staticmethod
     @listen_to('kytos/of_core.messages.in.ofpt_port_status')
-    def update_port_stats(self, event):
+    def update_port_stats(event):
         """Receive a Kytos event and update port.
 
         Get the event kytos/of_core.messages.in.ofpt_port_status and update the
@@ -74,8 +76,8 @@ class Main(KycoNApp):
         port_no = port_status.desc.port_no
         port_name = port_status.desc.name
         reason = reasons[port_status.reason.value]
-        msg = 'The port {} ({}) from switch {} was {}.'
-        log.debug(msg.format(port_no, port_name, dpid, reason))
+        msg = 'The port %s (%s) from switch %s was %s.'
+        log.debug(msg, port_no, port_name, dpid, reason)
 
     def shutdown(self):
         """End of the application."""
@@ -89,17 +91,17 @@ class Main(KycoNApp):
             topology (string): json with topology details.
         """
         nodes, links = [], []
-        for dpid, switch in self.controller.switches.items():
+        for _, switch in self.controller.switches.items():
             nodes.append(switch.as_dict())
-            for port_no, interface in switch.interfaces.items():
+            for _, interface in switch.interfaces.items():
                 link = {'source': switch.id,
                         'target': interface.id,
                         'type': 'interface'}
                 nodes.append(interface.as_dict())
                 links.append(link)
 
-                for endpoint, ts in interface.endpoints:
-                    if type(endpoint) is HWAddress:
+                for endpoint, _ in interface.endpoints:
+                    if isinstance(endpoint, HWAddress):
                         link = {'source': interface.id,
                                 'target': endpoint.value,
                                 'type': 'link'}

@@ -1,5 +1,10 @@
-"""App responsible for the main OpenFlow basic operations."""
+"""NApp responsible for the main OpenFlow basic operations."""
 
+from kyco.core.events import KycoEvent
+from kyco.core.flow import Flow
+from kyco.core.napps import KycoNApp
+from kyco.core.switch import Interface
+from kyco.utils import listen_to
 from pyof.v0x01.common.utils import new_message_from_header
 from pyof.v0x01.controller2switch.common import FlowStatsRequest
 from pyof.v0x01.controller2switch.features_request import FeaturesRequest
@@ -7,13 +12,8 @@ from pyof.v0x01.controller2switch.stats_request import StatsRequest, StatsTypes
 from pyof.v0x01.symmetric.echo_reply import EchoReply
 from pyof.v0x01.symmetric.hello import Hello
 
-from kyco.core.events import KycoEvent
-from kyco.core.flow import Flow
-from kyco.core.napps import KycoNApp
-from kyco.core.switch import Interface
-from kyco.utils import listen_to
-
 from napps.kytos.of_core import settings
+
 log = settings.log
 
 
@@ -54,8 +54,9 @@ class Main(KycoNApp):
             content={'message': req, 'destination': switch.connection})
         self.controller.buffers.msg_out.put(event)
 
+    @staticmethod
     @listen_to('kytos/of_core.messages.in.ofpt_stats_reply')
-    def handle_flow_stats_reply(self, event):
+    def handle_flow_stats_reply(event):
         """Handle flow stats reply message.
 
         This method updates the switches list with its Flow Stats.
@@ -119,7 +120,6 @@ class Main(KycoNApp):
 
         # creates an empty OpenFlow Message based on the message_type defined
         # on the unpacked header.
-        # TODO: Deal with openFlow version prior to message instantiation
         message = new_message_from_header(event.content['header'])
         binary_data = event.content['binary_data']
 
@@ -167,7 +167,6 @@ class Main(KycoNApp):
         """
         log.debug('Handling kytos/of_core.messages.ofpt_hello')
 
-        # TODO: Evaluate the OpenFlow version that will be used...
         hello = Hello(xid=event.content['message'].header.xid)
         event_out = KycoEvent(name='kytos/of_core.messages.out.ofpt_hello',
                               content={'message': hello,

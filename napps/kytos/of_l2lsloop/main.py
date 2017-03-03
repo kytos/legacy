@@ -1,6 +1,8 @@
-"""Module responsible for the main OpenFlow basic operations."""
+"""Module that implements a L2 Learning Switch algorithm with loop support."""
 
-
+from kyco.core.events import KycoEvent
+from kyco.core.napps import KycoNApp
+from kyco.utils import listen_to
 from pyof.foundation.network_types import Ethernet
 from pyof.v0x01.common.action import ActionOutput
 from pyof.v0x01.common.flow_match import FlowWildCards, Match
@@ -8,11 +10,8 @@ from pyof.v0x01.common.phy_port import Port
 from pyof.v0x01.controller2switch.flow_mod import FlowMod, FlowModCommand
 from pyof.v0x01.controller2switch.packet_out import PacketOut
 
-from kyco.core.events import KycoEvent
-from kyco.core.napps import KycoNApp
-from kyco.utils import listen_to
-
 from napps.kytos.of_l2lsloop import settings
+
 log = settings.log
 
 

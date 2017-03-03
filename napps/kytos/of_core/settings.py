@@ -1,3 +1,4 @@
+"""Settings for the of_core NApp.."""
 import logging
 
 # Log Registry Type
