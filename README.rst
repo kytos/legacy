@@ -56,7 +56,7 @@ Configuring
 
 After *kytos-napps* installation, this package copy all core napps to
 ``/var/lib/kytos/napps/kytos/`` where, by default, all networks applications are
-loaded when *Kytos Controller* is started.
+loaded when `Kytos SDN controller <https://kytos.io>`_ is started.
 
 Please configure your controller to point to the root of this folder
 (``/var/lib/kytos/napps/`` in order to load theses napps.
