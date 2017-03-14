@@ -64,7 +64,8 @@ Please configure your controller to point to the root of this folder
 You can also feel free to move this folder to another place into your system,
 but please remember to change this on your controller config file. For more
 information please visit the section "Configuration" on the `Kytos's
-Administrator Guide <http://docs.kytos.io/kyco/administrator/#configuration>`__.
+Administrator Guide
+<https://docs.kytos.io/kytos/administrator/#configuration>`__.
 
 Authors
 *******
