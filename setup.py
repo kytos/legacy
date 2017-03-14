@@ -178,10 +178,10 @@ class DevelopMode(develop):
 # parse_requirements() returns generator of pip.req.InstallRequirement objects
 requirements = parse_requirements('requirements.txt', session=False)
 
-setup(name='kyco-core-napps',
+setup(name='kytos-napps',
       version='1.1.0b1.dev1',
       description='Core Napps developed by Kytos Team',
-      url='http://github.com/kytos/kyco-core-napps',
+      url='http://github.com/kytos/kytos-napps',
       author='Kytos Team',
       author_email='of-ng-dev@ncc.unesp.br',
       license='MIT',

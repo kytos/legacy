@@ -1,9 +1,15 @@
 language: python
 python:
   - "3.6"
+sudo: required
+before_install:
+    - sudo apt-get -qq update
+    - sudo apt-get install -y rrdtool librrd-dev
 # command to install dependencies
 install:
-  - pip install git+git://github.com/kytos/python-openflow.git@develop
+  - pip install git+git://github.com/kytos/python-openflow.git
+  - pip install .
+  - pip install git+git://github.com/kytos/kytos-core.git
   - pip install -r requirements.txt -r requirements-dev.txt
   - pip install coveralls
 # command to run tests
