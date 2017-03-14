@@ -4,9 +4,10 @@ Overview
 
 |Experimental| |Tag| |Release| |License|
 
-Network Applications(*NApps*) is part of *Kytos* project and was developed
-to be used with `Kytos Controller <http://github.com/kytos/kytos>`__.  This
-repository contain only NApps developed by Kytos core team.
+
+Network Applications(*NApps*) is part of `Kytos project <https://kytos.io/>`__
+and was developed to be used with it. This repository contain only NApps
+developed by Kytos core team.
 
 Beside this Napps, new applications can be developed by third-part and may not
 be maintened by the core team. But of course that we support this and we provide
@@ -53,16 +54,16 @@ way:
 Configuring
 ***********
 
-After *Kyco-core-napps* installation, this package copy all core napps to
+After *kytos-napps* installation, this package copy all core napps to
 ``/var/lib/kytos/napps/kytos/`` where, by default, all networks applications are
-loaded when *Kyco* is started.
+loaded when *Kytos Controller* is started.
 
 Please configure your controller to point to the root of this folder
 (``/var/lib/kytos/napps/`` in order to load theses napps.
 
 You can also feel free to move this folder to another place into your system,
 but please remember to change this on your controller config file. For more
-information please visit the section "Configuration" on the `Kyco's
+information please visit the section "Configuration" on the `Kytos's
 Administrator Guide <http://docs.kytos.io/kyco/administrator/#configuration>`__.
 
 Authors
