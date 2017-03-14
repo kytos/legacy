@@ -1,8 +1,8 @@
 """Module that implements a L2 Learning Switch algorithm with loop support."""
 
-from kyco.core.events import KycoEvent
-from kyco.core.napps import KycoNApp
-from kyco.utils import listen_to
+from kytos.core.events import KytosEvent
+from kytos.core.napps import KytosNApp
+from kytos.utils import listen_to
 from pyof.foundation.network_types import Ethernet
 from pyof.v0x01.common.action import ActionOutput
 from pyof.v0x01.common.flow_match import FlowWildCards, Match
@@ -15,7 +15,7 @@ from napps.kytos.of_l2lsloop import settings
 log = settings.log
 
 
-class Main(KycoNApp):
+class Main(KytosNApp):
     """The main class for of.l2lsloop application."""
 
     def setup(self):
@@ -32,7 +32,7 @@ class Main(KycoNApp):
         """Method to handle flows to allow communication between switch ports.
 
         Args:
-            event (:class:`~kyco.core.events.KycoEvent):
+            event (:class:`~kytos.core.events.KytosEvent):
                 event with packet_in message.
         """
         log.debug("PacketIn Received")
@@ -60,7 +60,7 @@ class Main(KycoNApp):
             message_name = 'kytos/of_l2ls.messages.out.ofpt_flow_mod'
             content = {'destination': event.source,
                        'message': flow_mod}
-            event_out = KycoEvent(name=message_name, content=content)
+            event_out = KytosEvent(name=message_name, content=content)
 
         elif switch.should_flood(ethernet):
             # Flood the packet if we haven't done it yet
@@ -75,8 +75,8 @@ class Main(KycoNApp):
             message_name = 'kytos/of_l2ls.messages.out.ofpt_packet_out'
             content = {'destination': event.source,
                        'message': packet_out}
-            event_out = KycoEvent(name=message_name,
-                                  content=content)
+            event_out = KytosEvent(name=message_name,
+                                   content=content)
         else:
             log.debug("Not sending flood, since that was flooded already.")
             return

@@ -1,7 +1,7 @@
 Web Topology Layout NApp
 ========================
 
-This Network App (NApp) manages the settings and layouts of the **Kyco**
+This Network App (NApp) manages the settings and layouts of the **Kytos**
 web interface (kytos-admin-ui).
 
 It is used to store the interface settings (and layouts) and also to

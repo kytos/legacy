@@ -4,8 +4,8 @@ from abc import ABCMeta, abstractmethod
 from pathlib import Path
 
 import rrdtool
-from kyco.core.events import KycoEvent
-from kyco.core.flow import Flow
+from kytos.core.events import KytosEvent
+from kytos.core.flow import Flow
 from pyof.v0x01.common.phy_port import Port
 from pyof.v0x01.controller2switch.common import (AggregateStatsRequest,
                                                  FlowStatsRequest,
@@ -41,7 +41,7 @@ class Stats(metaclass=ABCMeta):
         pass
 
     def _send_event(self, req, conn):
-        event = KycoEvent(
+        event = KytosEvent(
             name='kytos/of_stats.messages.out.ofpt_stats_request',
             content={'message': req, 'destination': conn})
         self._buffer.put(event)

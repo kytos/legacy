@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# kyco-core-napps library documentation build configuration file, created by
+# kytos-napps library documentation build configuration file, created by
 # sphinx-quickstart on Wed May 11 16:13:35 2016.
 #
 # This file is execfile()d with the current directory set to its
@@ -53,7 +53,7 @@ source_suffix = '.rst'
 master_doc = 'references'
 
 # General information about the project.
-project_short_name = u'Kyco-Core-Napps'
+project_short_name = u'Kytos-Napps'
 project = u'Core Network Applications(NApps) developed to be used with Kytos Controller'
 copyright = u'2016, Kytos\' Development Team'
 author = u'Kytos\' Development Team'
@@ -132,7 +132,7 @@ html_context = {
 # documentation.
 html_theme_options = {
      # Navigation bar title. (Default: ``project`` value)
-    'navbar_title': 'Kyco-core-napps',
+    'navbar_title': 'Kytos-napps',
 
     # Tab name for entire site. (Default: "Site")
     'navbar_site_name': 'Sections',
@@ -202,7 +202,7 @@ html_theme_options = {
 
 # The name for this set of Sphinx documents.
 # "<project> v<release> documentation" by default.
-#html_title = u'kyco-core-napps library v0.1.0'
+#html_title = u'kytos-napps library v0.1.0'
 
 # A shorter title for the navigation bar.  Default is the same as html_title.
 #html_short_title = None
@@ -286,7 +286,7 @@ html_show_sourcelink = False
 #html_search_scorer = 'scorer.js'
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'kyco-core-nappslibrarydoc'
+htmlhelp_basename = 'kytos-nappslibrarydoc'
 
 # -- Options for LaTeX output ---------------------------------------------
 
@@ -308,7 +308,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'kyco-core-nappslibrary.tex', u'kyco-core-napps library Documentation',
+    (master_doc, 'kytos-nappslibrary.tex', u'kytos-napps library Documentation',
      u'Kytos\' Development Team', 'manual'),
 ]
 
@@ -338,7 +338,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'kyco-core-nappslibrary', u'kyco-core-napps library Documentation',
+    (master_doc, 'kytos-nappslibrary', u'kytos-napps library Documentation',
      [author], 1)
 ]
 
@@ -352,8 +352,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'kyco-core-nappslibrary', u'kyco-core-napps library Documentation',
-     author, 'kyco-core-nappslibrary', 'One line description of project.',
+    (master_doc, 'kytos-nappslibrary', u'kytos-napps library Documentation',
+     author, 'kytos-nappslibrary', 'One line description of project.',
      'Miscellaneous'),
 ]
 

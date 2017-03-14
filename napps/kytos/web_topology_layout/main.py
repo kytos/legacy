@@ -1,4 +1,4 @@
-"""Module to manage settings and layout of kyco web interface."""
+"""Module to manage settings and layout of kytos web interface."""
 
 import json
 from os import listdir, makedirs
@@ -6,7 +6,7 @@ from os.path import isfile, join
 
 from flask import request
 
-from kyco.core.napps import KycoNApp
+from kytos.core.napps import KytosNApp
 
 from napps.kytos.web_topology_layout import settings
 
@@ -15,7 +15,7 @@ log = settings.log
 makedirs(settings.TOPOLOGY_DIR, exist_ok=True)
 
 
-class Main(KycoNApp):
+class Main(KytosNApp):
     """Main class for Web Topology Layout application.
 
     This app intends to update the links between machines and switches. It

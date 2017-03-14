@@ -6,6 +6,6 @@
   "version": "0.1.1",
   "napp_dependencies": [],
   "license": "MIT",
-  "url": "https://github.com/kytos/kyco-core-napps.git",
+  "url": "https://github.com/kytos/kytos-napps.git",
   "tags": ["openflow", "core", "flow"]
 }

@@ -2,10 +2,10 @@
   "author": "kytos",
   "name": "web_topology_layout",
   "description": "Manage endpoints related to the web interface settings and layout.",
-  "long_description": "The web_topology_layout is a application to manager settings and layout of kyco web application (kytos-admin-ui).This application can save and load topologies.",
+  "long_description": "The web_topology_layout is a application to manager settings and layout of kytos web application (kytos-admin-ui).This application can save and load topologies.",
   "version": "0.1.0",
   "napp_dependencies": [],
   "license": "MIT",
-  "url": "https://github.com/kytos/kyco-core-napps.git",
+  "url": "https://github.com/kytos/kyto-napps.git",
   "tags": ["topology", "web", "interface", "layout"]
 }
