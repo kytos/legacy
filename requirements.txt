@@ -1,6 +1,3 @@
-python-openflow >= 1.1.0b1.dev0
+python-openflow
 rrdtool==0.1.6
 Flask
-
-# Avoid circular dependency
-# kytos-core >= 1.1.0b1.dev0
