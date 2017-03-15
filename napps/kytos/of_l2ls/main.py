@@ -1,8 +1,8 @@
 """NApp that solve the L2 Learning Switch algorithm."""
 
-from kyco.core.events import KycoEvent
-from kyco.core.napps import KycoNApp
-from kyco.utils import listen_to
+from kytos.core.events import KytosEvent
+from kytos.core.napps import KytosNApp
+from kytos.utils import listen_to
 from pyof.foundation.network_types import Ethernet
 from pyof.v0x01.common.action import ActionOutput
 from pyof.v0x01.common.flow_match import Match
@@ -14,8 +14,8 @@ from napps.kytos.of_l2ls import settings
 log = settings.log
 
 
-class Main(KycoNApp):
-    """Main class of a KycoNApp, responsible for OpenFlow operations."""
+class Main(KytosNApp):
+    """Main class of a KytosNApp, responsible for OpenFlow operations."""
 
     def setup(self):
         """App initialization (used instead of ``__init__``).
@@ -28,7 +28,7 @@ class Main(KycoNApp):
     def execute(self):
         """Method to be runned once on app 'start' or in a loop.
 
-        The execute method is called by the run method of KycoNApp class.
+        The execute method is called by the run method of KytosNApp class.
         Users shouldn't call this method directly.
         """
         pass
@@ -40,7 +40,7 @@ class Main(KycoNApp):
         Install flows allowing communication between switch ports.
 
         Args:
-            event (KycoPacketIn): Received Event
+            event (KytosPacketIn): Received Event
         """
         log.debug("PacketIn Received")
 
@@ -66,10 +66,10 @@ class Main(KycoNApp):
                 flow_mod.match.dl_type = ethernet.type
                 flow_mod.buffer_id = packet_in.buffer_id
                 flow_mod.actions.append(ActionOutput(port=ports[0]))
-                event_out = KycoEvent(name=('kytos/of_l2ls.messages.out.'
-                                            'ofpt_flow_mod'),
-                                      content={'destination': event.source,
-                                               'message': flow_mod})
+                event_out = KytosEvent(name=('kytos/of_l2ls.messages.out.'
+                                             'ofpt_flow_mod'),
+                                       content={'destination': event.source,
+                                                'message': flow_mod})
             else:
                 # Flood the packet if we haven't done it yet
                 packet_out = PacketOut()
@@ -77,10 +77,10 @@ class Main(KycoNApp):
                 packet_out.in_port = packet_in.in_port
 
                 packet_out.actions.append(ActionOutput(port=Port.OFPP_FLOOD))
-                event_out = KycoEvent(name=('kytos/of_l2ls.messages.out.'
-                                            'ofpt_packet_out'),
-                                      content={'destination': event.source,
-                                               'message': packet_out})
+                event_out = KytosEvent(name=('kytos/of_l2ls.messages.out.'
+                                             'ofpt_packet_out'),
+                                       content={'destination': event.source,
+                                                'message': packet_out})
 
             self.controller.buffers.msg_out.put(event_out)
 

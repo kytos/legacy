@@ -3,9 +3,9 @@
 import json
 from flask import request
 
-from kyco.core.events import KycoEvent
-from kyco.core.flow import Flow
-from kyco.core.napps import KycoNApp
+from kytos.core.events import KytosEvent
+from kytos.core.flow import Flow
+from kytos.core.napps import KytosNApp
 from pyof.v0x01.controller2switch.flow_mod import FlowModCommand
 
 from napps.kytos.of_flow_manager import settings
@@ -13,11 +13,11 @@ from napps.kytos.of_flow_manager import settings
 log = settings.log
 
 
-class Main(KycoNApp):
+class Main(KytosNApp):
     """Main class of of_stats NApp."""
 
     def setup(self):
-        """Replace the 'init' method for the KycoApp subclass.
+        """Replace the 'init' method for the KytosApp subclass.
 
         The setup method is automatically called by the run method.
         Users shouldn't call this method directly.
@@ -39,7 +39,7 @@ class Main(KycoNApp):
     def execute(self):
         """Method to be runned once on app 'start' or in a loop.
 
-        The execute method is called by the run method of KycoNApp class.
+        The execute method is called by the run method of KytosNApp class.
         Users shouldn't call this method directly.
         """
         pass
@@ -128,10 +128,10 @@ class FlowManager(object):
         switch = self.controller.get_switch_by_dpid(dpid)
         flow_mod = flow.as_flow_mod(FlowModCommand.OFPFC_ADD)
 
-        event_out = KycoEvent(name=('kytos/of_flow-manager.messages.out.'
-                                    'ofpt_flow_mod'),
-                              content={'destination': switch.connection,
-                                       'message': flow_mod})
+        event_out = KytosEvent(name=('kytos/of_flow-manager.messages.out.'
+                                     'ofpt_flow_mod'),
+                               content={'destination': switch.connection,
+                                        'message': flow_mod})
         self.controller.buffers.msg_out.put(event_out)
 
     def clear_flows(self, dpid):
@@ -139,10 +139,10 @@ class FlowManager(object):
         switch = self.controller.get_switch_by_dpid(dpid)
         for flow in switch.flows:
             flow_mod = flow.as_flow_mod(FlowModCommand.OFPFC_DELETE)
-            event_out = KycoEvent(name=('kytos/of_flow-manager.messages.out.'
-                                        'ofpt_flow_mod'),
-                                  content={'destination': switch.connection,
-                                           'message': flow_mod})
+            event_out = KytosEvent(name=('kytos/of_flow-manager.messages.out.'
+                                         'ofpt_flow_mod'),
+                                   content={'destination': switch.connection,
+                                            'message': flow_mod})
             self.controller.buffers.msg_out.put(event_out)
 
     def delete_flow(self, flow_id, dpid):
@@ -153,9 +153,9 @@ class FlowManager(object):
                 flow_mod = flow.as_flow_mod(FlowModCommand.OFPFC_DELETE)
                 content = {'destination': switch.connection,
                            'message': flow_mod}
-                event_out = KycoEvent(name=('kytos/of_flow-manager.'
-                                            'messages.out.ofpt_flow_mod'),
-                                      content=content)
+                event_out = KytosEvent(name=('kytos/of_flow-manager.'
+                                             'messages.out.ofpt_flow_mod'),
+                                       content=content)
                 self.controller.buffers.msg_out.put(event_out)
 
     @staticmethod

@@ -9,7 +9,7 @@ before_install:
 install:
   - pip install git+git://github.com/kytos/python-openflow.git
   - pip install .
-  - pip install git+git://github.com/kytos/kytos-core.git
+  - pip install git+git://github.com/kytos/kytos.git
   - pip install -r requirements.txt -r requirements-dev.txt
   - pip install coveralls
 # command to run tests

@@ -3,7 +3,7 @@ Core Napps
 ##########
 
 Here are the core Network Applications developed by the Kytos Team and that are
-deployed with *Kyco* by default.
+deployed with *Kytos* by default.
 
 *******
 of.core

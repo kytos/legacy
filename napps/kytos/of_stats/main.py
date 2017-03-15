@@ -1,6 +1,6 @@
 """Statistics application."""
-from kyco.core.napps import KycoNApp
-from kyco.utils import listen_to
+from kytos.core.napps import KytosNApp
+from kytos.utils import listen_to
 from pyof.v0x01.controller2switch.stats_request import StatsTypes
 
 from napps.kytos.of_stats import settings
@@ -10,7 +10,7 @@ from napps.kytos.of_stats.stats_api import FlowStatsAPI, PortStatsAPI, StatsAPI
 log = settings.log
 
 
-class Main(KycoNApp):
+class Main(KytosNApp):
     """Main class for statistics application."""
 
     def setup(self):

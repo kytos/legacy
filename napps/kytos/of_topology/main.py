@@ -2,8 +2,8 @@
 
 import json
 
-from kyco.core.napps import KycoNApp
-from kyco.utils import listen_to
+from kytos.core.napps import KytosNApp
+from kytos.utils import listen_to
 from pyof.foundation.basic_types import HWAddress
 from pyof.foundation.network_types import Ethernet
 
@@ -12,8 +12,8 @@ from napps.kytos.of_topology import constants, settings
 log = settings.log
 
 
-class Main(KycoNApp):
-    """Main class of a KycoNApp, responsible build a network topology.
+class Main(KytosNApp):
+    """Main class of a KytosNApp, responsible build a network topology.
 
     This app intends to update the links between machines and switches. It
     considers that if an interface is connected to another interface then this
@@ -45,7 +45,7 @@ class Main(KycoNApp):
         the interface endpoints, ignoring the LLDP packages.
 
         Parameters:
-            event (KycoEvent): event with Ethernet packet.
+            event (KytosEvent): event with Ethernet packet.
         """
         ethernet = Ethernet()
         ethernet.unpack(event.message.data.value)
@@ -68,7 +68,7 @@ class Main(KycoNApp):
         port status.
 
         Parameters:
-            event (KycoEvent): event with port_status content.
+            event (KytosEvent): event with port_status content.
         """
         port_status = event.content['message']
         reasons = ['CREATED', 'DELETED', 'MODIFIED']

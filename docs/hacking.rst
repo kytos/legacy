@@ -82,7 +82,7 @@ bash, then you need to run the ``workon`` command to activate the environment:
 
 .. code:: shell
 
-    workon kyco-core-napps
+    workon kytos-napps
 
 See more virtualenvwrapper commands on:
 http://virtualenvwrapper.readthedocs.org/en/latest/command_ref.html
