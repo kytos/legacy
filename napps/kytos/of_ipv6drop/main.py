@@ -2,7 +2,7 @@
 
 from kytos.core.events import KytosEvent
 from kytos.core.napps import KytosNApp
-from kytos.utils import listen_to
+from kytos.core.helpers import listen_to
 from pyof.v0x01.common.flow_match import Match
 from pyof.v0x01.controller2switch.flow_mod import FlowMod, FlowModCommand
 

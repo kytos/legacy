@@ -4,7 +4,7 @@ from kytos.core.events import KytosEvent
 from kytos.core.flow import Flow
 from kytos.core.napps import KytosNApp
 from kytos.core.switch import Interface
-from kytos.utils import listen_to
+from kytos.core.helpers import listen_to
 from pyof.v0x01.common.utils import new_message_from_header
 from pyof.v0x01.controller2switch.common import FlowStatsRequest
 from pyof.v0x01.controller2switch.features_request import FeaturesRequest

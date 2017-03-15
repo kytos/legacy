@@ -3,7 +3,7 @@
 import json
 
 from kytos.core.napps import KytosNApp
-from kytos.utils import listen_to
+from kytos.core.helpers import listen_to
 from pyof.foundation.basic_types import HWAddress
 from pyof.foundation.network_types import Ethernet
 

@@ -2,7 +2,7 @@
 
 from kytos.core.events import KytosEvent
 from kytos.core.napps import KytosNApp
-from kytos.utils import listen_to
+from kytos.core.helpers import listen_to
 from pyof.foundation.network_types import Ethernet
 from pyof.v0x01.common.action import ActionOutput
 from pyof.v0x01.common.flow_match import Match
