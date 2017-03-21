@@ -3,7 +3,7 @@ Overview
 
 The **of.l2ls** application is used in basic operations of switches. It
 implements the algorithm known as L2 Learning Switch, which aims to
-figure out which host is attached to which port. 
+figure out which host is attached to which switch port. 
 The switch keeps a table that stores a tuple containing the mac address 
 (hardware address) and port number. So, the switch can forward the 
 packets directly to the destination host. Initially this table is empty, so 
@@ -13,14 +13,12 @@ except to the port of the source host. The destination host will answer to that
 packet and once the packet is received, the switch adds an entry to the table
 mapping the mac address of the destination host to a port.
 This process is repeated until all ports with a host connected are mapped. This
-algorithm can be used to update the table when a change is detected. Note
-that, without this application, the switch would acts just as hub, broadcasting all 
-frames to all ports.
+algorithm can be used to update the table when a change is detected. 
 
 Installing
 ==========
 
-All the Kytos Network Applications are located in the NApps online repository.
+All of the Kytos Network Applications are located in the NApps online repository.
 To install this NApp, run:
 
 .. code:: shell
@@ -38,9 +36,9 @@ L2 Learning Switch Operation
 ----------------------------
 
 At the switch startup, it does not know which hosts are attached to
-which port. So, when a host A sends a frame, addressed to host B, the
-switch will broadcast this frame to all ports, except to the port which
-the frame has arrived. At same time, the switch learns which port the
+its ports. So, when some host A sends a frame addressed to host B, the
+switch will broadcast this frame to all ports, except to the port from where
+the frame has arrived. At same time, the switch learns at which port
 host A is attached. A table is stored in switch's local memory mapping
 the host mac address and port number.
 

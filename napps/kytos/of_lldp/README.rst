@@ -1,17 +1,17 @@
 Overview
 ========
 
-The *of.lldp* application implements the protocol Link Layer Discovery
+The *of.lldp* application implements the Link Layer Discovery
 Protocol (LLDP). This protocol is vendor free and used to discover
 network devices and all links between them. This protocol is implemented
 at layer 2 (L2) and defined in the IEEE 802.1ab. A network management
 system (NMS) can rapidly obtain the L2 network topology and topology
-changes over the time using LLDP.
+changes over time using LLDP.
 
 Installing
 ==========
 
-All the Kytos Network Applications are located in the NApps online repository.
+All of the Kytos Network Applications are located in the NApps online repository.
 To install this NApp, run:
 
 .. code:: shell

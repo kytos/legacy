@@ -2,18 +2,18 @@ Overview
 ========
 
 The *of.flow-manager* application exports a REST API to add, remove,
-list and clean flows from switches. It can be used by others
+list and clear flows from switches. It can be used by other
 applications to manage all flows.
 
-This applications creates an abstraction layer to other applications,
-since it is only necessary to know only the endpoints. The application
-takes care to handle the requests and return the information already
-formatted (all endpoints that receive a ``GET`` returns an JSON file).
+This application creates an abstraction layer to other applications,
+since it is only necessary to know the endpoints. The application handles
+the requests and return the information already formatted (all endpoints that
+receive a ``GET`` return a JSON file).
 
 Installing
 ==========
 
-All the Kytos Network Applications are located in the NApps online repository.
+All of the Kytos Network Applications are located in the NApps online repository.
 To install this NApp, run:
 
 .. code:: shell
@@ -30,7 +30,7 @@ Advanced
 Protocol Operation
 ------------------
 
-The endpoints implemented by this napp is presented in table below.
+The endpoints implemented in this napp are presented in the table below.
 
 +----------------------------------------+----------------------------------+------------+
 | Endpoint                               | Description                      | Method     |
@@ -50,16 +50,14 @@ The endpoints implemented by this napp is presented in table below.
 How it Works
 ------------
 
-An application that wishes to use this application, can use http
-methods, such as ``GET``,\ ``POST`` and ``DELETE`` to request or send an
-information to the napp. All endpoints of this napp returns a JSON
-response as described below.
+A NApp that wishes to use this application can use http methods, such as
+``GET``, ``POST`` and ``DELETE`` to request or send information to it.
+All endpoints of this napp return a JSON response as described below.
 
 Endpoint ``/flow-manager/dpid/flows``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Returns a JSON with all flows of a specific switch identified by the
-DPID.
+Returns a JSON with all flows of a specific switch identified by the DPID.
 
 Endpoint ``/flow-manager/flows``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

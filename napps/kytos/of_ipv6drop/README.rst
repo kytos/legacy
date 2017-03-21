@@ -1,24 +1,24 @@
 Overview
 ========
 
-The *of.ipv6drop* network application (NApp) install a flow on the
-connected switches so that they *DROP* all ipv6 incoming packets. Once
-the NApp is loaded on the controller it work by itself, without the need
-of any user interaction.
+The *of.ipv6drop* network application (NApp) installs a flow on all
+connected switches for them to *DROP* all ipv6 incoming packets. Once
+the NApp is loaded on the controller it works by itself, without the need
+of any interaction.
 
-To do so, the NApp listen to all ``kytos/core.switches.new`` events (that
-represents a new switch connected) and send to this switch a FlowMod
+To do so, the NApp listens to all ``kytos/core.switches.new`` events (which
+represent a new switch has connected) and send to this switch a FlowMod
 message to install the DROP IPv6 flow (match ``dl_type`` == ``0x86dd``).
 
 Requirements
 ============
 
-All requirements is installed using the *requirements.txt* packages.
+All requirements are listed in *requirements.txt*.
 
 Installing
 ==========
 
-All the Kytos Network Applications are located in the NApps online repository.
+All of the Kytos Network Applications are located in the NApps online repository.
 To install this NApp, run:
 
 .. code:: shell

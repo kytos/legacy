@@ -15,7 +15,7 @@ flask
 Installing
 ==========
 
-All the Kytos Network Applications are located in the NApps online repository.
+All of the Kytos Network Applications are located in the NApps online repository.
 To install this NApp, run:
 
 .. code:: shell
@@ -29,21 +29,21 @@ running).
 API
 ===
 
-The REST endpoints that this NApp exposes are:
+The REST endpoints this NApp exposes are:
 
 -  ``web/topology/layouts``:
 
-   -  This first endpoint only accepts the ``GET`` method and it return
+   -  This first endpoint only accepts the ``GET`` method and it returns
       a list with the name of current available layouts.
 
 -  ``web/topology/layouts/<name>``:
 
-   -  This endpoint accespts both ``GET`` and ``POST`` methods.
+   -  This endpoint accepts both ``GET`` and ``POST`` methods.
 
-      -  The ``GET`` method will return a json with the requested layout
-         (), if it exists. Otherwise, it will return a 400 error.
-      -  The ``POST`` method receives a json with the data to be saved
-         and save it as a json file. These files will be saved at
+      -  The ``GET`` method will return a JSON with the requested layout(),
+         if it exists. Otherwise, it will return a 400 error.
+      -  The ``POST`` method receives a JSON with the data to be saved
+         and save it as a file. These files will be saved at
          ``TOPOLOGY_DIR``, defined on the ``main.py`` file. **For now,
          the default value of this folder is
          ``/tmp/kytos/topologies/``**.
@@ -51,7 +51,7 @@ The REST endpoints that this NApp exposes are:
 JSON Format
 ===========
 
-The JSON format format is:
+The JSON format is:
 
 .. code:: json
 

@@ -1,10 +1,10 @@
 Overview
 ========
 
-The app **of.core** is a app responsible to handle OpenFlow basic
-operations.The main handle messages are:
+The NApp **of.core** is a NApp responsible to handle OpenFlow basic
+operations. The messages covered are:
 
--  reply and request hello messages;
+-  hello messages;
 -  reply echo request messages;
 -  request stats messages;
 -  send a feature request after echo reply;
@@ -15,13 +15,13 @@ operations.The main handle messages are:
 Requirements
 ============
 
-All requirements is installed using the *requirements.txt* packages.
+All requirements are listed in *requirements.txt*.
 
 Installing
 ==========
 
-All the Kytos Network Applications are located in the NApps online repository.
-To install this NApp, run:
+All of the Kytos Network Applications are located in the NApps online
+repository. To install this NApp, run:
 
 .. code:: shell
 

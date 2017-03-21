@@ -17,7 +17,7 @@ It is important to cite that this application **is not** working yet.
 Installing
 ==========
 
-All the Kytos Network Applications are located in the NApps online repository.
+All of the Kytos Network Applications are located in the NApps online repository.
 To install this NApp, run:
 
 .. code:: shell
@@ -34,6 +34,6 @@ Advanced
 L2LSLOOP Operation
 ------------------
 
-In order to avoid loop at Layer 2, this application identifies duplicate
+In order to avoid loops at Layer 2, this application identifies duplicate
 paths between endpoints and remove one of the paths by disabling one of
 the ports that are creating the loop.
