@@ -29,13 +29,25 @@ QuickStart
 Installing
 ==========
 
+NApps are installed and configured using
+`kytos-utils <https://github.com/kytos/kytos-utils>`__
+
 We are doing a huge effort to make Kytos and its components available on all
 common distros. So, we recommend you to download it from your distro repository.
 
-But if you are trying to test, develop or just want a more recent version of
-our software, no problem: Download now the latest release (it still a beta
-software) from our repository:
+To install a specific NApp, run:
 
+.. code-block:: shell
+
+   $ kytos napps install <napp>
+
+The NApp will be downloaded and installed automatically from the online
+repository if it is not found in the local system.
+
+Of course, if you are trying to test, develop or just want a more recent version
+of our software, no problem: Download now the latest release (it still a beta
+software) from our repository. This will download and install all the currently
+available NApps.
 
 First you need to clone *kytos-napps* repository:
 
@@ -66,7 +78,7 @@ please visit the section "Configuration" on the `Kytos's Administrator Guide
 <https://docs.kytos.io/kytos/administrator/#configuration>`__.
 
 For information about enabling or disabling NApps for the Kytos controller,
-please refer to `kytos-utils <https://github.com/kytos/kytos-napps>`__.
+please refer to `kytos-utils <https://github.com/kytos/kytos-utils>`__.
 
 Authors
 *******
