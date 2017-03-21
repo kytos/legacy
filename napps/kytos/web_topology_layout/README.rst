@@ -15,17 +15,16 @@ flask
 Installing
 ==========
 
-This is a default Kytos Network Application and the installation process is
-straight forward: Just copy the ``kytos/web_topology_layout`` directory to your
-napps directory. The default path is ``/var/lib/kytos/napps/``.
+All the Kytos Network Applications are located in the NApps online repository.
+To install this NApp, run:
 
-.. note:: Please note that you must copy from the root of the napp (including
-    the ``kyto`` folder). So you will have
-    ``/var/lib/kytos/napps/kytos/web_topology_layout`` at the end.
+.. code:: shell
 
-If you are going to install the whole repository, with all napps, you do not
-have to worry about the above procedings, since all napps will be copied into
-the correct napps folder during the installation process.
+   $ kytos napps install kytos/web_topology_layout
+
+If you are going to install kytos-napps from source code, all napps will be
+installed by default (just remember you need to enable the ones you want
+running).
 
 API
 ===
