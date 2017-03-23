@@ -1,27 +1,26 @@
 Overview
 ========
 
-The *of.lldp* application implements the protocol Link Layer Discovery
+The *of.lldp* application implements the Link Layer Discovery
 Protocol (LLDP). This protocol is vendor free and used to discover
 network devices and all links between them. This protocol is implemented
 at layer 2 (L2) and defined in the IEEE 802.1ab. A network management
 system (NMS) can rapidly obtain the L2 network topology and topology
-changes over the time using LLDP.
+changes over time using LLDP.
 
 Installing
 ==========
 
-This is a default Kytos Network Application and the installation process is
-straight forward: Just copy the ``kytos/of_lldp`` directory to your napps
-directory. The default path is ``/var/lib/kytos/napps/``.
+All of the Kytos Network Applications are located in the NApps online repository.
+To install this NApp, run:
 
-.. note:: Please note that you must copy from the root of the napp (including
-    the ``kyto`` folder). So you will have
-    ``/var/lib/kytos/napps/kytos/of_lldp`` at the end.
+.. code:: shell
 
-If you are going to install the whole repository, with all napps, you do not
-have to worry about the above procedings, since all napps will be copied into
-the correct napps folder during the installation process.
+   $ kytos napps install kytos/of_lldp
+
+If you are going to install kytos-napps from source code, all napps will be
+installed by default (just remember you need to enable the ones you want
+running).
 
 Advanced
 ========

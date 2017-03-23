@@ -1,42 +1,41 @@
 Overview
 ========
 
-The **of.topology** is an app responsible to update links
+The **of.topology** is a NApp responsible to update links
 between machines and network devices (i.e. switches and
-routers) and them update the current state of the network
+routers) and then update the current state of the network
 topology. This application depends of another application,
-called **of.lldp**, since it makes use of lldp packets to
+**of.lldp**, since it makes use of lldp packets to
 discover links between network devices.
 
-This application listen for two kinds of packets in. The
+This application listens for two kinds of packet_in events. The
 first one is lldp packets which carry information regarding
 the sender, such as port number, mac address, switch id and
-interface. The other packet that this application listen for
+interface. The other packet that this application listens for
 is port status open flow messages. When a packet of this
-kind is received, the application identify which kind of
-change the packet is warning (i.e. created, deleted or
+kind is received, the application identifies which kind of
+change the packet is warning about (i.e. created, deleted or
 modified). In both cases, the application returns a Json file
 with all updated changes identified.
 
 Requirements
 ============
 
-All requirements is installed using the *requirements.txt* packages.
+All requirements are listed in *requirements.txt*.
 
 Installing
 ==========
 
-This is a default Kytos Network Application and the installation process is
-straight forward: Just copy the ``kytos/of_topology`` directory to your napps
-directory. The default path is ``/var/lib/kytos/napps/``.
+All of the Kytos Network Applications are located in the NApps online repository.
+To install this NApp, run:
 
-.. note:: Please note that you must copy from the root of the napp (including
-    the ``kyto`` folder). So you will have
-    ``/var/lib/kytos/napps/kytos/of_topology`` at the end.
+.. code:: shell
 
-If you are going to install the whole repository, with all napps, you do not
-have to worry about the above procedings, since all napps will be copied into
-the correct napps folder during the installation process.
+   $ kytos napps install kytos/of_topology
+
+If you are going to install kytos-napps from source code, all napps will be
+installed by default (just remember you need to enable the ones you want
+running).
 
 REST API
 ========
@@ -45,7 +44,7 @@ Topology
 --------
 
 Using this app the route /kytos/topology will be enable in kytos and will
-respond with a json representing network topology.
+answer with a JSON representing the network topology.
 
 Network Topology Example
 ------------------------

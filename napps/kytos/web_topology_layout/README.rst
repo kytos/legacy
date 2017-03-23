@@ -15,36 +15,35 @@ flask
 Installing
 ==========
 
-This is a default Kytos Network Application and the installation process is
-straight forward: Just copy the ``kytos/web_topology_layout`` directory to your
-napps directory. The default path is ``/var/lib/kytos/napps/``.
+All of the Kytos Network Applications are located in the NApps online repository.
+To install this NApp, run:
 
-.. note:: Please note that you must copy from the root of the napp (including
-    the ``kyto`` folder). So you will have
-    ``/var/lib/kytos/napps/kytos/web_topology_layout`` at the end.
+.. code:: shell
 
-If you are going to install the whole repository, with all napps, you do not
-have to worry about the above procedings, since all napps will be copied into
-the correct napps folder during the installation process.
+   $ kytos napps install kytos/web_topology_layout
+
+If you are going to install kytos-napps from source code, all napps will be
+installed by default (just remember you need to enable the ones you want
+running).
 
 API
 ===
 
-The REST endpoints that this NApp exposes are:
+The REST endpoints this NApp exposes are:
 
 -  ``web/topology/layouts``:
 
-   -  This first endpoint only accepts the ``GET`` method and it return
+   -  This first endpoint only accepts the ``GET`` method and it returns
       a list with the name of current available layouts.
 
 -  ``web/topology/layouts/<name>``:
 
-   -  This endpoint accespts both ``GET`` and ``POST`` methods.
+   -  This endpoint accepts both ``GET`` and ``POST`` methods.
 
-      -  The ``GET`` method will return a json with the requested layout
-         (), if it exists. Otherwise, it will return a 400 error.
-      -  The ``POST`` method receives a json with the data to be saved
-         and save it as a json file. These files will be saved at
+      -  The ``GET`` method will return a JSON with the requested layout(),
+         if it exists. Otherwise, it will return a 400 error.
+      -  The ``POST`` method receives a JSON with the data to be saved
+         and save it as a file. These files will be saved at
          ``TOPOLOGY_DIR``, defined on the ``main.py`` file. **For now,
          the default value of this folder is
          ``/tmp/kytos/topologies/``**.
@@ -52,7 +51,7 @@ The REST endpoints that this NApp exposes are:
 JSON Format
 ===========
 
-The JSON format format is:
+The JSON format is:
 
 .. code:: json
 
