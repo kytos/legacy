@@ -2,7 +2,6 @@
   "author": "kytos",
   "name": "of_flow_manager",
   "description": "NApp that manages switches flows.",
-  "long_description": "NApp that exports a REST API to add, remove, list and clean flows from switches.",
   "version": "0.1.1",
   "napp_dependencies": [],
   "license": "MIT",

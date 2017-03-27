@@ -2,7 +2,6 @@
   "author": "kytos",
   "name": "of_ipv6drop",
   "description": "Install flows to DROP IPv6 packets on all switches.",
-  "long_description": "This NApp listen to new connected switches (``kytos/core.switches.new``) and install a flow to DROP all IPv6 packets that arrives on the switch.",
   "version": "0.1.0",
   "napp_dependencies": [],
   "license": "MIT",
