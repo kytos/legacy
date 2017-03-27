@@ -2,7 +2,6 @@
   "author": "kytos",
   "name": "of_stats",
   "description": "Provide statistics of openflow switches.",
-  "long_description": "Collect, store and provide (through a REST API) statistics about ports and flows such as transmitted and received bytes/sec, link speed, utilization, errors, etc.",
   "version": "0.1.0",
   "napp_dependencies": [],
   "license": "MIT",

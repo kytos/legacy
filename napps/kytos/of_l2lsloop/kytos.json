@@ -2,7 +2,6 @@
   "author": "kytos",
   "name": "of_l2lsloop",
   "description": "A L2 learning switch application for openflow switches, with supports topologies with loops.",
-  "long_description": "A small, simple and basic application that implements an L2 learning switch, with supports topologies with loops.With this app, you will be able to ping machines and learn the basics about an napp.",
   "version": "0.1.1",
   "napp_dependencies": [],
   "license": "MIT",
