@@ -10,17 +10,13 @@ from pyof.v0x01.controller2switch.packet_out import PacketOut
 
 from napps.kytos.of_lldp import constants, settings
 
-log = settings.log
-
 
 class Main(KytosNApp):
     """Main lldp app class."""
 
     def setup(self):
         """Create an empty dict to store the switches references and data."""
-        self.name = 'kytos/of_lldp'
         self.execute_as_loop(settings.POOLING_TIME)
-        self.controller.log_websocket.register_log(log)
 
     def execute(self):
         """Implement a loop to check switches liveness."""
@@ -57,8 +53,8 @@ class Main(KytosNApp):
                                      'message': packet_out}
                 self.controller.buffers.msg_out.put(event_out)
 
-                log.debug("Sending a LLDP PacketOut to the switch %s",
-                          switch.dpid)
+                self.log.debug("Sending a LLDP PacketOut to the switch %s",
+                               switch.dpid)
 
     @listen_to('kytos/of_core.messages.in.ofpt_packet_in')
     def update_links(self, event):
@@ -105,4 +101,4 @@ class Main(KytosNApp):
 
     def shutdown(self):
         """End of the application."""
-        log.debug('Shutting down...')
+        self.log.debug('Shutting down...')

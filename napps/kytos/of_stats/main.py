@@ -7,8 +7,6 @@ from napps.kytos.of_stats import settings
 from napps.kytos.of_stats.stats import Description, FlowStats, PortStats
 from napps.kytos.of_stats.stats_api import FlowStatsAPI, PortStatsAPI, StatsAPI
 
-log = settings.log
-
 
 class Main(KytosNApp):
     """Main class for statistics application."""
@@ -31,8 +29,6 @@ class Main(KytosNApp):
         FlowStatsAPI.register_endpoints()
         PortStatsAPI.register_endpoints()
 
-        self.controller.log_websocket.register_log(log)
-
     def execute(self):
         """Query all switches sequentially and then sleep before repeating."""
         for switch in self.controller.switches.values():
@@ -40,7 +36,7 @@ class Main(KytosNApp):
 
     def shutdown(self):
         """End of the application."""
-        log.debug('Shutting down...')
+        self.log.debug('Shutting down...')
 
     def _update_stats(self, switch):
         for stats in self._stats.values():
@@ -55,5 +51,5 @@ class Main(KytosNApp):
             stats = self._stats[msg.body_type.value]
             stats.listen(event.source.switch.dpid, msg.body)
         else:
-            log.debug('No listener for %s in %s.', msg.body_type.value,
-                      list(self._stats.keys()))
+            self.log.debug('No listener for %s in %s.', msg.body_type.value,
+                           list(self._stats.keys()))

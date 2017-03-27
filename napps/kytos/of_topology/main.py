@@ -9,8 +9,6 @@ from pyof.foundation.network_types import Ethernet
 
 from napps.kytos.of_topology import constants, settings
 
-log = settings.log
-
 
 class Main(KytosNApp):
     """Main class of a KytosNApp, responsible build a network topology.
@@ -26,11 +24,9 @@ class Main(KytosNApp):
         This setup will set the name of app, register the endpoint
         /kytos/topology and setup the logger.
         """
-        self.name = 'kytos/of_topology'
         self.controller.register_rest_endpoint('/topology',
                                                self.get_json_topology,
                                                methods=['GET'])
-        self.controller.log_websocket.register_log(log)
 
     def execute(self):
         """Do nothing, only wait for packet-in messages."""
@@ -77,11 +73,11 @@ class Main(KytosNApp):
         port_name = port_status.desc.name
         reason = reasons[port_status.reason.value]
         msg = 'The port %s (%s) from switch %s was %s.'
-        log.debug(msg, port_no, port_name, dpid, reason)
+        self.log.debug(msg, port_no, port_name, dpid, reason)
 
     def shutdown(self):
         """End of the application."""
-        log.debug('Shutting down...')
+        self.log.debug('Shutting down...')
 
     def get_json_topology(self):
         """Return a json with topology details.

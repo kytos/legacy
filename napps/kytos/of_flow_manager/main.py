@@ -10,8 +10,6 @@ from pyof.v0x01.controller2switch.flow_mod import FlowModCommand
 
 from napps.kytos.of_flow_manager import settings
 
-log = settings.log
-
 
 class Main(KytosNApp):
     """Main class of of_stats NApp."""
@@ -24,7 +22,6 @@ class Main(KytosNApp):
         """
         self.execute_as_loop(settings.STATS_INTERVAL)
         self.flow_manager = FlowManager(self.controller)
-        self.controller.log_websocket.register_log(log)
         endpoints = [('/flow-manager/<dpid>/flows', self.retrieve_flows,
                       ['GET']),
                      ('/flow-manager/flows', self.retrieve_flows,
@@ -46,7 +43,7 @@ class Main(KytosNApp):
 
     def shutdown(self):
         """Shutdown routine of the NApp."""
-        log.debug("flow-manager stopping")
+        self.log.debug("flow-manager stopping")
 
     def retrieve_flows(self, dpid=None):
         """Retrieve all flows from a sitch identified by dpid.
