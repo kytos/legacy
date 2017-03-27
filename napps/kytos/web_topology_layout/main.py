@@ -10,8 +10,6 @@ from kytos.core.napps import KytosNApp
 
 from napps.kytos.web_topology_layout import settings
 
-log = settings.log
-
 makedirs(settings.TOPOLOGY_DIR, exist_ok=True)
 
 
@@ -29,7 +27,6 @@ class Main(KytosNApp):
         This method will register the routes ['kytos/web/topology/layouts/',
         'web/topology/layouts/<name>'] to save and recover topologies.
         """
-        self.name = 'kytos/web_topology_layout'
         self.current_controller = self.controller
         self.controller.register_rest_endpoint('/web/topology/layouts/',
                                                self.get_topologies,
@@ -44,7 +41,7 @@ class Main(KytosNApp):
 
     def shutdown(self):
         """End of the application."""
-        log.debug('Shutting down...')
+        self.log.debug('Shutting down...')
 
     def topology(self, name):
         """Method used to save or load a topology layout.

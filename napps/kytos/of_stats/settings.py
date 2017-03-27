@@ -1,9 +1,6 @@
 """Settings file for the NApp kytos/of_stats."""
-from logging import getLogger
 from pathlib import Path
 from threading import Lock
-
-log = getLogger(__name__)
 
 #: Seconds to wait before asking for more statistics.
 #: Delete RRDs everytime this interval is changed

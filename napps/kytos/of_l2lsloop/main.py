@@ -12,16 +12,13 @@ from pyof.v0x01.controller2switch.packet_out import PacketOut
 
 from napps.kytos.of_l2lsloop import settings
 
-log = settings.log
-
 
 class Main(KytosNApp):
     """The main class for of.l2lsloop application."""
 
     def setup(self):
         """Method used to setup the of.l2lsloop application."""
-        self.name = 'kytos.l2_learning_switch'
-        self.controller.log_websocket.register_log(log)
+        pass
 
     def execute(self):
         """Do nothing."""
@@ -35,7 +32,7 @@ class Main(KytosNApp):
             event (:class:`~kytos.core.events.KytosEvent):
                 event with packet_in message.
         """
-        log.debug("PacketIn Received")
+        self.log.debug("PacketIn Received")
         packet_in = event.content['message']
         ethernet = Ethernet()
         ethernet.unpack(packet_in.data.value)
@@ -78,11 +75,12 @@ class Main(KytosNApp):
             event_out = KytosEvent(name=message_name,
                                    content=content)
         else:
-            log.debug("Not sending flood, since that was flooded already.")
+            msg = "Not sending flood, since that was flooded already."
+            self.log.debug(msg)
             return
 
         self.controller.buffers.msg_out.put(event_out)
 
     def shutdown(self):
         """End of the application."""
-        log.debug('Shutting down...')
+        self.log.debug('Shutting down...')

@@ -8,8 +8,6 @@ from pyof.v0x01.controller2switch.flow_mod import FlowMod, FlowModCommand
 
 from napps.kytos.of_ipv6drop import settings
 
-log = settings.log
-
 
 class Main(KytosNApp):
     """Main class of of_ipv6drop NApp."""
@@ -20,7 +18,7 @@ class Main(KytosNApp):
         The setup method is automatically called by the run method.
         Users shouldn't call this method directly.
         """
-        self.controller.log_websocket.register_log(log)
+        pass
 
     def execute(self):
         """Method to be runned once on app 'start' or in a loop.

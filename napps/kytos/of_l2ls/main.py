@@ -11,7 +11,6 @@ from pyof.v0x01.controller2switch.flow_mod import FlowMod, FlowModCommand
 from pyof.v0x01.controller2switch.packet_out import PacketOut
 
 from napps.kytos.of_l2ls import settings
-log = settings.log
 
 
 class Main(KytosNApp):
@@ -23,7 +22,7 @@ class Main(KytosNApp):
         The setup method is automatically called by the run method.
         Users shouldn't call this method directly.
         """
-        self.controller.log_websocket.register_log(log)
+        pass
 
     def execute(self):
         """Method to be runned once on app 'start' or in a loop.
@@ -42,7 +41,7 @@ class Main(KytosNApp):
         Args:
             event (KytosPacketIn): Received Event
         """
-        log.debug("PacketIn Received")
+        self.log.debug("PacketIn Received")
 
         packet_in = event.content['message']
 
