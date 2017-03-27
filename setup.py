@@ -8,7 +8,6 @@ import sys
 from pathlib import Path
 from subprocess import CalledProcessError, check_call
 
-from pip.req import parse_requirements
 from setuptools import Command, setup
 from setuptools.command.develop import develop
 from setuptools.command.install import install
@@ -175,8 +174,7 @@ class DevelopMode(develop):
         src.symlink_to(dst)
 
 
-# parse_requirements() returns generator of pip.req.InstallRequirement objects
-requirements = parse_requirements('requirements.txt', session=False)
+requirements = [i.strip() for i in open("requirements.txt").readlines()]
 
 setup(name='kytos-napps',
       version='1.1.0b1.dev1',
@@ -185,7 +183,7 @@ setup(name='kytos-napps',
       author='Kytos Team',
       author_email='of-ng-dev@ncc.unesp.br',
       license='MIT',
-      install_requires=[str(ir.req) for ir in requirements],
+      install_requires=requirements,
       # data_files are not copied in DevelopMode
       data_files=list(InstallMode.get_data_files(Path('napps'))),
       cmdclass={
