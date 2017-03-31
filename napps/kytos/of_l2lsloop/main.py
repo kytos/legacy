@@ -50,7 +50,7 @@ class Main(KytosNApp):
             flow_mod.match.wildcards -= FlowWildCards.OFPFW_DL_TYPE
             flow_mod.match.dl_src = ethernet.source.value
             flow_mod.match.dl_dst = ethernet.destination.value
-            flow_mod.match.dl_type = ethernet.type
+            flow_mod.match.dl_type = ethernet.ether_type
             flow_mod.buffer_id = packet_in.buffer_id
             flow_mod.actions.append(ActionOutput(port=ports[0]))
 
