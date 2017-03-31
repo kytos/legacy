@@ -33,7 +33,7 @@ class Main(KytosNApp):
                     continue
 
                 ethernet = Ethernet()
-                ethernet.type = constants.LLDP_ETHERTYPE
+                ethernet.ether_type = constants.LLDP_ETHERTYPE
                 ethernet.source = port.hw_addr
                 ethernet.destination = constants.LLDP_MULTICAST_MAC
 
@@ -83,7 +83,7 @@ class Main(KytosNApp):
             return obj
 
         ethernet = unpack_non_empty(event.message.data, Ethernet)
-        if ethernet.type == constants.LLDP_ETHERTYPE:
+        if ethernet.ether_type == constants.LLDP_ETHERTYPE:
             lldp = unpack_non_empty(ethernet.data, LLDP)
             dpid = unpack_non_empty(lldp.chassis_id.sub_value, DPID)
 

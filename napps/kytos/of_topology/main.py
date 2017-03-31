@@ -45,7 +45,7 @@ class Main(KytosNApp):
         """
         ethernet = Ethernet()
         ethernet.unpack(event.message.data.value)
-        if ethernet.type != constants.LLDP_ETHERTYPE:
+        if ethernet.ether_type != constants.LLDP_ETHERTYPE:
             port_no = event.message.in_port
             hw_address = ethernet.source
             switch = event.source.switch
