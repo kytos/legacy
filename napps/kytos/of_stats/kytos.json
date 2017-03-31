@@ -1,5 +1,5 @@
 {
-  "author": "kytos",
+  "username": "kytos",
   "name": "of_stats",
   "description": "Provide statistics of openflow switches.",
   "version": "0.1.0",

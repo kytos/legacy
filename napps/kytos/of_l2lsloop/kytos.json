@@ -1,5 +1,5 @@
 {
-  "author": "kytos",
+  "username": "kytos",
   "name": "of_l2lsloop",
   "description": "A L2 learning switch application for openflow switches, with supports topologies with loops.",
   "version": "0.1.1",

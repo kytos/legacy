@@ -1,5 +1,5 @@
 {
-  "author": "kytos",
+  "username": "kytos",
   "name": "of_lldp",
   "description": "App responsible by send packet with lldp protocol to network and to discover switches and hosts.",
   "version": "0.1.1",
