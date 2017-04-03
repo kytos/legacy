@@ -4,6 +4,7 @@ from abc import ABCMeta, abstractmethod
 from pathlib import Path
 
 import rrdtool
+from kytos.core import log
 from kytos.core.events import KytosEvent
 from kytos.core.flow import Flow
 from pyof.v0x01.common.phy_port import Port
@@ -13,8 +14,6 @@ from pyof.v0x01.controller2switch.common import (AggregateStatsRequest,
 from pyof.v0x01.controller2switch.stats_request import StatsRequest, StatsTypes
 
 from . import settings
-
-log = settings.log
 
 
 class Stats(metaclass=ABCMeta):

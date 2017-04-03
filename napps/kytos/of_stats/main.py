@@ -1,6 +1,7 @@
 """Statistics application."""
-from kytos.core.napps import KytosNApp
+from kytos.core import log
 from kytos.core.helpers import listen_to
+from kytos.core.napps import KytosNApp
 from pyof.v0x01.controller2switch.stats_request import StatsTypes
 
 from napps.kytos.of_stats import settings
@@ -36,7 +37,7 @@ class Main(KytosNApp):
 
     def shutdown(self):
         """End of the application."""
-        self.log.debug('Shutting down...')
+        log.debug('Shutting down...')
 
     def _update_stats(self, switch):
         for stats in self._stats.values():
@@ -51,5 +52,5 @@ class Main(KytosNApp):
             stats = self._stats[msg.body_type.value]
             stats.listen(event.source.switch.dpid, msg.body)
         else:
-            self.log.debug('No listener for %s in %s.', msg.body_type.value,
-                           list(self._stats.keys()))
+            log.debug('No listener for %s in %s.', msg.body_type.value,
+                      list(self._stats.keys()))

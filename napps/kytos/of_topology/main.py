@@ -2,12 +2,13 @@
 
 import json
 
-from kytos.core.napps import KytosNApp
+from kytos.core import log
 from kytos.core.helpers import listen_to
+from kytos.core.napps import KytosNApp
 from pyof.foundation.basic_types import HWAddress
 from pyof.foundation.network_types import Ethernet
 
-from napps.kytos.of_topology import constants, settings
+from napps.kytos.of_topology import constants
 
 
 class Main(KytosNApp):
@@ -73,11 +74,11 @@ class Main(KytosNApp):
         port_name = port_status.desc.name
         reason = reasons[port_status.reason.value]
         msg = 'The port %s (%s) from switch %s was %s.'
-        self.log.debug(msg, port_no, port_name, dpid, reason)
+        log.debug(msg, port_no, port_name, dpid, reason)
 
     def shutdown(self):
         """End of the application."""
-        self.log.debug('Shutting down...')
+        log.debug('Shutting down...')
 
     def get_json_topology(self):
         """Return a json with topology details.

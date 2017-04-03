@@ -1,12 +1,10 @@
 """NApp responsible for installing a DROP ipv6 flow on switch setup."""
 
 from kytos.core.events import KytosEvent
-from kytos.core.napps import KytosNApp
 from kytos.core.helpers import listen_to
+from kytos.core.napps import KytosNApp
 from pyof.v0x01.common.flow_match import Match
 from pyof.v0x01.controller2switch.flow_mod import FlowMod, FlowModCommand
-
-from napps.kytos.of_ipv6drop import settings
 
 
 class Main(KytosNApp):

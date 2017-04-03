@@ -3,13 +3,10 @@ import json
 from abc import ABCMeta, abstractmethod
 
 from flask import Response, request
+from kytos.core import log
 
-from napps.kytos.of_stats import settings
 from napps.kytos.of_stats.stats import FlowStats, PortStats
 from napps.kytos.of_stats.user_speed import UserSpeed
-
-
-log = settings.log
 
 
 class StatsAPI(metaclass=ABCMeta):
