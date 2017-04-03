@@ -5,3 +5,5 @@ sphinx-bootstrap-theme>=0.4.14
 # Linters
 pylama-pylint>=3.0.1
 radon>=1.4.2
+
+coverage

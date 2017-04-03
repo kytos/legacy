@@ -1,0 +1,28 @@
+checks:
+    python:
+        code_rating: true
+        duplicate_code: true
+filter:
+    paths: ['napps/*', 'tests/*']
+build:
+    environment:
+        python: 3.6.0
+        postgresql: false
+        redis: false
+    dependencies:
+        before:
+            - sudo apt-get install -y librrd-dev
+        override:
+            - true
+    tests:
+        before:
+            - pip install git+git://github.com/kytos/python-openflow.git
+            - pip install git+git://github.com/kytos/kytos.git
+            - pip install -r requirements-dev.txt
+        override:
+            -
+                command: 'coverage run setup.py test'
+                coverage:
+                    file: '.coverage'
+                    config_file: '.coveragerc'
+                    format: 'py-cc'

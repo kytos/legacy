@@ -2,7 +2,7 @@
 Overview
 ########
 
-|Experimental| |Tag| |Release| |License|
+|Experimental| |Tag| |Release| |License| |Build| |Coverage| |Quality|
 
 
 Network Applications(*NApps*) are part of `Kytos project <https://kytos.io/>`__
@@ -104,3 +104,12 @@ This software is under *MIT-License*. For more information please read
    :target: https://github.com/kytos/kytos-napps/releases
 .. |License| image:: https://img.shields.io/github/license/kytos/kytos-napps.svg
    :target: https://github.com/kytos/kytos-napps/blob/master/LICENSE
+.. |Build| image:: https://scrutinizer-ci.com/g/kytos/kytos-napps/badges/build.png?b=master
+  :alt: Build status
+  :target: https://scrutinizer-ci.com/g/kytos/kytos-napps/?branch=master
+.. |Coverage| image:: https://scrutinizer-ci.com/g/kytos/kytos-napps/badges/coverage.png?b=master
+  :alt: Code coverage
+  :target: https://scrutinizer-ci.com/g/kytos/kytos-napps/?branch=master
+.. |Quality| image:: https://scrutinizer-ci.com/g/kytos/kytos-napps/badges/quality-score.png?b=master
+  :alt: Code-quality score
+  :target: https://scrutinizer-ci.com/g/kytos/kytos-napps/?branch=master
