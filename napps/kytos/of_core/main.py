@@ -147,7 +147,7 @@ class Main(KytosNApp):
         """
         log.debug("Echo Request message read")
 
-        echo_request = event.content['message']
+        echo_request = event.message
         echo_reply = EchoReply(xid=echo_request.header.xid)
         event_out = KytosEvent(name=('kytos/of_core.messages.out.'
                                      'ofpt_echo_reply'),
@@ -157,8 +157,7 @@ class Main(KytosNApp):
 
     @listen_to('kytos/core.connection.new')
     def handle_core_new_connection(self, event):
-        message = event.content['message']
-        self.say_hello(message.source)
+        self.say_hello(event.source)
 
     def say_hello(self, destination, xid=None):
         # should be called once a new connection is established.
@@ -186,13 +185,13 @@ class Main(KytosNApp):
         # checking if version is 1.0 or later for now.
         # TODO: should check for version_bitmap on hello message for proper
         # negotiation.
-        if event.content['message'].header.version >= 0x01:
+        if event.message.header.version >= 0x01:
             event_raw = KytosEvent(
                 name='kytos/of_core.hello_complete',
-                content={'source': event.source})
-            self.controller.raw.put(event_raw)
+                content={'destination': event.source})
+            self.controller.buffers.raw.put(event_raw)
         else:
-            error_message = ErrorMsg(xid=event.content['message'].header.xid,
+            error_message = ErrorMsg(xid=event.message.header.xid,
                                      error_type=ErrorType.OFPET_HELLO_FAILED,
                                      code=HelloFailedCode.OFPHFC_INCOMPATIBLE)
             event_out = KytosEvent(
@@ -203,7 +202,7 @@ class Main(KytosNApp):
             self.controller.buffers.msg_out.put(event_out)
 
     @listen_to('kytos/of_core.messages.out.ofpt_echo_reply')
-    def handle_queued_open_flow_echo_reply(self, event):
+    def handle_queued_openflow_echo_reply(self, event):
         if settings.SEND_FEATURES_REQUEST_ON_ECHO:
             self.send_features_request(event.destination)
 
