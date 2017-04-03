@@ -5,7 +5,7 @@ from os import listdir, makedirs
 from os.path import isfile, join
 
 from flask import request
-
+from kytos.core import log
 from kytos.core.napps import KytosNApp
 
 from napps.kytos.web_topology_layout import settings
@@ -41,7 +41,7 @@ class Main(KytosNApp):
 
     def shutdown(self):
         """End of the application."""
-        self.log.debug('Shutting down...')
+        log.debug('Shutting down...')
 
     def topology(self, name):
         """Method used to save or load a topology layout.

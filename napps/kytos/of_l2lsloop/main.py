@@ -1,16 +1,15 @@
 """Module that implements a L2 Learning Switch algorithm with loop support."""
 
+from kytos.core import log
 from kytos.core.events import KytosEvent
-from kytos.core.napps import KytosNApp
 from kytos.core.helpers import listen_to
+from kytos.core.napps import KytosNApp
 from pyof.foundation.network_types import Ethernet
 from pyof.v0x01.common.action import ActionOutput
 from pyof.v0x01.common.flow_match import FlowWildCards, Match
 from pyof.v0x01.common.phy_port import Port
 from pyof.v0x01.controller2switch.flow_mod import FlowMod, FlowModCommand
 from pyof.v0x01.controller2switch.packet_out import PacketOut
-
-from napps.kytos.of_l2lsloop import settings
 
 
 class Main(KytosNApp):
@@ -32,7 +31,7 @@ class Main(KytosNApp):
             event (:class:`~kytos.core.events.KytosEvent):
                 event with packet_in message.
         """
-        self.log.debug("PacketIn Received")
+        log.debug("PacketIn Received")
         packet_in = event.content['message']
         ethernet = Ethernet()
         ethernet.unpack(packet_in.data.value)
@@ -76,11 +75,11 @@ class Main(KytosNApp):
                                    content=content)
         else:
             msg = "Not sending flood, since that was flooded already."
-            self.log.debug(msg)
+            log.debug(msg)
             return
 
         self.controller.buffers.msg_out.put(event_out)
 
     def shutdown(self):
         """End of the application."""
-        self.log.debug('Shutting down...')
+        log.debug('Shutting down...')

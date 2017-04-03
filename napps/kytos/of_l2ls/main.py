@@ -1,8 +1,9 @@
 """NApp that solve the L2 Learning Switch algorithm."""
 
+from kytos.core import log
 from kytos.core.events import KytosEvent
-from kytos.core.napps import KytosNApp
 from kytos.core.helpers import listen_to
+from kytos.core.napps import KytosNApp
 from pyof.foundation.network_types import Ethernet
 from pyof.v0x01.common.action import ActionOutput
 from pyof.v0x01.common.flow_match import Match
@@ -41,7 +42,7 @@ class Main(KytosNApp):
         Args:
             event (KytosPacketIn): Received Event
         """
-        self.log.debug("PacketIn Received")
+        log.debug("PacketIn Received")
 
         packet_in = event.content['message']
 

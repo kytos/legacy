@@ -1,10 +1,11 @@
 """NApp responsible for the main OpenFlow basic operations."""
 
+from kytos.core import log
 from kytos.core.events import KytosEvent
 from kytos.core.flow import Flow
+from kytos.core.helpers import listen_to
 from kytos.core.napps import KytosNApp
 from kytos.core.switch import Interface
-from kytos.core.helpers import listen_to
 from pyof.v0x01.common.utils import new_message_from_header
 from pyof.v0x01.controller2switch.common import FlowStatsRequest
 from pyof.v0x01.controller2switch.features_request import FeaturesRequest
@@ -87,7 +88,7 @@ class Main(KytosNApp):
         Args:
             event (KytosEvent): Event with features reply message.
         """
-        self.log.debug('Handling Features Reply Event')
+        log.debug('Handling Features Reply Event')
 
         features = event.content['message']
         dpid = features.datapath_id.value
@@ -113,7 +114,7 @@ class Main(KytosNApp):
         Args:
             event (KytosEvent): RawEvent with openflow message to be unpacked
         """
-        self.log.debug('RawOpenFlowMessage received by RawOFMessage handler')
+        log.debug('RawOpenFlowMessage received by RawOFMessage handler')
 
         # creates an empty OpenFlow Message based on the message_type defined
         # on the unpacked header.
@@ -123,7 +124,7 @@ class Main(KytosNApp):
         # The unpack will happen only to those messages with body beyond header
         if binary_data and len(binary_data) > 0:
             message.unpack(binary_data)
-        self.log.debug('RawOpenFlowMessage unpacked')
+        log.debug('RawOpenFlowMessage unpacked')
 
         name = message.header.message_type.name.lower()
         of_event = KytosEvent(name="kytos/of_core.messages.in.{}".format(name),
@@ -142,7 +143,7 @@ class Main(KytosNApp):
             event (:class:`~kytos.core.events.KytosEvent`):
                 Event with echo request in message.
         """
-        self.log.debug("Echo Request message read")
+        log.debug("Echo Request message read")
 
         echo_request = event.content['message']
         echo_reply = EchoReply(xid=echo_request.header.xid)
@@ -162,7 +163,7 @@ class Main(KytosNApp):
         Args:
             event (KytosMessageInHello): KytosMessageInHelloEvent
         """
-        self.log.debug('Handling kytos/of_core.messages.ofpt_hello')
+        log.debug('Handling kytos/of_core.messages.ofpt_hello')
 
         hello = Hello(xid=event.content['message'].header.xid)
         event_out = KytosEvent(name='kytos/of_core.messages.out.ofpt_hello',
@@ -183,7 +184,7 @@ class Main(KytosNApp):
             event (:class:`~.kytos.core.events.KytosEvent`):
                 Event with hello message.
         """
-        self.log.debug('Sending a feature request after responding to a hello')
+        log.debug('Sending a feature request after responding to a hello')
 
         event_out = KytosEvent(name=('kytos/of_core.messages.out.'
                                      'ofpt_features_request'),
@@ -193,4 +194,4 @@ class Main(KytosNApp):
 
     def shutdown(self):
         """End of the application."""
-        self.log.debug('Shutting down...')
+        log.debug('Shutting down...')

@@ -1,8 +1,9 @@
 """NApp responsible to discover new switches and hosts."""
 
+from kytos.core import log
 from kytos.core.events import KytosEvent
-from kytos.core.napps import KytosNApp
 from kytos.core.helpers import listen_to
+from kytos.core.napps import KytosNApp
 from pyof.foundation.basic_types import DPID, UBInt16
 from pyof.foundation.network_types import LLDP, Ethernet
 from pyof.v0x01.common.action import ActionOutput
@@ -53,8 +54,8 @@ class Main(KytosNApp):
                                      'message': packet_out}
                 self.controller.buffers.msg_out.put(event_out)
 
-                self.log.debug("Sending a LLDP PacketOut to the switch %s",
-                               switch.dpid)
+                log.debug("Sending a LLDP PacketOut to the switch %s",
+                          switch.dpid)
 
     @listen_to('kytos/of_core.messages.in.ofpt_packet_in')
     def update_links(self, event):
@@ -101,4 +102,4 @@ class Main(KytosNApp):
 
     def shutdown(self):
         """End of the application."""
-        self.log.debug('Shutting down...')
+        log.debug('Shutting down...')

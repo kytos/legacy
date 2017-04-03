@@ -3,6 +3,7 @@
 import json
 from flask import request
 
+from kytos.core import log
 from kytos.core.events import KytosEvent
 from kytos.core.flow import Flow
 from kytos.core.napps import KytosNApp
@@ -43,7 +44,7 @@ class Main(KytosNApp):
 
     def shutdown(self):
         """Shutdown routine of the NApp."""
-        self.log.debug("flow-manager stopping")
+        log.debug("flow-manager stopping")
 
     def retrieve_flows(self, dpid=None):
         """Retrieve all flows from a sitch identified by dpid.
