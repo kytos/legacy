@@ -56,6 +56,7 @@ help:
 
 .PHONY: clean
 clean:
+	rm -rf napps.*
 	rm -rf kytos.*
 	rm -rf $(BUILDDIR)/*
 
