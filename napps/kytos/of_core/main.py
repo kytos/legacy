@@ -6,9 +6,9 @@ from kytos.core.flow import Flow
 from kytos.core.helpers import listen_to
 from kytos.core.napps import KytosNApp
 from kytos.core.switch import Interface
+from pyof.v0x01.asynchronous.error_msg import (ErrorMsg, ErrorType,
+                                               HelloFailedCode)
 from pyof.v0x01.common.utils import new_message_from_header
-from pyof.v0x01.asynchronous.error_msg import ErrorMsg
-from pyof.v0x01.asynchronous.error_msg import ErrorType, HelloFailedCode
 from pyof.v0x01.controller2switch.common import FlowStatsRequest
 from pyof.v0x01.controller2switch.features_request import FeaturesRequest
 from pyof.v0x01.controller2switch.stats_request import StatsRequest, StatsTypes
@@ -157,9 +157,15 @@ class Main(KytosNApp):
 
     @listen_to('kytos/core.connection.new')
     def handle_core_new_connection(self, event):
+        """Method called when a new switch is connected.
+
+        This method will send a hello world message when a new switch is
+        connected.
+        """
         self.say_hello(event.source)
 
     def say_hello(self, destination, xid=None):
+        """Method used to send a hello messages."""
         # should be called once a new connection is established.
         # To be able to deal with of1.3 negotiation, hello should also
         # cary a version_bitmap.
@@ -182,9 +188,6 @@ class Main(KytosNApp):
         """
         log.debug('Handling kytos/of_core.messages.in.ofpt_hello')
 
-        # checking if version is 1.0 or later for now.
-        # TODO: should check for version_bitmap on hello message for proper
-        # negotiation.
         if event.message.header.version >= 0x01:
             event_raw = KytosEvent(
                 name='kytos/of_core.hello_complete',
@@ -203,11 +206,21 @@ class Main(KytosNApp):
 
     @listen_to('kytos/of_core.messages.out.ofpt_echo_reply')
     def handle_queued_openflow_echo_reply(self, event):
+        """Method used to handle  echo reply messages.
+
+        This method will send a feature request message if the variable
+        SEND_FEATURES_REQUEST_ON_ECHO is True.By default this variable is
+        False.
+        """
         if settings.SEND_FEATURES_REQUEST_ON_ECHO:
             self.send_features_request(event.destination)
 
     @listen_to('kytos/of_core.hello_complete')
     def handle_openflow_hello_complete(self, event):
+        """Method used when a hello message is completed.
+
+        This method will send a features request message.
+        """
         self.send_features_request(event.destination)
 
     def send_features_request(self, destination):
@@ -220,16 +233,14 @@ class Main(KytosNApp):
                                         'destination': destination})
         self.controller.buffers.msg_out.put(event_out)
 
+    @staticmethod
     @listen_to('kytos/of_core.messages.in.hello_failed',
                'kytos/of_core.messages.out.hello_failed')
-    # may present concurrency issues due to unordered
-    # event listeners call. sugestion:
-    # listen to 'kytos/of_core.hello_failed', trigered when message is sent)
-    def handle_openflow_in_hello_failed(self, event):
-        # terminate the connection
-        # but should do it only after the message has been sent...
-        # not in concurrency with the sender method
+    def handle_openflow_in_hello_failed(event):
+        """Method used to close the connection when get a hello failed."""
         event.destination.close()
+        msg = "The switch {} was disconnected.".format(event.destination)
+        log.debug(msg)
 
     def shutdown(self):
         """End of the application."""

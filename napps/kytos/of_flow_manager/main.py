@@ -1,8 +1,8 @@
 """NApp responsible for installing or removing flows on the switches."""
 
 import json
-from flask import request
 
+from flask import request
 from kytos.core import log
 from kytos.core.events import KytosEvent
 from kytos.core.flow import Flow

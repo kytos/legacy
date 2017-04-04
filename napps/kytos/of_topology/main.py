@@ -67,7 +67,7 @@ class Main(KytosNApp):
         Parameters:
             event (KytosEvent): event with port_status content.
         """
-        port_status = event.content['message']
+        port_status = event.message
         reasons = ['CREATED', 'DELETED', 'MODIFIED']
         dpid = event.source.switch.dpid
         port_no = port_status.desc.port_no
