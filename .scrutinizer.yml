@@ -18,7 +18,7 @@ build:
         before:
             - pip install git+git://github.com/kytos/python-openflow.git
             - pip install git+git://github.com/kytos/kytos.git
-            - pip install -r requirements-dev.txt
+            - pip install -r requirements.txt -r requirements-dev.txt
         override:
             -
                 command: 'coverage run setup.py test'
