@@ -5,8 +5,7 @@ from os import listdir, makedirs
 from os.path import isfile, join
 
 from flask import request
-from kytos.core import log
-from kytos.core.napps import KytosNApp
+from kytos.core import KytosNApp, log
 
 from napps.kytos.web_topology_layout import settings
 

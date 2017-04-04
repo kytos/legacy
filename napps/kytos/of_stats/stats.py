@@ -4,8 +4,7 @@ from abc import ABCMeta, abstractmethod
 from pathlib import Path
 
 import rrdtool
-from kytos.core import log
-from kytos.core.events import KytosEvent
+from kytos.core import KytosEvent, log
 from kytos.core.flow import Flow
 from pyof.v0x01.common.phy_port import Port
 from pyof.v0x01.controller2switch.common import (AggregateStatsRequest,

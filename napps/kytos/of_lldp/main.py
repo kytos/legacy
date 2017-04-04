@@ -1,9 +1,7 @@
 """NApp responsible to discover new switches and hosts."""
 
-from kytos.core import log
-from kytos.core.events import KytosEvent
+from kytos.core import KytosEvent, KytosNApp, log
 from kytos.core.helpers import listen_to
-from kytos.core.napps import KytosNApp
 from pyof.foundation.basic_types import DPID, UBInt16
 from pyof.foundation.network_types import LLDP, Ethernet
 from pyof.v0x01.common.action import ActionOutput
