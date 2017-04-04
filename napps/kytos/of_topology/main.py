@@ -2,9 +2,8 @@
 
 import json
 
-from kytos.core import log
+from kytos.core import KytosNApp, log
 from kytos.core.helpers import listen_to
-from kytos.core.napps import KytosNApp
 from pyof.foundation.basic_types import HWAddress
 from pyof.foundation.network_types import Ethernet
 

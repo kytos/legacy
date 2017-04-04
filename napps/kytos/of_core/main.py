@@ -1,10 +1,8 @@
 """NApp responsible for the main OpenFlow basic operations."""
 
-from kytos.core import log
-from kytos.core.events import KytosEvent
+from kytos.core import KytosEvent, KytosNApp, log
 from kytos.core.flow import Flow
 from kytos.core.helpers import listen_to
-from kytos.core.napps import KytosNApp
 from kytos.core.switch import Interface
 from pyof.v0x01.common.utils import new_message_from_header
 from pyof.v0x01.controller2switch.common import FlowStatsRequest

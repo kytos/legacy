@@ -1,7 +1,7 @@
 """Statistics application."""
-from kytos.core import log
+
+from kytos.core import KytosNApp, log
 from kytos.core.helpers import listen_to
-from kytos.core.napps import KytosNApp
 from pyof.v0x01.controller2switch.stats_request import StatsTypes
 
 from napps.kytos.of_stats import settings

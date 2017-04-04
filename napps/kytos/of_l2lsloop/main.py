@@ -1,9 +1,7 @@
 """Module that implements a L2 Learning Switch algorithm with loop support."""
 
-from kytos.core import log
-from kytos.core.events import KytosEvent
+from kytos.core import KytosEvent, KytosNApp, log
 from kytos.core.helpers import listen_to
-from kytos.core.napps import KytosNApp
 from pyof.foundation.network_types import Ethernet
 from pyof.v0x01.common.action import ActionOutput
 from pyof.v0x01.common.flow_match import FlowWildCards, Match

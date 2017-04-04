@@ -1,8 +1,7 @@
 """NApp responsible for installing a DROP ipv6 flow on switch setup."""
 
-from kytos.core.events import KytosEvent
+from kytos.core import KytosEvent, KytosNApp, log
 from kytos.core.helpers import listen_to
-from kytos.core.napps import KytosNApp
 from pyof.v0x01.common.flow_match import Match
 from pyof.v0x01.controller2switch.flow_mod import FlowMod, FlowModCommand
 
@@ -35,10 +34,11 @@ class Main(KytosNApp):
         flow_mod.command = FlowModCommand.OFPFC_ADD
         flow_mod.match = Match()
         flow_mod.match.dl_type = 0x86dd  # ipv6
-        event_out = KytosEvent(name=('kytos/of_ipv6disable.messages.out.'
+        event_out = KytosEvent(name=('kytos/of_ipv6drop.messages.out.'
                                      'ofpt_flow_mod'),
                                content={'destination': switch.connection,
                                         'message': flow_mod})
+        log.info('Sending "IPv6 DROP" flow to switch %s', switch.id)
         self.controller.buffers.msg_out.put(event_out)
 
     def shutdown(self):

@@ -3,10 +3,8 @@
 import json
 from flask import request
 
-from kytos.core import log
-from kytos.core.events import KytosEvent
+from kytos.core import KytosEvent, KytosNApp, log
 from kytos.core.flow import Flow
-from kytos.core.napps import KytosNApp
 from pyof.v0x01.controller2switch.flow_mod import FlowModCommand
 
 from napps.kytos.of_flow_manager import settings
