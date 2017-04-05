@@ -54,9 +54,9 @@ master_doc = 'references'
 
 # General information about the project.
 project_short_name = u'Kytos-Napps'
-project = u'Core Network Applications(NApps) developed to be used with Kytos Controller'
-copyright = u'2016, Kytos\' Development Team'
-author = u'Kytos\' Development Team'
+project = u'Network Applications(NApps) developed to be used with Kytos Controller'
+copyright = u'2017, Kytos Project'
+author = u'Kytos Project'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
