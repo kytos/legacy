@@ -1,8 +1,8 @@
 """NApp responsible for installing or removing flows on the switches."""
 
 import json
-from flask import request
 
+from flask import request
 from kytos.core import KytosEvent, KytosNApp, log
 from kytos.core.flow import Flow
 from pyof.v0x01.controller2switch.flow_mod import FlowModCommand

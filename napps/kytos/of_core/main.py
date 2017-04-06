@@ -4,6 +4,8 @@ from kytos.core import KytosEvent, KytosNApp, log
 from kytos.core.flow import Flow
 from kytos.core.helpers import listen_to
 from kytos.core.switch import Interface
+from pyof.v0x01.asynchronous.error_msg import (ErrorMsg, ErrorType,
+                                               HelloFailedCode)
 from pyof.v0x01.common.utils import new_message_from_header
 from pyof.v0x01.controller2switch.common import FlowStatsRequest
 from pyof.v0x01.controller2switch.features_request import FeaturesRequest
@@ -143,7 +145,7 @@ class Main(KytosNApp):
         """
         log.debug("Echo Request message read")
 
-        echo_request = event.content['message']
+        echo_request = event.message
         echo_reply = EchoReply(xid=echo_request.header.xid)
         event_out = KytosEvent(name=('kytos/of_core.messages.out.'
                                      'ofpt_echo_reply'),
@@ -151,44 +153,92 @@ class Main(KytosNApp):
                                         'destination': event.source})
         self.controller.buffers.msg_out.put(event_out)
 
+    @listen_to('kytos/core.connection.new')
+    def handle_core_new_connection(self, event):
+        """Method called when a new switch is connected.
+
+        This method will send a hello world message when a new switch is
+        connected.
+        """
+        self.say_hello(event.source)
+
+    def say_hello(self, destination, xid=None):
+        """Method used to send a hello messages."""
+        # should be called once a new connection is established.
+        # To be able to deal with of1.3 negotiation, hello should also
+        # cary a version_bitmap.
+        hello = Hello(xid=xid)
+        event_out = KytosEvent(
+            name='kytos/of_core.messages.out.ofpt_hello',
+            content={'message': hello,
+                     'destination': destination})
+        self.controller.buffers.msg_out.put(event_out)
+
     @listen_to('kytos/of_core.messages.in.ofpt_hello')
     def handle_openflow_in_hello(self, event):
         """Handle hello messages.
 
-        This method will get a KytosEvent with hello message sent by client and
-        sends a hello message to the client.
+        This method will get a KytosEvent with hello message sent by client
+        and deal with negotiation.
 
         Args:
             event (KytosMessageInHello): KytosMessageInHelloEvent
         """
-        log.debug('Handling kytos/of_core.messages.ofpt_hello')
+        log.debug('Handling kytos/of_core.messages.in.ofpt_hello')
 
-        hello = Hello(xid=event.content['message'].header.xid)
-        event_out = KytosEvent(name='kytos/of_core.messages.out.ofpt_hello',
-                               content={'message': hello,
-                                        'destination': event.source})
-        self.controller.buffers.msg_out.put(event_out)
+        if event.message.header.version >= 0x01:
+            event_raw = KytosEvent(
+                name='kytos/of_core.hello_complete',
+                content={'destination': event.source})
+            self.controller.buffers.raw.put(event_raw)
+        else:
+            error_message = ErrorMsg(xid=event.message.header.xid,
+                                     error_type=ErrorType.OFPET_HELLO_FAILED,
+                                     code=HelloFailedCode.OFPHFC_INCOMPATIBLE)
+            event_out = KytosEvent(
+                name='kytos/of_core.messages.out.hello_failed',
+                content={'source': event.destination,
+                         'destination': event.source,
+                         'message': error_message})
+            self.controller.buffers.msg_out.put(event_out)
 
-    @listen_to('kytos/of_core.messages.out.ofpt_hello',
-               'kytos/of_core.messages.out.ofpt_echo_reply')
-    def send_features_request(self, event):
-        """Send a feature request to the switch after a hello Message.
+    @listen_to('kytos/of_core.messages.out.ofpt_echo_reply')
+    def handle_queued_openflow_echo_reply(self, event):
+        """Method used to handle  echo reply messages.
 
-        We consider here that the hello is sent just during the Handshake
-        processes, which means that, at this point, we do not have the switch
-        `dpid`, just the `connection`.
-
-        Args:
-            event (:class:`~.kytos.core.events.KytosEvent`):
-                Event with hello message.
+        This method will send a feature request message if the variable
+        SEND_FEATURES_REQUEST_ON_ECHO is True.By default this variable is
+        False.
         """
+        if settings.SEND_FEATURES_REQUEST_ON_ECHO:
+            self.send_features_request(event.destination)
+
+    @listen_to('kytos/of_core.hello_complete')
+    def handle_openflow_hello_complete(self, event):
+        """Method used when a hello message is completed.
+
+        This method will send a features request message.
+        """
+        self.send_features_request(event.destination)
+
+    def send_features_request(self, destination):
+        """Send a feature request to the switch."""
         log.debug('Sending a feature request after responding to a hello')
 
         event_out = KytosEvent(name=('kytos/of_core.messages.out.'
                                      'ofpt_features_request'),
                                content={'message': FeaturesRequest(),
-                                        'destination': event.destination})
+                                        'destination': destination})
         self.controller.buffers.msg_out.put(event_out)
+
+    @staticmethod
+    @listen_to('kytos/of_core.messages.in.hello_failed',
+               'kytos/of_core.messages.out.hello_failed')
+    def handle_openflow_in_hello_failed(event):
+        """Method used to close the connection when get a hello failed."""
+        event.destination.close()
+        msg = "The switch {} was disconnected.".format(event.destination)
+        log.debug(msg)
 
     def shutdown(self):
         """End of the application."""
