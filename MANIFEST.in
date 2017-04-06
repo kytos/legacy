@@ -1,2 +1,2 @@
-recursive-include kytos *
+recursive-include napps *
 include *.txt
