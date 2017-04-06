@@ -146,7 +146,8 @@ class Main(KytosNApp):
         log.debug("Echo Request message read")
 
         echo_request = event.message
-        echo_reply = EchoReply(xid=echo_request.header.xid)
+        echo_reply = EchoReply(xid=echo_request.header.xid,
+                               data=echo_request.data)
         event_out = KytosEvent(name=('kytos/of_core.messages.out.'
                                      'ofpt_echo_reply'),
                                content={'message': echo_reply,
