@@ -1,3 +1,0 @@
-kytos
-python-openflow
-rrdtool
