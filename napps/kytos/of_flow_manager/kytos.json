@@ -1,5 +1,5 @@
 {
-  "author": "kytos",
+  "username": "kytos",
   "name": "of_flow_manager",
   "description": "NApp that manages switches flows.",
   "version": "0.1.1",

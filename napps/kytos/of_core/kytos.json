@@ -1,5 +1,5 @@
 {
-  "author": "kytos",
+  "username": "kytos",
   "name": "of_core",
   "description": "OpenFlow Core of Kytos Controller, responsible for main OpenFlow operations.",
   "version": "0.1.1",

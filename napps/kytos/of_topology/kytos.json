@@ -1,5 +1,5 @@
 {
-  "author": "kytos",
+  "username": "kytos",
   "name": "of_topology",
   "description": "A simple app that update links between machines and swithes and return a json with network topology using the route /kytos/topology.",
   "version": "0.1.1",
