@@ -1,4 +1,5 @@
 {
+  "author": "kytos",
   "username": "kytos",
   "name": "web_topology_layout",
   "description": "Manage endpoints related to the web interface settings and layout.",
