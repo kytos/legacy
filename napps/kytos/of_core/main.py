@@ -1,12 +1,12 @@
 """NApp responsible for the main OpenFlow basic operations."""
-
 from kytos.core import KytosEvent, KytosNApp, log
 from kytos.core.flow import Flow
 from kytos.core.helpers import listen_to
-from kytos.core.switch import Interface
+from kytos.core.switch import Interface, CONNECTION_STATE
+from pyof.foundation.exceptions import UnpackException
 from pyof.v0x01.asynchronous.error_msg import (ErrorMsg, ErrorType,
                                                HelloFailedCode)
-from pyof.v0x01.common.utils import new_message_from_header
+from pyof.v0x01.common.header import Type as OFPTYPE
 from pyof.v0x01.controller2switch.common import FlowStatsRequest
 from pyof.v0x01.controller2switch.features_request import FeaturesRequest
 from pyof.v0x01.controller2switch.stats_request import StatsRequest, StatsTypes
@@ -14,6 +14,7 @@ from pyof.v0x01.symmetric.echo_reply import EchoReply
 from pyof.v0x01.symmetric.hello import Hello
 
 from napps.kytos.of_core import settings
+from napps.kytos.of_core.utils import unpack, of_slicer
 
 
 class Main(KytosNApp):
@@ -26,6 +27,7 @@ class Main(KytosNApp):
         Users shouldn't call this method directly.
         """
         self.name = 'kytos/of_core'
+        self.versions = [0x01]
         self.execute_as_loop(settings.STATS_INTERVAL)
 
     def execute(self):
@@ -89,7 +91,6 @@ class Main(KytosNApp):
         Args:
             event (KytosEvent): Event with features reply message.
         """
-        log.debug('Handling Features Reply Event')
 
         features = event.content['message']
         dpid = features.datapath_id.value
@@ -108,14 +109,22 @@ class Main(KytosNApp):
 
         switch.update_features(features)
 
-    @listen_to('kytos/core.messages.openflow.new')
-    def handle_new_openflow_message(self, event):
+        if (event.source.state == CONNECTION_STATE.SETUP and
+                event.source.protocol.state == 'waiting_features_reply'):
+            event.source.protocol.state = 'handshake_complete'
+            event.source.state = CONNECTION_STATE.ESTABLISHED
+            log.info('Connection %s: HANDSHAKE COMPLETE', event.source.id)
+            event_raw = KytosEvent(name='kytos/of_core.handshake_complete',
+                                   content={'source': event.source})
+            self.controller.buffers.app.put(event_raw)
+
+    @listen_to('kytos/core.openflow.data.in')
+    def handle_data_in(self, event):
         """Handle a RawEvent and generate a kytos/core.messages.in.* event.
 
         Args:
             event (KytosEvent): RawEvent with openflow message to be unpacked
         """
-        log.debug('RawOpenFlowMessage received by RawOFMessage handler')
 
         # If the switch is already known to the controller, update the
         # 'lastseen' attribute
@@ -123,20 +132,66 @@ class Main(KytosNApp):
         if switch:
             switch.update_lastseen()
 
-        # creates an empty OpenFlow Message based on the message_type defined
-        # on the unpacked header.
-        message = new_message_from_header(event.content['header'])
-        binary_data = event.content['binary_data']
+        connection = event.source
+        if connection.state in (CONNECTION_STATE.FINISHED,
+                                CONNECTION_STATE.FAILED):
+            return
 
-        # The unpack will happen only to those messages with body beyond header
-        if binary_data and len(binary_data) > 0:
-            message.unpack(binary_data)
-        log.debug('RawOpenFlowMessage unpacked')
+        data = connection.remaining_data + event.content['new_data']
+        packets, connection.remaining_data = of_slicer(data)
+        if not packets:
+            return
 
+        unprocessed_packets = []
+
+        for packet in packets:
+            log.debug('Connection %s: New Raw Openflow packet', connection.id)
+            log.debug(packet.hex())
+
+            try:
+                message = unpack(packet)
+            except UnpackException:
+                connection.state = CONNECTION_STATE.FINISHED
+                connection.close()
+                return
+            m_type = message.header.message_type
+
+            log.debug('Connection %s: IN OFP, version: %s, type: %s, xid: %s',
+                      connection.id,
+                      message.header.version, m_type, message.header.xid)
+
+            if connection.state == CONNECTION_STATE.NEW:
+                if m_type != OFPTYPE.OFPT_HELLO:
+                    log.debug('Connection %s: Invalid OF Hello message',
+                              connection.id)
+                    connection.protocol.state = 'hello_invalid'
+                    connection.state = CONNECTION_STATE.FINISHED
+                    connection.close()
+                elif self._negociate(connection, message):
+                    connection.state = CONNECTION_STATE.SETUP
+                    continue
+                connection.state = CONNECTION_STATE.FAILED
+                return
+
+            elif connection.state == CONNECTION_STATE.SETUP:
+                if not (m_type == OFPTYPE.OFPT_FEATURES_REPLY and
+                        connection.protocol.state == 'waiting_features_reply'):
+                    unprocessed_packets.append(packet)
+                    continue
+
+            self.emmit_message_in(connection, message)
+
+        connection.remaining_data = b''.join(unprocessed_packets) + \
+                                    connection.remaining_data
+
+    def emmit_message_in(self, connection, message):
+        """Emits a KytosEvent for an incomming message containing the message
+        and the source."""
         name = message.header.message_type.name.lower()
-        of_event = KytosEvent(name="kytos/of_core.messages.in.{}".format(name),
-                              content={'message': message,
-                                       'source': event.source})
+        of_event = KytosEvent(
+            name="kytos/of_core.messages.in.{}".format(name),
+            content={'message': message,
+                     'source': connection})
         self.controller.buffers.msg_in.put(of_event)
 
     @listen_to('kytos/of_core.messages.in.ofpt_echo_request')
@@ -150,27 +205,26 @@ class Main(KytosNApp):
             event (:class:`~kytos.core.events.KytosEvent`):
                 Event with echo request in message.
         """
-        log.debug("Echo Request message read")
 
         echo_request = event.message
         echo_reply = EchoReply(xid=echo_request.header.xid,
                                data=echo_request.data)
-        event_out = KytosEvent(name=('kytos/of_core.messages.out.'
-                                     'ofpt_echo_reply'),
-                               content={'message': echo_reply,
-                                        'destination': event.source})
+        event_out = KytosEvent(
+            name='kytos/of_core.messages.out.ofpt_echo_reply',
+            content={'message': echo_reply,
+                     'destination': event.source})
         self.controller.buffers.msg_out.put(event_out)
 
-    @listen_to('kytos/core.connection.new')
+    @listen_to('kytos/core.openflow.connection.new')
     def handle_core_new_connection(self, event):
         """Method called when a new switch is connected.
 
         This method will send a hello world message when a new switch is
         connected.
         """
-        self.say_hello(event.source)
+        self._say_hello(event.source)
 
-    def say_hello(self, destination, xid=None):
+    def _say_hello(self, connection, xid=None):
         """Method used to send a hello messages."""
         # should be called once a new connection is established.
         # To be able to deal with of1.3 negotiation, hello should also
@@ -179,37 +233,48 @@ class Main(KytosNApp):
         event_out = KytosEvent(
             name='kytos/of_core.messages.out.ofpt_hello',
             content={'message': hello,
-                     'destination': destination})
+                     'destination': connection})
         self.controller.buffers.msg_out.put(event_out)
 
-    @listen_to('kytos/of_core.messages.in.ofpt_hello')
-    def handle_openflow_in_hello(self, event):
+    def _negociate(self, connection, message):
         """Handle hello messages.
 
-        This method will get a KytosEvent with hello message sent by client
+        This method will handle the incomming hello message by client
         and deal with negotiation.
 
         Args:
             event (KytosMessageInHello): KytosMessageInHelloEvent
         """
-        log.debug('Handling kytos/of_core.messages.in.ofpt_hello')
 
-        if event.message.header.version >= 0x01:
-            event_raw = KytosEvent(
-                name='kytos/of_core.hello_complete',
-                content={'destination': event.source})
-            self.controller.buffers.raw.put(event_raw)
+        if message.header.version >= min(self.versions):
+            connection.protocol.name = 'openflow'
+            connection.protocol.version = min(message.header.version,
+                                              max(self.versions))
+            connection.protocol.state = 'sending_features'
+            self.send_features_request(connection)
+            log.debug('Connection %s: Hello complete', connection.id)
+            return True
         else:
-            error_message = ErrorMsg(xid=event.message.header.xid,
-                                     error_type=ErrorType.OFPET_HELLO_FAILED,
-                                     code=HelloFailedCode.OFPHFC_INCOMPATIBLE)
+            connection.protocol.state = 'hello_failed'
+            event_raw = KytosEvent(
+                name='kytos/of_core.hello_failed',
+                content={'source': connection})
+            self.controller.buffers.app.put(event_raw)
+
+            error_message = ErrorMsg(
+                xid=message.header.xid,
+                error_type=ErrorType.OFPET_HELLO_FAILED,
+                code=HelloFailedCode.OFPHFC_INCOMPATIBLE)
+
             event_out = KytosEvent(
                 name='kytos/of_core.messages.out.hello_failed',
-                content={'source': event.destination,
-                         'destination': event.source,
+                content={'destination': connection,
                          'message': error_message})
-            self.controller.buffers.msg_out.put(event_out)
 
+            self.controller.buffers.msg_out.put(event_out)
+            return False
+
+    # May be removed
     @listen_to('kytos/of_core.messages.out.ofpt_echo_reply')
     def handle_queued_openflow_echo_reply(self, event):
         """Method used to handle  echo reply messages.
@@ -221,23 +286,19 @@ class Main(KytosNApp):
         if settings.SEND_FEATURES_REQUEST_ON_ECHO:
             self.send_features_request(event.destination)
 
-    @listen_to('kytos/of_core.hello_complete')
-    def handle_openflow_hello_complete(self, event):
-        """Method used when a hello message is completed.
-
-        This method will send a features request message.
-        """
-        self.send_features_request(event.destination)
-
     def send_features_request(self, destination):
         """Send a feature request to the switch."""
-        log.debug('Sending a feature request after responding to a hello')
 
-        event_out = KytosEvent(name=('kytos/of_core.messages.out.'
-                                     'ofpt_features_request'),
-                               content={'message': FeaturesRequest(),
-                                        'destination': destination})
+        event_out = KytosEvent(
+            name='kytos/of_core.messages.out.ofpt_features_request',
+            content={'message': FeaturesRequest(),
+                     'destination': destination})
         self.controller.buffers.msg_out.put(event_out)
+
+    @listen_to('kytos/of_core.messages.out.ofpt_features_request')
+    def handle_features_request_sent(self, event):
+        if event.destination.protocol.state == 'sending_features':
+            event.destination.protocol.state = 'waiting_features_reply'
 
     @staticmethod
     @listen_to('kytos/of_core.messages.in.hello_failed',
@@ -245,8 +306,7 @@ class Main(KytosNApp):
     def handle_openflow_in_hello_failed(event):
         """Method used to close the connection when get a hello failed."""
         event.destination.close()
-        msg = "The switch {} was disconnected.".format(event.destination)
-        log.debug(msg)
+        log.debug("Connection %s: Connection closed.", event.destination.id)
 
     def shutdown(self):
         """End of the application."""
