@@ -35,7 +35,8 @@ class Main(KytosNApp):
         Users shouldn't call this method directly.
         """
         for switch in self.controller.switches.values():
-            self._update_flow_list(switch)
+            if switch.is_connected():
+                self._update_flow_list(switch)
 
     def _update_flow_list(self, switch):
         """Method responsible for request stats of flow to switches.
