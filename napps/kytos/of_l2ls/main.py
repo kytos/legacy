@@ -3,6 +3,7 @@
 from kytos.core import KytosEvent, KytosNApp, log
 from kytos.core.helpers import listen_to
 from pyof.foundation.network_types import Ethernet
+from pyof.v0x01.asynchronous.packet_in import PacketInReason
 from pyof.v0x01.common.action import ActionOutput
 from pyof.v0x01.common.flow_match import Match
 from pyof.v0x01.common.phy_port import Port
@@ -51,6 +52,9 @@ class Main(KytosNApp):
 
         switch.update_mac_table(ethernet.source, in_port)
 
+        if packet_in.reason != PacketInReason.OFPR_NO_MATCH:
+            return
+
         # IGNORE LLDP packets
         if ethernet.destination not in settings.lldp_macs:
             ports = switch.where_is_mac(ethernet.destination)
@@ -68,17 +72,20 @@ class Main(KytosNApp):
                                              'ofpt_flow_mod'),
                                        content={'destination': event.source,
                                                 'message': flow_mod})
-            else:
-                # Flood the packet if we haven't done it yet
-                packet_out = PacketOut()
-                packet_out.buffer_id = packet_in.buffer_id
-                packet_out.in_port = packet_in.in_port
+                self.controller.buffers.msg_out.put(event_out)
 
-                packet_out.actions.append(ActionOutput(port=Port.OFPP_FLOOD))
-                event_out = KytosEvent(name=('kytos/of_l2ls.messages.out.'
-                                             'ofpt_packet_out'),
-                                       content={'destination': event.source,
-                                                'message': packet_out})
+            # Flood the packet if we haven't done it yet
+            packet_out = PacketOut()
+            packet_out.buffer_id = packet_in.buffer_id
+            packet_out.in_port = packet_in.in_port
+            packet_out.data = packet_in.data
+
+            port = ports[0] if ports else Port.OFPP_FLOOD
+            packet_out.actions.append(ActionOutput(port=port))
+            event_out = KytosEvent(name=('kytos/of_l2ls.messages.out.'
+                                         'ofpt_packet_out'),
+                                   content={'destination': event.source,
+                                            'message': packet_out})
 
             self.controller.buffers.msg_out.put(event_out)
 
