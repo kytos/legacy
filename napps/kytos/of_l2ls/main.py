@@ -66,7 +66,6 @@ class Main(KytosNApp):
                 flow_mod.match.dl_src = ethernet.source.value
                 flow_mod.match.dl_dst = ethernet.destination.value
                 flow_mod.match.dl_type = ethernet.ether_type
-                flow_mod.buffer_id = packet_in.buffer_id
                 flow_mod.actions.append(ActionOutput(port=ports[0]))
                 event_out = KytosEvent(name=('kytos/of_l2ls.messages.out.'
                                              'ofpt_flow_mod'),
@@ -74,7 +73,7 @@ class Main(KytosNApp):
                                                 'message': flow_mod})
                 self.controller.buffers.msg_out.put(event_out)
 
-            # Flood the packet if we haven't done it yet
+            # Send the packet to correct destination or flood it
             packet_out = PacketOut()
             packet_out.buffer_id = packet_in.buffer_id
             packet_out.in_port = packet_in.in_port
