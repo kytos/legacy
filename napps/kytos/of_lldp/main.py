@@ -22,7 +22,8 @@ class Main(KytosNApp):
 
     def execute(self):
         """Implement a loop to check switches liveness."""
-        for switch in self.controller.switches.values():
+        switches = list(self.controller.switches.values())
+        for switch in switches:
             # Gerar lldp para cada uma das portas do switch
             # Gerar o hash de cada um dos pacotes e armazenar
 
