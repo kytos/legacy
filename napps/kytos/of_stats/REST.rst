@@ -14,7 +14,7 @@ Port Statistics
    *dpid*;
 -  **/kytos/stats/[*dpid*]/ports/[*port*]?start=[*start*]&end=[*end*]**:
    Provide statistics between *start* and *end* (UNIX timestamps). If
-   **start=[*start*]&** is omitted, use the oldest entry as *start*. If
+   **start=[*start*]&** is omitted, use the entire database period. If
    **&end=[*end*]** is omitted, use the time of the request as *end*.
 
 Flow Statistics
@@ -27,5 +27,21 @@ Flow Statistics
    ones) for each statistic for flow *ID* of switch *dpid*.
 -  **/kytos/stats/[*dpid*]/flows/[*ID*]?start=[*start*]&end=[*end*]**:
    Provide statistics between *start* and *end* (UNIX timestamps). If
-   **start=[*start*]&** is omitted, use the oldest entry as *start*. If
+   **start=[*start*]&** is omitted, use the entire database period. If
    **&end=[*end*]** is omitted, use the time of the request as *end*.
+
+Troubleshooting
+---------------
+
+I get only zeros
+................
+Try specifying the start parameter.
+
+Wrong link utilization
+......................
+Sometimes, the link speed is not correctly informed by the switch.
+Check the section with the same name in ``README.rst``.
+
+Other issues
+............
+Try deleting the database as described in ``README.rst``.
