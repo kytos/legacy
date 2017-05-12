@@ -23,7 +23,10 @@ Requirements
 ============
 
 Besides Python packages described in *requirements.txt*,
-`rrdtool <http://www.rrdtool.org>`__ is required and must be installed.
+`rrdtool <http://www.rrdtool.org>`__ is required and must be installed. If you
+are using Ubuntu, you must install, using apt:
+
+- `rrdtool`, `python3.6-dev` and `librrd-dev`
 
 .. note:: We currently use rrd to keep persistence in data, but future
     versions of this napp will allow you to choose what kind of backend you
