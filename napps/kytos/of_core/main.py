@@ -117,6 +117,12 @@ class Main(KytosNApp):
         """
         log.debug('RawOpenFlowMessage received by RawOFMessage handler')
 
+        # If the switch is already known to the controller, update the
+        # 'lastseen' attribute
+        switch = event.source.switch
+        if switch:
+            switch.update_lastseen()
+
         # creates an empty OpenFlow Message based on the message_type defined
         # on the unpacked header.
         message = new_message_from_header(event.content['header'])
