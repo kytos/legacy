@@ -163,7 +163,7 @@ single flow dictionary or a list of flow dictionaries. Wildcarded fields can be
 omitted.
 
 For instance, if one needs flows to block a specific source mac_address
-(say 00:15:af;d5:38:98) and send all ipv6 traffic to the controller, the JSON
+(say 00:15:af:d5:38:98) and send all ipv6 traffic to the controller, the JSON
 string should be:
 
 .. code:: json
@@ -174,11 +174,11 @@ string should be:
                  "dl_src": "00:15:af:d5:38:98"
                },
                {
-                 "dl_type": 0x86dd,
+                 "dl_type": 34525,
                  "actions": [
                               {
                                 "type": "action_output",
-                                "port": 0xfffd
+                                "port": 65533 
                               }
                             ]
                }
@@ -199,4 +199,6 @@ which may be obtained using the *retrieve* endpoint.
 For instance, if one wants to remove the very first flow presented in this file:
 
 .. code:: shell
+
   curl -X DELETE 127.0.0.1:8181/kytos/flow-manager/00:00:00:00:00:00:00:01/e972d1a60d34c249afa6aa929cb6c5a6/flows-d
+
