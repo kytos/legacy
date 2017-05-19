@@ -47,6 +47,11 @@ The endpoints implemented in this napp are presented in the table below.
 |                                        | Switch                           |            |
 +----------------------------------------+----------------------------------+------------+
 
+Examples
+--------
+
+For examples on how to use the API and the JSON formats, please refer to EXAMPLES.rst
+
 How it Works
 ------------
 
