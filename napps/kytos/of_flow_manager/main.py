@@ -55,19 +55,20 @@ class Main(KytosNApp):
         If no dpid has been specified, returns the flows from all switches.
         """
         switch_flows = {}
+
         if dpid:
-            switch = self.controller.get_switch_by_dpid(dpid)
-            flows = []
-            for flow in switch.flows:
-                flows.append(flow.as_dict()['flow'])
-            switch_flows[dpid] = flows
+            target = [dpid]
         else:
-            for switch_dpid in self.controller.switches:
-                switch = self.controller.get_switch_by_dpid(switch_dpid)
-                flows = []
-                for flow in switch.flows:
-                    flows.append(flow.as_dict()['flow'])
-                switch_flows[switch_dpid] = flows
+            target = self.controller.switches
+
+        for switch_dpid in target:
+            switch = self.controller.get_switch_by_dpid(switch_dpid)
+            flows = {}
+            for flow in switch.flows:
+                flow = (flow.as_dict()['flow'])
+                flow_id = flow.pop('self.id',0)
+                flows[flow_id] = flow
+            switch_flows[switch_dpid] = flows
         return json.dumps(switch_flows)
 
     def insert_flows(self, dpid=None):
