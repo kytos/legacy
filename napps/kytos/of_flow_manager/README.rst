@@ -1,7 +1,7 @@
 Overview
 ========
 
-The *of.flow-manager* application exports a REST API to add, remove,
+The *of_flow_manager* NApp exports a REST API to add, remove,
 list and clear flows from switches. It can be used by other
 applications to manage all flows.
 
@@ -32,20 +32,21 @@ Protocol Operation
 
 The endpoints implemented in this napp are presented in the table below.
 
-+----------------------------------------+----------------------------------+------------+
-| Endpoint                               | Description                      | Method     |
-+========================================+==================================+============+
-| ``/flow-manager/dpid/flows``           | Retrieve flows from a specific   | ``GET``    |
-|                                        | Switch                           |            |
-+----------------------------------------+----------------------------------+------------+
-| ``/flow-manager/flows``                | Retrieve all flows               | ``GET``    |
-+----------------------------------------+----------------------------------+------------+
-| ``/flow-manager/dpid/flows-a``         | Add a flow in a specific Switch  | ``POST``   |
-|                                        |                                  |            |
-+----------------------------------------+----------------------------------+------------+
-| ``/flow-manager/dpid/flow_id/flows-d`` | Delete a flow from a specific    | ``DELETE`` |
-|                                        | Switch                           |            |
-+----------------------------------------+----------------------------------+------------+
++------------------------------------------+----------------------------------+------------+
+| Endpoint                                 | Description                      | Method     |
++==========================================+==================================+============+
+| ``/flow-manager/flows[/dpid]``           | Retrieve installed flows from    | ``GET``    |
+|                                          | switches                         |            |
++------------------------------------------+----------------------------------+------------+
+| ``/flow-manager/flows[/dpid]``           | Add flows to switches            | ``POST``   |
++------------------------------------------+----------------------------------+------------+
+| ``/flow-manager/flows[/dpid[/flow_id]]`` | Delete flows from switches       | ``DELETE`` |
++------------------------------------------+----------------------------------+------------+
+
+Examples
+--------
+
+For examples on how to use the API and the JSON formats, please refer to EXAMPLES.rst
 
 How it Works
 ------------
@@ -54,22 +55,18 @@ A NApp that wishes to use this application can use http methods, such as
 ``GET``, ``POST`` and ``DELETE`` to request or send information to it.
 All endpoints of this napp return a JSON response as described below.
 
-Endpoint ``/flow-manager/dpid/flows``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``GET /flow-manager/flows[/dpid]``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Returns a JSON with all flows of a specific switch identified by the DPID.
+Returns a JSON with all flows from a specific switch identified by dpid if provided,
+otherwise returns all flows from all switches.
 
-Endpoint ``/flow-manager/flows``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Returns a JSON with all flows of all switches.
-
-Endpoint ``/flow-manager/dpid/flows-a``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``POST /flow-manager/flows[/dpid]``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Returns a JSON with success message.
 
-Endpoint ``/flow-manager/dpid/flow_id/flows-d``
+``DELETE /flow-manager/flows[/dpid[/flow_id]]``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Returns a JSON with success message.
