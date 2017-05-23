@@ -87,7 +87,14 @@ class Main(KytosNApp):
             topology (string): json with topology details.
         """
         nodes, links = [], []
-        for _, switch in self.controller.switches.items():
+        switches = self.controller.switches
+
+        switches_mac_address = []
+        for switch in switches.values():
+            for interface in switch.interfaces.values():
+                switches_mac_address.append(interface.address)
+
+        for _, switch in switches.items():
             nodes.append(switch.as_dict())
             for _, interface in switch.interfaces.items():
                 link = {'source': switch.id,
@@ -98,6 +105,9 @@ class Main(KytosNApp):
 
                 for endpoint, _ in interface.endpoints:
                     if isinstance(endpoint, HWAddress):
+                        if endpoint in switches_mac_address:
+                            continue
+
                         link = {'source': interface.id,
                                 'target': endpoint.value,
                                 'type': 'link'}
