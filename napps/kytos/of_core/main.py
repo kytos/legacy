@@ -1,8 +1,9 @@
 """NApp responsible for the main OpenFlow basic operations."""
 from kytos.core import KytosEvent, KytosNApp, log
+from kytos.core.connection import CONNECTION_STATE
 from kytos.core.flow import Flow
 from kytos.core.helpers import listen_to
-from kytos.core.switch import Interface, CONNECTION_STATE
+from kytos.core.switch import Interface
 from pyof.foundation.exceptions import UnpackException
 from pyof.v0x01.asynchronous.error_msg import (ErrorMsg, ErrorType,
                                                HelloFailedCode)
@@ -113,13 +114,15 @@ class Main(KytosNApp):
                 event.source.protocol.state == 'waiting_features_reply'):
             event.source.protocol.state = 'handshake_complete'
             event.source.state = CONNECTION_STATE.ESTABLISHED
-            log.info('Connection %s: HANDSHAKE COMPLETE', event.source.id)
-            event_raw = KytosEvent(name='kytos/of_core.handshake_complete',
-                                   content={'source': event.source})
-            self.controller.buffers.app.put(event_raw)
+            log.info('Connection %s: OPENFLOW HANDSHAKE COMPLETE',
+                     event.source.id)
+            # # event to be generated in near future
+            # event_raw = KytosEvent(name='kytos/of_core.handshake_complete',
+            #                        content={'source': event.source})
+            # self.controller.buffers.app.put(event_raw)
 
-    @listen_to('kytos/core.openflow.data.in')
-    def handle_data_in(self, event):
+    @listen_to('kytos/core.openflow.raw.in')
+    def handle_raw_in(self, event):
         """Handle a RawEvent and generate a kytos/core.messages.in.* event.
 
         Args:
@@ -167,7 +170,7 @@ class Main(KytosNApp):
                     connection.protocol.state = 'hello_invalid'
                     connection.state = CONNECTION_STATE.FINISHED
                     connection.close()
-                elif self._negociate(connection, message):
+                elif self._negotiate(connection, message):
                     connection.state = CONNECTION_STATE.SETUP
                     continue
                 connection.state = CONNECTION_STATE.FAILED
@@ -179,12 +182,12 @@ class Main(KytosNApp):
                     unprocessed_packets.append(packet)
                     continue
 
-            self.emmit_message_in(connection, message)
+            self._emmit_message_in(connection, message)
 
         connection.remaining_data = b''.join(unprocessed_packets) + \
                                     connection.remaining_data
 
-    def emmit_message_in(self, connection, message):
+    def _emmit_message_in(self, connection, message):
         """Emits a KytosEvent for an incomming message containing the message
         and the source."""
         name = message.header.message_type.name.lower()
@@ -236,7 +239,7 @@ class Main(KytosNApp):
                      'destination': connection})
         self.controller.buffers.msg_out.put(event_out)
 
-    def _negociate(self, connection, message):
+    def _negotiate(self, connection, message):
         """Handle hello messages.
 
         This method will handle the incomming hello message by client
@@ -295,6 +298,7 @@ class Main(KytosNApp):
                      'destination': destination})
         self.controller.buffers.msg_out.put(event_out)
 
+    # ensure request has actually been sent before changing state
     @listen_to('kytos/of_core.messages.out.ofpt_features_request')
     def handle_features_request_sent(self, event):
         if event.destination.protocol.state == 'sending_features':
