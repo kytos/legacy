@@ -1,2 +1,2 @@
-python-openflow
-kytos
+python-openflow>=2017.1b3
+kytos>=2017.1b3

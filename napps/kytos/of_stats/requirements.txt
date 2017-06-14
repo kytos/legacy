@@ -1,4 +1,4 @@
-python-openflow
+python-openflow>=2017.1b3
 rrdtool
 flask
-kytos
+kytos>=2017.1b3
