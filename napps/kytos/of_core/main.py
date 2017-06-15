@@ -15,7 +15,9 @@ from pyof.v0x01.symmetric.echo_reply import EchoReply
 from pyof.v0x01.symmetric.hello import Hello
 
 from napps.kytos.of_core import settings
-from napps.kytos.of_core.utils import unpack, of_slicer
+from napps.kytos.of_core.utils import (emit_message_in, emit_message_out,
+                                       GenericHello, NegotiationException,
+                                       of_slicer, unpack_gen)
 
 
 class Main(KytosNApp):
