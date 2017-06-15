@@ -97,7 +97,7 @@ class Main(KytosNApp):
         version_utils = self.of_core_version_utils[connection.protocol.version]
         switch = version_utils.handle_features_reply(self.controller, event)
 
-        if (connection.is_in_setup_state() and
+        if (connection.is_during_setup() and
                 connection.protocol.state == 'waiting_features_reply'):
             connection.protocol.state = 'handshake_complete'
             connection.set_established_state()
@@ -123,8 +123,7 @@ class Main(KytosNApp):
             switch.update_lastseen()
 
         connection = event.source
-        if connection.state in (CONNECTION_STATE.FINISHED,
-                                CONNECTION_STATE.FAILED):
+        if not connection.is_alive():
             return
 
         data = connection.remaining_data + event.content['new_data']
@@ -138,7 +137,7 @@ class Main(KytosNApp):
             log.debug('Connection %s: New Raw Openflow packet - %s',
                       connection.id, packet.hex())
 
-            if connection.state == CONNECTION_STATE.NEW:
+            if connection.is_new():
                 try:
                     message = GenericHello(packet=packet)
                     self._negotiate(connection, message)
@@ -150,11 +149,10 @@ class Main(KytosNApp):
                         log.debug('Connection %s: Negotiation Failed',
                                   connection.id)
                     connection.protocol.state = 'hello_failed'
-                    connection.state = CONNECTION_STATE.FINISHED
                     connection.close()
                     connection.state = CONNECTION_STATE.FAILED
                     return
-                connection.state = CONNECTION_STATE.SETUP
+                connection.set_setup_state()
                 continue
 
             try:
@@ -165,7 +163,6 @@ class Main(KytosNApp):
                     debug_msg = 'connection closed before version negotiation'
                 log.debug('Connection %s: %s',
                           connection.id, debug_msg)
-                connection.state = CONNECTION_STATE.FINISHED
                 connection.close()
                 return
 
@@ -175,7 +172,7 @@ class Main(KytosNApp):
                       message.header.message_type,
                       message.header.xid)
 
-            if connection.state == CONNECTION_STATE.SETUP:
+            if connection.is_during_setup():
                 if not (str(message.header.message_type) ==
                         'Type.OFPT_FEATURES_REPLY' and
                         connection.protocol.state == 'waiting_features_reply'):
