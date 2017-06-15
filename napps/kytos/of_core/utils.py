@@ -1,11 +1,17 @@
 import struct
 
+import pyof.v0x01 as pyof_01
+import pyof.v0x04 as pyof_04
+
 from collections import OrderedDict
 
 from kytos.core import KytosEvent, log
 
 from pyof.foundation.exceptions import PackException, UnpackException
 from pyof.v0x01.common.header import Type as OFPTYPE
+
+pyof_version_libs = {0x01: pyof_01,
+                     0x04: pyof_04}
 
 
 def of_slicer(remaining_data):
@@ -23,15 +29,14 @@ def of_slicer(remaining_data):
     return pkts, remaining_data
 
 
-def unpack_gen(pyof_lib):
-    """returns a unpack function for a specific pyof_lib"""
-    def unpack_func(packet):
-        return unpack(packet, pyof_lib)
-    return unpack_func
-
-
-def unpack(packet, pyof_lib):
+def unpack(packet):
     """Unpacks the OpenFlow packet and returns a message."""
+    version = _unpack_int(packet[0])
+    try:
+        pyof_lib = pyof_version_libs[version]
+    except KeyError:
+        raise UnpackException('Version not supported')
+
     try:
         header = pyof_lib.common.header.Header()
         header.unpack(packet[:8])
@@ -47,6 +52,8 @@ def unpack(packet, pyof_lib):
 
 def _unpack_int(packet, offset=0, size=None):
     if size is None:
+        if type(packet) == int:
+            return packet
         size = len(packet)
     return int.from_bytes(packet[offset:offset + size], byteorder='big')
 
