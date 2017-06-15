@@ -32,7 +32,7 @@ class Main(KytosNApp):
         """
         pass
 
-    @listen_to('kytos/of_core.messages.in.ofpt_packet_in')
+    @listen_to('kytos/of_core.v0x01.messages.in.ofpt_packet_in')
     def handle_packet_in(self, event):
         """Handle PacketIn Event.
 
