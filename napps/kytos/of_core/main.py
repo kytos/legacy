@@ -5,6 +5,10 @@ from kytos.core.flow import Flow
 from kytos.core.helpers import listen_to
 from kytos.core.switch import Interface
 from pyof.foundation.exceptions import UnpackException
+
+import pyof.v0x01 as pyof_01
+import pyof.v0x04 as pyof_04
+
 from pyof.v0x01.asynchronous.error_msg import (ErrorMsg, ErrorType,
                                                HelloFailedCode)
 from pyof.v0x01.common.header import Type as OFPTYPE
@@ -31,6 +35,8 @@ class Main(KytosNApp):
         """
         self.name = 'kytos/of_core'
         self.versions = [0x01]
+        self.pyof_version_libs = {0x01: pyof_01,
+                                  0x04: pyof_04}
         self.execute_as_loop(settings.STATS_INTERVAL)
 
     def execute(self):
@@ -173,8 +179,8 @@ class Main(KytosNApp):
                 continue
 
             try:
-                message = unpack(packet)
-            except UnpackException:
+                message = connection.protocol.unpack(packet)
+            except (UnpackException, AttributeError) as e:
                 connection.state = CONNECTION_STATE.FINISHED
                 connection.close()
                 return
@@ -248,6 +254,16 @@ class Main(KytosNApp):
                      'destination': connection})
         self.controller.buffers.msg_out.put(event_out)
 
+    def _get_version_from_bitmask(self, message_versions):
+        """Get common version from hello message version bitmap."""
+        return max([version for version in message_versions
+                    if version in self.versions])
+
+    def _get_version_from_header(self, message_version):
+        """Get common version from hello message header version."""
+        version = min(message_version, max(self.versions))
+        return version if version in self.versions else None
+
     def _negotiate(self, connection, message):
         """Handle hello messages.
 
@@ -258,33 +274,23 @@ class Main(KytosNApp):
             event (KytosMessageInHello): KytosMessageInHelloEvent
         """
 
-        if message.header.version >= min(self.versions):
-            connection.protocol.name = 'openflow'
-            connection.protocol.version = min(message.header.version,
-                                              max(self.versions))
-            connection.protocol.state = 'sending_features'
-            self.send_features_request(connection)
-            log.debug('Connection %s: Hello complete', connection.id)
-            return True
+        if message.versions:
+            version = self._get_version_from_bitmask(message.versions)
         else:
-            connection.protocol.state = 'hello_failed'
-            event_raw = KytosEvent(
-                name='kytos/of_core.hello_failed',
-                content={'source': connection})
-            self.controller.buffers.app.put(event_raw)
+            version = self._get_version_from_header(message.header.version)
 
-            error_message = ErrorMsg(
-                xid=message.header.xid,
-                error_type=ErrorType.OFPET_HELLO_FAILED,
-                code=HelloFailedCode.OFPHFC_INCOMPATIBLE)
+        if version is None:
+            self.fail_negotiation(connection, message)
+            raise NegotiationException()
 
-            event_out = KytosEvent(
-                name='kytos/of_core.messages.out.hello_failed',
-                content={'destination': connection,
-                         'message': error_message})
+        connection.protocol.name = 'openflow'
+        connection.protocol.version = version
+        connection.protocol.unpack = unpack_gen(
+            self.pyof_version_libs[version])
+        connection.protocol.state = 'sending_features'
+        self.send_features_request(connection)
+        log.debug('Connection %s: Hello complete', connection.id)
 
-            self.controller.buffers.msg_out.put(event_out)
-            return False
 
     # May be removed
     @listen_to('kytos/of_core.messages.out.ofpt_echo_reply')
