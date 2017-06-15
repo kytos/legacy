@@ -32,7 +32,11 @@ class Main(KytosNApp):
 
     def execute(self):
         """Query all switches sequentially and then sleep before repeating."""
-        for switch in self.controller.switches.values():
+        switches = list(self.controller.switches.values())
+        for switch in switches:
+            if not (switch.is_connected() and
+                    switch.connection.protocol.version == 0x01):
+                continue
             self._update_stats(switch)
 
     def shutdown(self):

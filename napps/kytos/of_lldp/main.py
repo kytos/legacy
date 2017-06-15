@@ -24,7 +24,8 @@ class Main(KytosNApp):
         """Implement a loop to check switches liveness."""
         switches = list(self.controller.switches.values())
         for switch in switches:
-            if not switch.is_connected():
+            if not (switch.is_connected() and
+                    switch.connection.protocol.version == 0x01):
                 continue
             # Gerar lldp para cada uma das portas do switch
             # Gerar o hash de cada um dos pacotes e armazenar

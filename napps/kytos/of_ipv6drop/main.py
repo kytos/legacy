@@ -29,6 +29,8 @@ class Main(KytosNApp):
     def ipv6_drop(self, event):
         """Install a flow on the switch that drop all incoming ipv6 packets."""
         switch = event.content['switch']
+        if switch.connection.protocol.version is not 0x01:
+            return
 
         flow_mod = FlowMod()
         flow_mod.command = FlowModCommand.OFPFC_ADD
