@@ -3,7 +3,6 @@ from kytos.core import KytosEvent, KytosNApp, log
 from kytos.core.connection import CONNECTION_STATE
 from kytos.core.flow import Flow
 from kytos.core.helpers import listen_to
-from kytos.core.switch import Interface
 from pyof.foundation.exceptions import UnpackException
 
 import pyof.v0x01 as pyof_01
@@ -23,6 +22,9 @@ import pyof.v0x04.common.utils
 import pyof.v0x04.controller2switch.common
 import pyof.v0x04.controller2switch.features_request
 import pyof.v0x04.symmetric.echo_reply
+
+import napps.kytos.of_core.v0x01.utils as of_core_v0x01_utils
+import napps.kytos.of_core.v0x04.utils as of_core_v0x04_utils
 
 from napps.kytos.of_core import settings
 from napps.kytos.of_core.utils import (emit_message_in, emit_message_out,
@@ -44,6 +46,8 @@ class Main(KytosNApp):
         self.versions = [0x01, 0x04]
         self.pyof_version_libs = {0x01: pyof_01,
                                   0x04: pyof_04}
+        self.of_core_version_utils = {0x01: of_core_v0x01_utils,
+                                      0x04: of_core_v0x04_utils}
         self.execute_as_loop(settings.STATS_INTERVAL)
 
     def execute(self):
@@ -54,22 +58,10 @@ class Main(KytosNApp):
         """
         for switch in self.controller.switches.values():
             if switch.is_connected():
-                self._update_flow_list(switch)
-
-    def _update_flow_list(self, switch):
-        """Method responsible for request stats of flow to switches.
-
-        Args:
-            switch(:class:`~kytos.core.switch.Switch`):
-                target to send a stats request.
-        """
-        body = FlowStatsRequest()  # Port.OFPP_NONE and All Tables
-        req = StatsRequest(body_type=StatsTypes.OFPST_FLOW, body=body)
-        req.pack()
-        event = KytosEvent(
-            name='kytos/of_core.messages.out.ofpt_stats_request',
-            content={'message': req, 'destination': switch.connection})
-        self.controller.buffers.msg_out.put(event)
+                version_utils = \
+                    self.of_core_version_utils[switch.
+                                               connection.protocol.version]
+                version_utils.update_flow_list(self.controller, switch)
 
     @staticmethod
     @listen_to('kytos/of_core.v0x01.messages.in.ofpt_stats_reply')
@@ -108,33 +100,17 @@ class Main(KytosNApp):
         Args:
             event (KytosEvent): Event with features reply message.
         """
+        connection = event.source
+        version_utils = self.of_core_version_utils[connection.protocol.version]
+        switch = version_utils.handle_features_reply(self.controller, event)
 
-        features = event.content['message']
-        dpid = features.datapath_id.value
-
-        switch = self.controller.get_switch_or_create(dpid=dpid,
-                                                      connection=event.source)
-
-        for port in features.ports:
-            interface = Interface(name=port.name.value,
-                                  address=port.hw_addr.value,
-                                  port_number=port.port_no.value,
-                                  switch=switch,
-                                  state=port.state.value,
-                                  features=port.curr)
-            switch.update_interface(interface)
-
-        switch.update_features(features)
-
-        if (event.source.state == CONNECTION_STATE.SETUP and
-                event.source.protocol.state == 'waiting_features_reply'):
-            event.source.protocol.state = 'handshake_complete'
-            event.source.state = CONNECTION_STATE.ESTABLISHED
-            log.info('Connection %s: OPENFLOW HANDSHAKE COMPLETE',
-                     event.source.id)
+        if (connection.is_in_setup_state() and
+                connection.protocol.state == 'waiting_features_reply'):
+            connection.protocol.state = 'handshake_complete'
+            connection.set_established_state()
             # # event to be generated in near future
             # event_raw = KytosEvent(name='kytos/of_core.handshake_complete',
-            #                        content={'source': event.source})
+            #                        content={'source': connection})
             # self.controller.buffers.app.put(event_raw)
 
     @listen_to('kytos/core.openflow.raw.in')
