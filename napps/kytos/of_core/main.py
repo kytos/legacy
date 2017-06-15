@@ -153,6 +153,25 @@ class Main(KytosNApp):
             log.debug('Connection %s: New Raw Openflow packet', connection.id)
             log.debug(packet.hex())
 
+            if connection.state == CONNECTION_STATE.NEW:
+                try:
+                    message = GenericHello(packet=packet)
+                    self._negotiate(connection, message)
+                except (UnpackException, NegotiationException) as e:
+                    if type(e) == UnpackException:
+                        log.debug('Connection %s: Invalid hello message',
+                                  connection.id)
+                    else:
+                        log.debug('Connection %s: Negotiation Failed',
+                                  connection.id)
+                    connection.protocol.state = 'hello_failed'
+                    connection.state = CONNECTION_STATE.FINISHED
+                    connection.close()
+                    connection.state = CONNECTION_STATE.FAILED
+                    return
+                connection.state = CONNECTION_STATE.SETUP
+                continue
+
             try:
                 message = unpack(packet)
             except UnpackException:
@@ -165,21 +184,9 @@ class Main(KytosNApp):
                       connection.id,
                       message.header.version, m_type, message.header.xid)
 
-            if connection.state == CONNECTION_STATE.NEW:
-                if m_type != OFPTYPE.OFPT_HELLO:
-                    log.debug('Connection %s: Invalid OF Hello message',
-                              connection.id)
-                    connection.protocol.state = 'hello_invalid'
-                    connection.state = CONNECTION_STATE.FINISHED
-                    connection.close()
-                elif self._negotiate(connection, message):
-                    connection.state = CONNECTION_STATE.SETUP
-                    continue
-                connection.state = CONNECTION_STATE.FAILED
-                return
-
-            elif connection.state == CONNECTION_STATE.SETUP:
-                if not (m_type == OFPTYPE.OFPT_FEATURES_REPLY and
+            if connection.state == CONNECTION_STATE.SETUP:
+                if not (str(message.header.message_type) ==
+                        'Type.OFPT_FEATURES_REPLY' and
                         connection.protocol.state == 'waiting_features_reply'):
                     unprocessed_packets.append(packet)
                     continue
