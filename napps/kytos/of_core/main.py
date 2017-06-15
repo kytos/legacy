@@ -86,14 +86,7 @@ class Main(KytosNApp):
 
     @listen_to('kytos/of_core.v0x0[14].messages.in.ofpt_features_reply')
     def handle_features_reply(self, event):
-        """Handle received kytos/of_core.messages.in.ofpt_features_reply event.
-
-        Reads the KytosEvent with features reply message sent by the client,
-        save this data and sends three new messages to the client:
-
-            * SetConfig Message;
-            * FlowMod Message with a FlowDelete command;
-            * BarrierRequest Message;
+        """Handle kytos/of_core.messages.in.ofpt_features_reply event.
 
         This is the end of the Handshake workflow of the OpenFlow Protocol.
 
@@ -108,6 +101,8 @@ class Main(KytosNApp):
                 connection.protocol.state == 'waiting_features_reply'):
             connection.protocol.state = 'handshake_complete'
             connection.set_established_state()
+            log.info('Connection %s, Switch %s: OPENFLOW HANDSHAKE COMPLETE',
+                     connection.id, switch.dpid)
             # # event to be generated in near future
             # event_raw = KytosEvent(name='kytos/of_core.handshake_complete',
             #                        content={'source': connection})
@@ -140,8 +135,8 @@ class Main(KytosNApp):
         unprocessed_packets = []
 
         for packet in packets:
-            log.debug('Connection %s: New Raw Openflow packet', connection.id)
-            log.debug(packet.hex())
+            log.debug('Connection %s: New Raw Openflow packet - %s',
+                      connection.id, packet.hex())
 
             if connection.state == CONNECTION_STATE.NEW:
                 try:
@@ -165,14 +160,20 @@ class Main(KytosNApp):
             try:
                 message = connection.protocol.unpack(packet)
             except (UnpackException, AttributeError) as e:
+                log.debug(e)
+                if type(e) == AttributeError:
+                    debug_msg = 'connection closed before version negotiation'
+                log.debug('Connection %s: %s',
+                          connection.id, debug_msg)
                 connection.state = CONNECTION_STATE.FINISHED
                 connection.close()
                 return
-            m_type = message.header.message_type
 
             log.debug('Connection %s: IN OFP, version: %s, type: %s, xid: %s',
                       connection.id,
-                      message.header.version, m_type, message.header.xid)
+                      message.header.version,
+                      message.header.message_type,
+                      message.header.xid)
 
             if connection.state == CONNECTION_STATE.SETUP:
                 if not (str(message.header.message_type) ==
@@ -225,10 +226,12 @@ class Main(KytosNApp):
         self._say_hello(event.source)
 
     def _say_hello(self, connection, xid=None):
-        """Method used to send a hello messages."""
-        # should be called once a new connection is established.
-        # To be able to deal with of1.3 negotiation, hello should also
-        # cary a version_bitmap.
+        """Method used to send a hello messages.
+
+        Should be called once a new connection is established.
+        To be able to deal with OF1.3 negotiation, hello should also
+        carry a version_bitmap.
+        """
         hello = GenericHello(versions=self.versions, xid=xid)
         self.emit_message_out(connection, hello)
 
@@ -245,10 +248,10 @@ class Main(KytosNApp):
     def _negotiate(self, connection, message):
         """Handle hello messages.
 
-        This method will handle the incomming hello message by client
+        This method will handle the incoming hello message by client
         and deal with negotiation.
 
-        Args:
+        Parameters:
             event (KytosMessageInHello): KytosMessageInHelloEvent
         """
 
@@ -256,6 +259,9 @@ class Main(KytosNApp):
             version = self._get_version_from_bitmask(message.versions)
         else:
             version = self._get_version_from_header(message.header.version)
+
+        log.debug('connection %s: negotiated version - %s',
+                  connection.id, str(version))
 
         if version is None:
             self.fail_negotiation(connection, message)
@@ -310,9 +316,9 @@ class Main(KytosNApp):
             features_request.FeaturesRequest()
         self.emit_message_out(destination, features_request)
 
-    # ensure request has actually been sent before changing state
     @listen_to('kytos/of_core.v0x0[14].messages.out.ofpt_features_request')
     def handle_features_request_sent(self, event):
+        """Ensure request has actually been sent before changing state."""
         if event.destination.protocol.state == 'sending_features':
             event.destination.protocol.state = 'waiting_features_reply'
 
@@ -320,7 +326,7 @@ class Main(KytosNApp):
     @listen_to('kytos/of_core.v0x[0-9a-f]{2}.messages.in.hello_failed',
                'kytos/of_core.v0x0[14].messages.out.hello_failed')
     def handle_openflow_in_hello_failed(event):
-        """Method used to close the connection when get a hello failed."""
+        """Close the connection upon hello failure."""
         event.destination.close()
         log.debug("Connection %s: Connection closed.", event.destination.id)
 
