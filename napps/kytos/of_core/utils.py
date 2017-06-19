@@ -1,10 +1,17 @@
 import struct
 
-from kytos.core import log
+import pyof.v0x01 as pyof_01
+import pyof.v0x04 as pyof_04
 
-from pyof.foundation.exceptions import UnpackException
-from pyof.v0x01.common.header import Header
-from pyof.v0x01.common.utils import new_message_from_header
+from collections import OrderedDict
+
+from kytos.core import KytosEvent, log
+
+from pyof.foundation.exceptions import PackException, UnpackException
+from pyof.v0x01.common.header import Type as OFPTYPE
+
+pyof_version_libs = {0x01: pyof_01,
+                     0x04: pyof_04}
 
 
 def of_slicer(remaining_data):
@@ -24,10 +31,16 @@ def of_slicer(remaining_data):
 
 def unpack(packet):
     """Unpacks the OpenFlow packet and returns a message."""
+    version = _unpack_int(packet[0])
     try:
-        header = Header()
+        pyof_lib = pyof_version_libs[version]
+    except KeyError:
+        raise UnpackException('Version not supported')
+
+    try:
+        header = pyof_lib.common.header.Header()
         header.unpack(packet[:8])
-        message = new_message_from_header(header)
+        message = pyof_lib.common.utils.new_message_from_header(header)
         binary_data = packet[8:]
         if binary_data:
             message.unpack(binary_data)
@@ -35,3 +48,156 @@ def unpack(packet):
     except (UnpackException, ValueError) as e:
         log.info('Could not unpack message: %s', packet)
         raise UnpackException(e)
+
+
+def _unpack_int(packet, offset=0, size=None):
+    if size is None:
+        if type(packet) == int:
+            return packet
+        size = len(packet)
+    return int.from_bytes(packet[offset:offset + size], byteorder='big')
+
+
+def _emit_message(controller, connection, message, direction):
+    """Make controller emit a KytosEvent for an incoming/outgoing message
+    containing the message and the source."""
+    if direction == 'in':
+        address_type = 'source'
+        message_buffer = controller.buffers.msg_in
+    elif direction == 'out':
+        address_type = 'destination'
+        message_buffer = controller.buffers.msg_out
+    else:
+        raise Exception("direction must be 'in' or 'out'")
+
+    name = message.header.message_type.name.lower()
+    hex_version = 'v0x%0.2x' % (message.header.version + 0)
+    of_event = KytosEvent(
+        name=f"kytos/of_core.{hex_version}.messages.{direction}.{name}",
+        content={'message': message,
+                 address_type: connection})
+    message_buffer.put(of_event)
+
+
+def emit_message_in(controller, connection, message):
+    """Make controller emit a KytosEvent for an incoming message
+    containing the message and the source."""
+    _emit_message(controller, connection, message, 'in')
+
+
+def emit_message_out(controller, connection, message):
+    """Make controller emit a KytosEvent for an outgoing message
+    containing the message and the destination."""
+    _emit_message(controller, connection, message, 'out')
+
+
+class GenericHello():
+    """Version agnostic OpenFlow Hello Message"""
+    header_sizes = OrderedDict(
+        version=1,
+        type=1,
+        length=2,
+        xid=4)
+
+    elem_type_size = 2
+    elem_len_size = 2
+
+    OFPHET_VERSIONBITMAP = 1
+
+    class generic_Header():
+        pass
+
+    def __init__(self, *, packet=None, versions=None, xid=None):
+        """Initialize a GenericHello instance from a binary packet or from
+            initial versions and xid parameters.
+
+            Parameters:
+                packet: binary packet (bytes) to be unpacked and used to
+                        initialize the message
+                versions: list of versions used to build the version bitmap
+                xid: xid to be used in the message
+        """
+        self.header = self.generic_Header()
+        self.header.message_type = OFPTYPE.OFPT_HELLO
+        if not any((packet, versions)):
+            raise Exception('either packet or versions must be set.')
+
+        if packet is not None:
+            self.unpack(packet)
+        else:
+            if xid is None:
+                self.header.xid = 0
+
+        if versions is not None:
+            self.versions = versions
+            self.header.version = max(versions)
+        if xid is not None:
+            self.header.xid = xid
+
+    def pack(self):
+        versions = self.versions
+        xid = self.header.xid
+        packet_version = max(versions)
+        if packet_version > 31:
+            raise PackException
+        versions_value = 0
+        for version in versions:
+            versions_value += (1 << version)
+        bitmap = versions_value.to_bytes(4, byteorder='big')
+        version_byte = packet_version.to_bytes(self.header_sizes['version'],
+                                               byteorder='big')
+        xid_byte = xid.to_bytes(self.header_sizes['xid'],
+                                byteorder='big')
+        packet = version_byte + b'\x00\x00\x10' + xid_byte + \
+            b'\x00\x01\x00\x08' + bitmap
+        return packet
+
+    def unpack(self, packet):
+        offset = 0
+        # self.header = self.generic_Header()
+        for key, size in self.header_sizes.items():
+            setattr(self.header, key, _unpack_int(packet, offset, size))
+            offset += size
+
+        if (self.header.type != 0):
+            raise UnpackException
+
+        elements = {}
+        try:
+            while offset < self.header.length:
+                elem_type = _unpack_int(
+                    packet, offset, self.elem_type_size)
+
+                offset += self.elem_type_size
+                elem_length = _unpack_int(
+                    packet, offset, self.elem_len_size)
+
+                offset += self.elem_len_size
+                elem_header_size = self.elem_type_size - self.elem_len_size
+                elem_value_size = elem_length - elem_header_size
+                elem_value = _unpack_int(
+                    packet, offset, elem_value_size)
+
+                elements[elem_type] = elem_value
+        except IndexError:
+            raise UnpackException
+
+        self.elements = elements
+
+        if self.OFPHET_VERSIONBITMAP in self.elements:
+            bitmap = self.elements[self.OFPHET_VERSIONBITMAP]
+            versions = []
+            for i in range(32):
+                if ((1 << i) & bitmap) != 0:
+                    versions.append(i)
+            self.versions = versions
+            self.version_bitmap = bitmap
+        else:
+            self.versions = None
+
+
+class NegotiationException(Exception):
+    """OF version negotiation failed Exception"""
+
+    def __str__(self):
+        return "OF version negotiation failed: " + super().__str__()

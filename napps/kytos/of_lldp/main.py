@@ -24,7 +24,8 @@ class Main(KytosNApp):
         """Implement a loop to check switches liveness."""
         switches = list(self.controller.switches.values())
         for switch in switches:
-            if not switch.is_connected():
+            if not (switch.is_connected() and
+                    switch.connection.protocol.version == 0x01):
                 continue
             # Gerar lldp para cada uma das portas do switch
             # Gerar o hash de cada um dos pacotes e armazenar
@@ -61,7 +62,7 @@ class Main(KytosNApp):
                 log.debug("Sending a LLDP PacketOut to the switch %s",
                           switch.dpid)
 
-    @listen_to('kytos/of_core.messages.in.ofpt_packet_in')
+    @listen_to('kytos/of_core.v0x01.messages.in.ofpt_packet_in')
     def update_links(self, event):
         """Method used to update interfaces when a Ethernet packet is received.
 
