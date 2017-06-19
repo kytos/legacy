@@ -185,7 +185,7 @@ class DevelopMode(develop):
 requirements = [i.strip() for i in open("requirements.txt").readlines()]
 
 setup(name='kytos-napps',
-      version='2017.1b1',
+      version='2017.1b3',
       description='Core Napps developed by Kytos Team',
       url='http://github.com/kytos/kytos-napps',
       author='Kytos Team',
