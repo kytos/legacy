@@ -220,7 +220,7 @@ class RRD:
             tstamps, cols, rows = self.fetch(index, start, end='now')
         except FileNotFoundError:
             # No RRD for port, so it will return zero values
-            pass
+            return {}
         # Last rows may have future timestamp and be empty
         latest = None
         min_tstamp = int(time.time()) - settings.STATS_INTERVAL * 2

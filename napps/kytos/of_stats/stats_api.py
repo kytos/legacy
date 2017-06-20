@@ -255,8 +255,8 @@ class FlowStatsAPI(StatsAPI):
             index = (self._dpid, flow.id)
             rrd_data = self._rrd.fetch_latest(index)
             stats = {}
-            stats['Bps'] = rrd_data['byte_count']
-            stats['pps'] = rrd_data['packet_count']
+            stats['Bps'] = rrd_data.get('byte_count', 0)
+            stats['pps'] = rrd_data.get('packet_count', 0)
             dct = flow.as_dict()['flow']
             # Make it JS friendly
             dct['id'] = dct.pop('self.id')
