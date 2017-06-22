@@ -39,8 +39,6 @@ class Main(KytosNApp):
         Users shouldn't call this method directly.
         """
         self.name = 'kytos/of_core'
-        # this should go to settings
-        self.versions = [0x01, 0x04]
         self.of_core_version_utils = {0x01: of_core_v0x01_utils,
                                       0x04: of_core_v0x04_utils}
         self.execute_as_loop(settings.STATS_INTERVAL)
@@ -224,18 +222,18 @@ class Main(KytosNApp):
         To be able to deal with OF1.3 negotiation, hello should also
         carry a version_bitmap.
         """
-        hello = GenericHello(versions=self.versions, xid=xid)
+        hello = GenericHello(versions=settings.OPENFLOW_VERSIONS, xid=xid)
         self.emit_message_out(connection, hello)
 
     def _get_version_from_bitmask(self, message_versions):
         """Get common version from hello message version bitmap."""
         return max([version for version in message_versions
-                    if version in self.versions])
+                    if version in settings.OPENFLOW_VERSIONS])
 
     def _get_version_from_header(self, message_version):
         """Get common version from hello message header version."""
-        version = min(message_version, max(self.versions))
-        return version if version in self.versions else None
+        version = min(message_version, max(settings.OPENFLOW_VERSIONS))
+        return version if version in settings.OPENFLOW_VERSIONS else None
 
     def _negotiate(self, connection, message):
         """Handle hello messages.
@@ -276,7 +274,7 @@ class Main(KytosNApp):
             content={'source': connection})
         self.controller.buffers.app.put(event_raw)
 
-        version = max(self.versions)
+        version = max(settings.OPENFLOW_VERSIONS)
         pyof_lib = pyof_version_libs[version]
 
         error_message = pyof_lib.asynchronous.error_msg.ErrorMsg(
