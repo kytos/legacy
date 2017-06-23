@@ -118,8 +118,6 @@ class Main(KytosNApp):
             switch.update_lastseen()
 
         connection = event.source
-        if not connection.is_alive():
-            return
 
         data = connection.remaining_data + event.content['new_data']
         packets, connection.remaining_data = of_slicer(data)
@@ -129,6 +127,8 @@ class Main(KytosNApp):
         unprocessed_packets = []
 
         for packet in packets:
+            if not connection.is_alive():
+                return
             log.debug('Connection %s: New Raw Openflow packet - %s',
                       connection.id, packet.hex())
 
@@ -182,12 +182,14 @@ class Main(KytosNApp):
     def emit_message_in(self, connection, message):
         """Emit a KytosEvent for an incoming message containing the message
         and the source."""
-        emit_message_in(self.controller, connection, message)
+        if connection.is_alive():
+            emit_message_in(self.controller, connection, message)
 
     def emit_message_out(self, connection, message):
         """Emit a KytosEvent for an outgoing message containing the message
         and the destination."""
-        emit_message_out(self.controller, connection, message)
+        if connection.is_alive():
+            emit_message_out(self.controller, connection, message)
 
     @listen_to('kytos/of_core.v0x0[14].messages.in.ofpt_echo_request')
     def handle_echo_request(self, event):
