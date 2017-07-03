@@ -2,7 +2,7 @@
   "author": "kytos",
   "username": "kytos",
   "name": "of_flow_manager",
-  "description": "NApp that manages switches flows.",
+  "description": "Manage switches' flows through a REST API.",
   "version": "0.1.1",
   "napp_dependencies": [],
   "license": "MIT",

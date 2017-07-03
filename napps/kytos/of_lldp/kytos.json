@@ -2,7 +2,7 @@
   "author": "kytos",
   "username": "kytos",
   "name": "of_lldp",
-  "description": "App responsible by send packet with lldp protocol to network and to discover switches and hosts.",
+  "description": "Discovers switches and hosts in the network using the lldp protocol.",
   "version": "0.1.1",
   "napp_dependencies": [],
   "license": "MIT",
