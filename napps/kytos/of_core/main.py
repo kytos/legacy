@@ -20,8 +20,8 @@ import pyof.v0x04.controller2switch.common
 import pyof.v0x04.controller2switch.features_request
 import pyof.v0x04.symmetric.echo_reply
 
-import napps.kytos.of_core.v0x01.utils as of_core_v0x01_utils
-import napps.kytos.of_core.v0x04.utils as of_core_v0x04_utils
+from napps.kytos.of_core.v0x01 import utils as of_core_v0x01_utils
+from napps.kytos.of_core.v0x04 import utils as of_core_v0x04_utils
 
 from napps.kytos.of_core import settings
 from napps.kytos.of_core.utils import (emit_message_in, emit_message_out,
