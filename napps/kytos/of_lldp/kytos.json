@@ -4,7 +4,7 @@
   "name": "of_lldp",
   "description": "Discovers switches and hosts in the network using the lldp protocol.",
   "version": "0.1.1",
-  "napp_dependencies": [],
+  "napp_dependencies": ["kytos/of_core"],
   "license": "MIT",
   "url": "https://github.com/kytos/kytos-napps.git",
   "tags": ["openflow", "lldp","network"]

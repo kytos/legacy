@@ -4,7 +4,7 @@
   "name": "of_topology",
   "description": "Keeps track of links between hosts and switches. Returns a JSON with network topology using the endpoint /kytos/topology.",
   "version": "0.1.1",
-  "napp_dependencies": [],
+  "napp_dependencies": ["kytos/of_core", "kytos/of_l2ls", "kytos/of_lldp"],
   "license": "MIT",
   "url": "https://github.com/kytos/kytos-napps.git",
   "tags": ["openflow", "topology", "switches", "hosts"]

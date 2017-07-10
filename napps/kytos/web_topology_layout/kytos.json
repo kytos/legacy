@@ -4,7 +4,7 @@
   "name": "web_topology_layout",
   "description": "Manage endpoints related to the web interface settings and layout.",
   "version": "0.1.0",
-  "napp_dependencies": [],
+  "napp_dependencies": ["kytos/of_core"],
   "license": "MIT",
   "url": "https://github.com/kytos/kyto-napps.git",
   "tags": ["topology", "web", "interface", "layout"]

@@ -4,7 +4,7 @@
   "name": "of_flow_manager",
   "description": "Manage switches' flows through a REST API.",
   "version": "0.1.1",
-  "napp_dependencies": [],
+  "napp_dependencies": ["kytos/of_core"],
   "license": "MIT",
   "url": "https://github.com/kytos/kytos-napps.git",
   "tags": ["openflow", "core", "flow"]
