@@ -9,6 +9,8 @@ pydocstyle ~= 1.1.1
 pylama ~= 7.3.3
 pylama_pylint ~= 3.0.1
 radon ~= 1.5.0
-tox ~= 2.7.0
 
 coverage >= 4.4.1
+
+# rrdtool is required to resolve imports while testing
+rrdtool ~= 0.1.11

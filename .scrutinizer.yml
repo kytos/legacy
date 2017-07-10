@@ -11,13 +11,13 @@ build:
         redis: false
     dependencies:
         before:
-            - sudo apt-get install -y librrd-dev
-        override:
-            - true
+            - sudo apt-get install --no-install-recommends -y librrd-dev
     tests:
         before:
             - pip install git+git://github.com/kytos/python-openflow.git
-            - pip install git+git://github.com/kytos/kytos.git
+            # Can't install kytos directly because it has an HTTP dependency
+            - pip install git+git://github.com/diraol/watchdog.git
+            - git clone --depth 1 git://github.com/kytos/kytos.git && cd kytos && sed -i 's|.*http.*watchdog.*||' requirements.txt && pip install . && cd - && rm -rf kytos
             - pip install -r requirements.txt -r requirements-dev.txt
         override:
             -
