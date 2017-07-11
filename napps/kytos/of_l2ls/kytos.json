@@ -4,7 +4,7 @@
   "name": "of_l2ls",
   "description": "An L2 learning switch application for OpenFlow switches.",
   "version": "0.1.1",
-  "napp_dependencies": [],
+  "napp_dependencies": ["kytos/of_core"],
   "license": "MIT",
   "url": "https://github.com/kytos/kytos-napps.git",
   "tags": ["openflow", "l2", "small"]
