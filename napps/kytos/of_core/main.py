@@ -154,8 +154,7 @@ class Main(KytosNApp):
                 log.debug(e)
                 if type(e) == AttributeError:
                     debug_msg = 'connection closed before version negotiation'
-                log.debug('Connection %s: %s',
-                          connection.id, debug_msg)
+                    log.debug('Connection %s: %s' ,connection.id, debug_msg)
                 connection.close()
                 return
 
