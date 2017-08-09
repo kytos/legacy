@@ -1,7 +1,6 @@
 """NApp responsible for the main OpenFlow basic operations."""
 from kytos.core import KytosEvent, KytosNApp, log
 from kytos.core.connection import ConnectionState
-from kytos.core.flow import Flow
 from kytos.core.helpers import listen_to
 from pyof.foundation.exceptions import UnpackException
 from pyof.utils import unpack, PYOF_VERSION_LIBS
@@ -27,6 +26,7 @@ from napps.kytos.of_core.v0x01 import utils as of_core_v0x01_utils
 from napps.kytos.of_core.v0x04 import utils as of_core_v0x04_utils
 
 from napps.kytos.of_core import settings
+from napps.kytos.of_core.flow import Flow
 from napps.kytos.of_core.utils import (emit_message_in, emit_message_out,
                                        GenericHello, NegotiationException,
                                        of_slicer)

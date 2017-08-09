@@ -5,12 +5,13 @@ from pathlib import Path
 
 import rrdtool
 from kytos.core import KytosEvent, log
-from kytos.core.flow import Flow
+from napps.kytos.of_core.flow import Flow
 from pyof.v0x01.common.phy_port import Port
 from pyof.v0x01.controller2switch.common import (AggregateStatsRequest,
                                                  FlowStatsRequest,
                                                  PortStatsRequest)
 from pyof.v0x01.controller2switch.stats_request import StatsRequest, StatsTypes
+
 
 from . import settings
 
