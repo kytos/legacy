@@ -12,6 +12,7 @@ import pyof.v0x01.controller2switch.common
 import pyof.v0x01.controller2switch.features_request
 import pyof.v0x01.controller2switch.stats_request
 import pyof.v0x01.symmetric.echo_reply
+from pyof.v0x01.symmetric.hello import Hello as HelloV0x01
 
 import pyof.v0x04.asynchronous.error_msg
 import pyof.v0x04.common.header
@@ -19,6 +20,7 @@ import pyof.v0x04.common.utils
 import pyof.v0x04.controller2switch.common
 import pyof.v0x04.controller2switch.features_request
 import pyof.v0x04.symmetric.echo_reply
+from pyof.v0x04.symmetric.hello import Hello as HelloV0x04
 
 from napps.kytos.of_core.v0x01 import utils as of_core_v0x01_utils
 from napps.kytos.of_core.v0x04 import utils as of_core_v0x04_utils
@@ -223,7 +225,10 @@ class Main(KytosNApp):
         To be able to deal with OF1.3 negotiation, hello should also
         carry a version_bitmap.
         """
-        hello = GenericHello(versions=settings.OPENFLOW_VERSIONS, xid=xid)
+        if 0x04 in settings.OPENFLOW_VERSIONS:
+            hello = HelloV0x04()
+        else:
+            hello = HelloV0x01()
         self.emit_message_out(connection, hello)
 
     def _get_version_from_bitmask(self, message_versions):
