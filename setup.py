@@ -80,17 +80,6 @@ class TestCoverage(SimpleCommand):
         call(cmd, shell=True)
 
 
-class DocTest(SimpleCommand):
-    """Run documentation tests."""
-
-    description = 'run documentation tests'
-
-    def run(self):
-        """Run doctests using Sphinx Makefile."""
-        cmd = 'make -C docs/ doctest'
-        check_call(cmd, shell=True)
-
-
 class Linter(SimpleCommand):
     """Code linters."""
 
@@ -110,7 +99,7 @@ class CITest(SimpleCommand):
     def run(self):
         """Run unit tests with coverage, doc tests and linter."""
         cmds = ['python setup.py ' + cmd
-                for cmd in ('coverage', 'doctest', 'lint')]
+                for cmd in ('coverage', 'lint')]
         cmd = ' && '.join(cmds)
         check_call(cmd, shell=True)
 
@@ -197,7 +186,6 @@ setup(name='kytos-napps',
           'ci': CITest,
           'coverage': TestCoverage,
           'develop': DevelopMode,
-          'doctest': DocTest,
           'install': InstallMode,
           'lint': Linter,
       },
