@@ -10,10 +10,6 @@ from kytos.core import KytosEvent, log
 from pyof.foundation.exceptions import PackException, UnpackException
 from pyof.v0x01.common.header import Type as OFPTYPE
 
-pyof_version_libs = {0x01: pyof_01,
-                     0x04: pyof_04}
-
-
 def of_slicer(remaining_data):
     """Slice a raw bytes into OpenFlow packets"""
     data_len = len(remaining_data)
@@ -27,27 +23,6 @@ def of_slicer(remaining_data):
         else:
             break
     return pkts, remaining_data
-
-
-def unpack(packet):
-    """Unpacks the OpenFlow packet and returns a message."""
-    version = _unpack_int(packet[0])
-    try:
-        pyof_lib = pyof_version_libs[version]
-    except KeyError:
-        raise UnpackException('Version not supported')
-
-    try:
-        header = pyof_lib.common.header.Header()
-        header.unpack(packet[:8])
-        message = pyof_lib.common.utils.new_message_from_header(header)
-        binary_data = packet[8:]
-        if binary_data:
-            message.unpack(binary_data)
-        return message
-    except (UnpackException, ValueError) as e:
-        log.info('Could not unpack message: %s', packet)
-        raise UnpackException(e)
 
 
 def _unpack_int(packet, offset=0, size=None):
