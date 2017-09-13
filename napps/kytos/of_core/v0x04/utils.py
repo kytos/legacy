@@ -12,7 +12,7 @@ def update_flow_list(controller, switch):
         switch(:class:`~kytos.core.switch.Switch`):
             target to send a stats request.
     """
-    log.info("update_flow_list not implemented yet for OF v0x04")
+    log.error("update_flow_list not implemented yet for OF v0x04")
 
 
 def handle_features_reply(controller, event):
