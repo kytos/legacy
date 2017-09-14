@@ -2,7 +2,7 @@
 
 import json
 
-from kytos.core import KytosNApp, log
+from kytos.core import KytosNApp, log, rest
 from kytos.core.helpers import listen_to
 from pyof.foundation.basic_types import HWAddress
 from pyof.foundation.network_types import Ethernet
@@ -19,14 +19,8 @@ class Main(KytosNApp):
     """
 
     def setup(self):
-        """Setup the app of.topology.
-
-        This setup will set the name of app, register the endpoint
-        /kytos/topology and setup the logger.
-        """
-        self.controller.register_rest_endpoint('/topology',
-                                               self.get_json_topology,
-                                               methods=['GET'])
+        """Nothing to setup."""
+        pass
 
     def execute(self):
         """Do nothing, only wait for packet-in messages."""
@@ -79,6 +73,7 @@ class Main(KytosNApp):
         """End of the application."""
         log.debug('Shutting down...')
 
+    @rest('topology')
     def get_json_topology(self):
         """Return a json with topology details.
 
