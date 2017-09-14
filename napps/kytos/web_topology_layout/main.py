@@ -44,8 +44,7 @@ class Main(KytosNApp):
         """
         if request.method == 'POST':
             return self.save_topology(name)
-        else:
-            return self.get_topology(name)
+        return self.get_topology(name)
 
     @staticmethod
     def save_topology(name):

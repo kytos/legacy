@@ -7,8 +7,6 @@ from kytos.core import KytosEvent, KytosNApp, log, rest
 from kytos.core.flow import Flow
 from pyof.v0x01.controller2switch.flow_mod import FlowModCommand
 
-from napps.kytos.of_flow_manager import settings
-
 
 class Main(KytosNApp):
     """Main class of of_stats NApp."""
@@ -52,7 +50,7 @@ class Main(KytosNApp):
             flows = {}
             for flow in switch.flows:
                 flow = (flow.as_dict()['flow'])
-                flow_id = flow.pop('self.id',0)
+                flow_id = flow.pop('self.id', 0)
                 flows[flow_id] = flow
             switch_flows[switch_dpid] = flows
         return json.dumps(switch_flows)
