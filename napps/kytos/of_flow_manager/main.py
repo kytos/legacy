@@ -3,11 +3,9 @@
 import json
 
 from flask import request
-from kytos.core import KytosEvent, KytosNApp, log
+from kytos.core import KytosEvent, KytosNApp, log, rest
 from kytos.core.flow import Flow
 from pyof.v0x01.controller2switch.flow_mod import FlowModCommand
-
-from napps.kytos.of_flow_manager import settings
 
 
 class Main(KytosNApp):
@@ -20,22 +18,6 @@ class Main(KytosNApp):
         Users shouldn't call this method directly.
         """
         self.flow_manager = FlowManager(self.controller)
-        endpoints = [('/flow-manager/flows', self.retrieve_flows,
-                      ['GET']),
-                     ('/flow-manager/flows/<dpid>', self.retrieve_flows,
-                      ['GET']),
-                     ('/flow-manager/flows', self.insert_flows,
-                      ['POST']),
-                     ('/flow-manager/flows/<dpid>', self.insert_flows,
-                      ['POST']),
-                     ('/flow-manager/flows', self.delete_flows,
-                      ['DELETE']),
-                     ('/flow-manager/flows/<dpid>', self.delete_flows,
-                      ['DELETE']),
-                     ('/flow-manager/flows/<dpid>/<flow_id>',
-                      self.delete_flows, ['DELETE'])]
-        for endpoint in endpoints:
-            self.controller.register_rest_endpoint(*endpoint)
 
     def execute(self):
         """Method to be runned once on app 'start' or in a loop.
@@ -49,6 +31,8 @@ class Main(KytosNApp):
         """Shutdown routine of the NApp."""
         log.debug("flow-manager stopping")
 
+    @rest('flows')
+    @rest('flows/<dpid>')
     def retrieve_flows(self, dpid=None):
         """Retrieve all flows from a switch identified by dpid.
 
@@ -66,11 +50,13 @@ class Main(KytosNApp):
             flows = {}
             for flow in switch.flows:
                 flow = (flow.as_dict()['flow'])
-                flow_id = flow.pop('self.id',0)
+                flow_id = flow.pop('self.id', 0)
                 flows[flow_id] = flow
             switch_flows[switch_dpid] = flows
         return json.dumps(switch_flows)
 
+    @rest('flows', methods=['POST'])
+    @rest('flows/<dpid>', methods=['POST'])
     def insert_flows(self, dpid=None):
         """Install new flows in the switch identified by dpid.
 
@@ -88,6 +74,9 @@ class Main(KytosNApp):
 
         return json.dumps({"response": "FlowMod Messages Sent"}), 201
 
+    @rest('flows', methods=['DELETE'])
+    @rest('flows/<dpid>', methods=['DELETE'])
+    @rest('flows/<dpid>/<flow_id>', methods=['DELETE'])
     def delete_flows(self, flow_id=None, dpid=None):
         """Delete a flow from a switch identified by flow_id and dpid.
 

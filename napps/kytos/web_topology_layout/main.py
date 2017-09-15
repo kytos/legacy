@@ -5,7 +5,7 @@ from os import listdir, makedirs
 from os.path import isfile, join
 
 from flask import request
-from kytos.core import KytosNApp, log
+from kytos.core import KytosNApp, log, rest
 
 from napps.kytos.web_topology_layout import settings
 
@@ -21,18 +21,8 @@ class Main(KytosNApp):
     """
 
     def setup(self):
-        """Method used to create the web_topology_layout routes.
-
-        This method will register the routes ['kytos/web/topology/layouts/',
-        'web/topology/layouts/<name>'] to save and recover topologies.
-        """
+        """Method used to create the web_topology_layout routes."""
         self.current_controller = self.controller
-        self.controller.register_rest_endpoint('/web/topology/layouts/',
-                                               self.get_topologies,
-                                               methods=['GET'])
-        self.controller.register_rest_endpoint('/web/topology/layouts/<name>',
-                                               self.topology,
-                                               methods=['GET', 'POST'])
 
     def execute(self):
         """Do nothing."""
@@ -42,6 +32,7 @@ class Main(KytosNApp):
         """End of the application."""
         log.debug('Shutting down...')
 
+    @rest('layouts/<name>', methods=['GET', 'POST'])
     def topology(self, name):
         """Method used to save or load a topology layout.
 
@@ -53,8 +44,7 @@ class Main(KytosNApp):
         """
         if request.method == 'POST':
             return self.save_topology(name)
-        else:
-            return self.get_topology(name)
+        return self.get_topology(name)
 
     @staticmethod
     def save_topology(name):
@@ -76,6 +66,7 @@ class Main(KytosNApp):
         return json.dumps({'response': 'Saved'}), 201
 
     @staticmethod
+    @rest('layouts/')
     def get_topology(name):
         """Method to read and return a topology from json file.
 
