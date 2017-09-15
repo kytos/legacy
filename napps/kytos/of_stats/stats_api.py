@@ -113,15 +113,6 @@ class PortStatsAPI(StatsAPI):
         self._port = port
 
     @classmethod
-    def register_endpoints(cls):
-        """Register REST API endpoints in the controller."""
-        cls.controller.register_rest_endpoint(
-            '/stats/<dpid>/ports/<int:port>', cls.get_port_stats,
-            methods=['GET'])
-        cls.controller.register_rest_endpoint(
-            '/stats/<dpid>/ports', cls.get_ports_list, methods=['GET'])
-
-    @classmethod
     def get_port_stats(cls, dpid, port):
         """Get up to 60 points of all statistics of PortStats.
 
@@ -207,15 +198,6 @@ class FlowStatsAPI(StatsAPI):
         super().__init__()
         self._dpid = dpid
         self._flow = flow
-
-    @classmethod
-    def register_endpoints(cls):
-        """Register REST API endpoints in the controller."""
-        cls.controller.register_rest_endpoint(
-            '/stats/<dpid>/flows/<flow_hash>', cls.get_flow_stats,
-            methods=['GET'])
-        cls.controller.register_rest_endpoint(
-            '/stats/<dpid>/flows', cls.get_flow_list, methods=['GET'])
 
     @classmethod
     def get_flow_list(cls, dpid):
