@@ -4,6 +4,7 @@ from kytos.core.connection import ConnectionState
 from kytos.core.flow import Flow
 from kytos.core.helpers import listen_to
 from pyof.foundation.exceptions import UnpackException
+from pyof.utils import unpack, PYOF_VERSION_LIBS
 
 import pyof.v0x01.asynchronous.error_msg
 import pyof.v0x01.common.header
@@ -28,7 +29,7 @@ from napps.kytos.of_core.v0x04 import utils as of_core_v0x04_utils
 from napps.kytos.of_core import settings
 from napps.kytos.of_core.utils import (emit_message_in, emit_message_out,
                                        GenericHello, NegotiationException,
-                                       of_slicer, unpack, pyof_version_libs)
+                                       of_slicer)
 
 
 class Main(KytosNApp):
@@ -202,7 +203,7 @@ class Main(KytosNApp):
                 Event with echo request in message.
         """
 
-        pyof_lib = pyof_version_libs[event.source.protocol.version]
+        pyof_lib = PYOF_VERSION_LIBS[event.source.protocol.version]
         echo_request = event.message
         echo_reply = pyof_lib.symmetric.echo_reply.EchoReply(
             xid=echo_request.header.xid,
@@ -281,7 +282,7 @@ class Main(KytosNApp):
         self.controller.buffers.app.put(event_raw)
 
         version = max(settings.OPENFLOW_VERSIONS)
-        pyof_lib = pyof_version_libs[version]
+        pyof_lib = PYOF_VERSION_LIBS[version]
 
         error_message = pyof_lib.asynchronous.error_msg.ErrorMsg(
             xid=hello_message.header.xid,
@@ -306,7 +307,7 @@ class Main(KytosNApp):
     def send_features_request(self, destination):
         """Send a feature request to the switch."""
         version = destination.protocol.version
-        pyof_lib = pyof_version_libs[version]
+        pyof_lib = PYOF_VERSION_LIBS[version]
         features_request = pyof_lib.controller2switch.\
             features_request.FeaturesRequest()
         self.emit_message_out(destination, features_request)
