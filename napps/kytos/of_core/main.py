@@ -1,6 +1,6 @@
 """NApp responsible for the main OpenFlow basic operations."""
 from kytos.core import KytosEvent, KytosNApp, log
-from kytos.core.connection import CONNECTION_STATE
+from kytos.core.connection import ConnectionState
 from kytos.core.flow import Flow
 from kytos.core.helpers import listen_to
 from pyof.foundation.exceptions import UnpackException
@@ -145,7 +145,7 @@ class Main(KytosNApp):
                                   connection.id)
                     connection.protocol.state = 'hello_failed'
                     connection.close()
-                    connection.state = CONNECTION_STATE.FAILED
+                    connection.state = ConnectionState.FAILED
                     return
                 connection.set_setup_state()
                 continue
