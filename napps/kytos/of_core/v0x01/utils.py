@@ -7,6 +7,7 @@ from pyof.v0x01.controller2switch.common import ConfigFlags, FlowStatsRequest
 from pyof.v0x01.controller2switch.set_config import SetConfig
 from pyof.v0x01.controller2switch.stats_request import StatsRequest, StatsTypes
 from pyof.v0x01.symmetric.echo_request import EchoRequest
+from pyof.v0x01.symmetric.hello import Hello
 
 
 def update_flow_list(controller, switch):
@@ -70,3 +71,8 @@ def send_set_config(controller, switch):
     set_config.flags = ConfigFlags.OFPC_FRAG_NORMAL
     set_config.miss_send_len = 0xffff #Send the whole packet
     emit_message_out (controller, switch.connection, set_config)
+
+def say_hello(controller, connection):
+    """Send back a Hello packet with the same version as the switch."""
+    hello = Hello()
+    emit_message_out(controller, connection, hello)

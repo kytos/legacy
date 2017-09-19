@@ -8,6 +8,7 @@ from pyof.v0x04.symmetric.echo_request import EchoRequest
 from pyof.v0x04.controller2switch.common import ConfigFlags
 from pyof.v0x04.controller2switch.set_config import SetConfig
 from pyof.v0x04.common.action import ControllerMaxLen
+from pyof.v0x04.symmetric.hello import Hello
 
 def update_flow_list(controller, switch):
     """Method responsible for request stats of flow to switches.
@@ -56,3 +57,8 @@ def send_set_config(controller, switch):
     set_config.flags = ConfigFlags.OFPC_FRAG_NORMAL
     set_config.miss_send_len = ControllerMaxLen.OFPCML_NO_BUFFER
     emit_message_out (controller, switch.connection, set_config)
+
+def say_hello(controller, connection):
+    """Send back a Hello packet with the same version as the switch."""
+    hello = Hello()
+    emit_message_out(controller, connection, hello)
