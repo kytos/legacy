@@ -1,0 +1,468 @@
+openapi: 3.0.0
+info:
+  title: kytos/of_topology
+  version: 0.1.1
+  description: "**Warning**: *This documentation is experimental and will change soon.*\n
+
+  Keeps track of links between hosts and switches. Returns a JSON
+  with network topology using the endpoint /kytos/topology."
+
+  tags:
+  - name: Current
+    description: Rest endpoints already implemented.
+  - name: Future
+    description: Rest endpoints under development.
+
+paths:
+
+  /kytos/topology:
+    get:
+      summary: Return a json with topology details.
+      description: Sample description
+      tags:
+        - Current
+      responses:
+        200:
+          description: "Method responsible to return a json in /kytos/topology
+          route."
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  nodes:
+                    type: array
+                    description: List of Nodes avaliable in the network
+                    items:
+                      $ref: '#/definitions/Node'
+                  links:
+                    type: array
+                    description: List of Links avaliable in the network
+                    items:
+                      $ref: '#/definitions/Link'
+
+
+  /kytos/topology/nodes:
+    get:
+      summary: Return a JSON with all the nodes in the topology.
+      tags:
+        - Future
+      responses:
+        200:
+          description: "Nodes are datapaths and hosts. Datapaths will be
+          exported with all known information about them or about their
+          interfaces.\n
+
+          The ID field is defined by the DPID, without the ':' and
+          the left-side zeros. Interface's ID field is defined by
+          ID:interface-number."
+          content:
+            application/json:
+              schema:
+                type: array
+                description: List of Nodes avaliable in the network
+                items:
+                  $ref: '#/definitions/NewNode'
+                example:
+                - {
+                   "type":"switch",
+                   "dpid":"00:00:00:00:00:00:00:01",
+                   "name":"00:00:00:00:00:00:00:01",
+                   "serial":"",
+                   "id":"1",
+                   "software":null,
+                   "ofp_version":"0x01",
+                   "connection":"127.0.0.1:49328",
+                   "data_path":"",
+                   "manufacturer":"",
+                   "hardware":"",
+                   "interfaces": [
+                     {
+                       "type":"UNI",
+                       "port_number":1,
+                       "name":"s1-eth1",
+                       "mac":"ba:36:c7:2a:f5:6b",
+                       "id":"1:1",
+                       "speed":"10 Gbps"
+                     },
+                     {
+                       "type":"NNI",
+                       "port_number":2,
+                       "name":"s1-eth2",
+                       "mac":"36:87:18:7a:19:a5",
+                       "id":"1:2",
+                       "speed":"10 Gbps"
+                     },
+                     {
+                       "type":"controller",
+                       "port_number":65534,
+                       "name":"s1",
+                       "mac":"42:11:03:2c:f5:48",
+                       "id":"1:65534",
+                       "speed":""
+                     },
+                   ]
+                  }
+                - {
+                   "type":"host",
+                   "id":"15afd53898",
+                   "mac":"00:15:af:d5:38:98"
+                  }
+
+  /kytos/topology/links:
+    get:
+      summary: Return a JSON with all the nodes in the topology.
+      tags:
+        - Future
+      responses:
+        200:
+          description: "Every link has an alias, which can be user-defined in
+          the configuration file or automatically generated. The link's path is
+          defined by the interfaces that compose the link, in a list. Links
+          have also default metrics, such as hop +count, and user-defined
+          metrics.\n
+
+           If the link is a direct connection, 'path' will show the interfaces
+           in this connection. If the link is a user-defined multihop link,
+           'path' will show the aliases of the links that composes it."
+          content:
+            application/json:
+              schema:
+                type: array
+                description: List of Nodes avaliable in the network
+                items:
+                  $ref: '#/definitions/NewLink'
+                example:
+                - {
+                   "alias": "1to2",
+                   "path": ["1:2", "2:1"],
+                   "metrics": {
+                     "hops":1,
+                     "bandwidth":"10 Gbps",
+                     "custom_cost":8
+                   }
+                  }
+                - {
+                   "alias": "3:1-2:3",
+                   "path": ["3:1", "2:3"],
+                   "metrics": {
+                     "hops":1,
+                     "bandwidth":"10 Gbps"
+                   }
+                  }
+                - {
+                   "alias": "2to1",
+                   "path": ["2:1", "1:2"],
+                   "metrics": {
+                     "hops":1,
+                     "bandwidth":"10 Gbps",
+                     "custom_cost":8,
+                     "reliability":0.98
+                   }
+                 }
+                - {
+                   "alias": "3:2-host",
+                   "path":  ["3:2", "ab87d9905:host"],
+                   "metrics": {
+                     "hops":1,
+                     "bandwidth":"10 Gbps"
+                   }
+                 }
+                - {
+                   "alias": "1to3",
+                   "path": ["1to2", "2:3-3:1"],
+                   "metrics": {
+                     "hops":2,
+                     "bandwidth":"10 Gbps",
+                     "custom_cost":15
+                   }
+                 }
+
+  /kytos/topology/links/extended:
+    get:
+      summary: Return a JSON with all the links in the topology.
+      tags:
+        - Future
+      responses:
+        200:
+          description: "The difference from the /links endpoint is in
+          user-defined multihop links: 'path' will show all interfaces that
+          compose the link instead of aliases."
+          content:
+            application/json:
+              schema:
+                type: array
+                description: List of Nodes avaliable in the network
+                items:
+                  $ref: '#/definitions/NewLink'
+                example:
+                -  {
+                    "alias": "1to2",
+                    "path": ["1:2", "2:1"],
+                    "metrics": {
+                      "hops":1,
+                      "bandwidth":"10 Gbps",
+                      "custom_cost":8
+                    }
+                  }
+                - {
+                    "alias": "1to3",
+                    "path": ["1:2", "2:1", "2:3", "3:1"],
+                    "metrics": {
+                      "hops":2,
+                      "bandwidth":"10 Gbps",
+                      "custom_cost":15
+                    }
+                  }
+
+definitions:
+  Node:
+    oneOf:
+    - $ref: '#/definitions/Switch'
+    - $ref: '#/definitions/Interface'
+    example:
+    - {
+         "switch":"00:00:00:00:00:00:00:03",
+         "type":"interface",
+         "port_number":1,
+         "name":"s3-eth1",
+         "mac":"e6:60:0a:28:de:a0",
+         "id":"00:00:00:00:00:00:00:03:1",
+         "speed":"10 Gbps"
+      }
+    - {
+         "type":"switch",
+         "dpid":"00:00:00:00:00:00:00:03",
+         "name":"00:00:00:00:00:00:00:03",
+         "serial":"",
+         "id":"00:00:00:00:00:00:00:03",
+         "software":null,
+         "ofp_version":"0x01",
+         "connection":"127.0.0.1:49330",
+         "data_path":"",
+         "manufacturer":"",
+         "hardware":""
+      }
+
+  Switch:
+    type: object
+    properties:
+      type:
+        type: string
+        description: Display 'switch' as node type.
+        example: switch
+      dpid:
+        type: string
+        description: Switch datapath ID
+        example: 00:00:00:00:00:00:00:02
+      serial:
+        type: string
+        description: Display the serial number of switch
+      id:
+         type: string
+         description: Display the Identifier of switch
+      software:
+         type: string
+         description: Describe the software version
+         example: Version 2.3.4
+      ofp_version:
+         type: string
+         description: Openflow version
+         example: '0x01'
+      connection:
+         type: string
+         description: Address used to communicate with the controller
+         example: 127.0.0.1:49330
+      data_path:
+         type: string
+         description: Datapath identifier
+      manufacturer:
+         type: string
+         description: Manufacture name
+         example: Unkown Manufactor
+      hardware:
+         type: string
+         description: describe the Hardware version
+         example: Hardware version 2.0
+
+  Interface:
+    type: object
+    properties:
+      type:
+        type: string
+        description: Display 'interface' as node type.
+        example: interface
+      switch:
+        type: string
+        description: Switch Mac Address
+        example: 00:00:00:00:00:00:00:01
+      port_number:
+        type: integer
+        description: Interface port number
+        example: 2
+      name:
+        type: string
+        description: Interface name
+        example: "s1-eth2"
+      mac:
+        type: string
+        description: Mac address of this interface
+        example: 36:87:18:7a:19:a5
+      id:
+        type: string
+        description: Interface identifier is always a switch:port_number
+        example: 00:00:00:00:00:00:00:01:2
+      speed:
+        type: string
+        description: Max speed allowed by this interface
+        example: 10 Gbps
+  Link:
+    properties:
+      type:
+        type: string
+        description: Display 'link' as node type.
+        example: link
+      source:
+        type: string
+        description: Identifier of source node
+        example: 00:00:00:00:00:00:00:02
+      target:
+        type: string
+        description: Identifier of target node
+        example: 00:00:00:00:00:00:00:02:1
+
+  NewNode:
+    type: object
+    oneOf:
+    - $ref: '#/definitions/NewSwitch'
+    - $ref: '#/definitions/Host'
+    example:
+    - {
+        "type":"switch",
+        "dpid":"00:00:00:00:00:00:00:01",
+        "name":"00:00:00:00:00:00:00:01",
+        "serial":"",
+        "id":"1",
+        "software":null,
+        "ofp_version":"0x01",
+        "connection":"127.0.0.1:49328",
+        "data_path":"",
+        "manufacturer":"",
+        "hardware":"",
+        "interfaces": [
+          {
+            "type":"UNI",
+            "port_number":1,
+            "name":"s1-eth1",
+            "mac":"ba:36:c7:2a:f5:6b",
+            "id":"1:1",
+            "speed":"10 Gbps"
+          },
+          {
+            "type":"NNI",
+            "port_number":2,
+            "name":"s1-eth2",
+            "mac":"36:87:18:7a:19:a5",
+            "id":"1:2",
+            "speed":"10 Gbps"
+          },
+          {
+            "type":"controller",
+            "port_number":65534,
+            "name":"s1",
+            "mac":"42:11:03:2c:f5:48",
+            "id":"1:65534",
+            "speed":""
+          },
+        ]
+      }
+    - {
+        "type":"host",
+        "id":"15afd53898",
+        "mac":"00:15:af:d5:38:98"
+      }
+
+  NewSwitch:
+    allOf:
+    - $ref: '#/definitions/Switch'
+    - properties:
+        interfaces:
+          type: array
+          description: List of interfaces used by switch
+          items:
+            $ref: '#/definitions/NewInterface'
+
+  NewInterface:
+    type: object
+    properties:
+      type:
+        type: string
+        description: Display 'interface' as node type.
+        example: interface
+      port_number:
+        type: integer
+        description: Interface port number
+        example: 2
+      name:
+        type: string
+        description: Interface name
+        example: "s1-eth2"
+      mac:
+        type: string
+        description: Mac address of this interface
+        example: 36:87:18:7a:19:a5
+      id:
+        type: string
+        description: Interface identifier is always a switch:port_number
+        example: 00:00:00:00:00:00:00:01:2
+      speed:
+        type: string
+        description: Max speed allowed by this interface
+        example: 10 Gbps
+
+  Host:
+    type: object
+    properties:
+      type:
+        type: string
+        description: Display 'host' as node type.
+        example: host
+      id:
+        type: string
+        description: Host identifier
+        example: ab87d9905
+      mac:
+        type: string
+        description: Mac address of this host
+        example: 00:0a:b8:7d:99:05
+
+  NewLink:
+    type: object
+    properties:
+      alias:
+        type: string
+        description: Nick name for the link
+        example: 1to2
+      path:
+        type: array
+        description: Array of alias used by identifier other nodes.
+        items:
+          type: string
+          example:
+          - 1to2
+          - 2to2
+      metrics:
+        type: object
+        properties:
+          hops:
+            type: interger
+            description: Hop is one portion of the path between source and destination.
+            example: 1
+          bandwidth:
+            type: string
+            description: Max speed allowed by link.
+            example: 10 Gbps
+          custom_cost:
+            type: int
+            description: Custom field used to messure a cost to pass in this link
+            example: 8
