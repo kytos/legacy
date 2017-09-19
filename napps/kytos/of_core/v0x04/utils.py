@@ -2,6 +2,9 @@
 from kytos.core import log
 from kytos.core.switch import Interface
 
+from napps.kytos.of_core.utils import emit_message_out
+
+from pyof.v0x04.symmetric.echo_request import EchoRequest
 
 def update_flow_list(controller, switch):
     """Method responsible for request stats of flow to switches.
@@ -35,3 +38,11 @@ def handle_features_reply(controller, event):
     switch.update_features(features_reply)
 
     return switch
+
+def send_echo(controller, switch):
+    """Send echo request to a datapath.
+
+    Keep the connection alive through symmetric echoes.
+    """
+    echo = EchoRequest(data=b'kytosd_13')
+    emit_message_out(controller, switch.connection, echo)

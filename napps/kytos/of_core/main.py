@@ -58,6 +58,10 @@ class Main(KytosNApp):
                     self.of_core_version_utils[switch.
                                                connection.protocol.version]
                 version_utils.update_flow_list(self.controller, switch)
+                if settings.SEND_ECHO_REQUESTS:
+                    version_utils.send_echo(self.controller, switch)
+
+
 
     @staticmethod
     @listen_to('kytos/of_core.v0x01.messages.in.ofpt_stats_reply')
