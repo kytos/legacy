@@ -11,3 +11,6 @@ SEND_FEATURES_REQUEST_ON_ECHO = False
 
 #: Send Echo requests to switches periodically to keep connection
 SEND_ECHO_REQUESTS = True
+
+#: Send Set Config messages right after the OpenFlow handshake
+SEND_SET_CONFIG = True

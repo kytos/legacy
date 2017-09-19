@@ -62,7 +62,6 @@ class Main(KytosNApp):
                     version_utils.send_echo(self.controller, switch)
 
 
-
     @staticmethod
     @listen_to('kytos/of_core.v0x01.messages.in.ofpt_stats_reply')
     def handle_flow_stats_reply(event):
@@ -101,6 +100,8 @@ class Main(KytosNApp):
                 connection.protocol.state == 'waiting_features_reply'):
             connection.protocol.state = 'handshake_complete'
             connection.set_established_state()
+            if settings.SEND_SET_CONFIG:
+                version_utils.send_set_config(self.controller, switch)
             log.info('Connection %s, Switch %s: OPENFLOW HANDSHAKE COMPLETE',
                      connection.id, switch.dpid)
             # # event to be generated in near future
@@ -161,7 +162,7 @@ class Main(KytosNApp):
                 log.debug(e)
                 if type(e) == AttributeError:
                     debug_msg = 'connection closed before version negotiation'
-                    log.debug('Connection %s: %s' ,connection.id, debug_msg)
+                    log.debug('Connection %s: %s' , connection.id, debug_msg)
                 connection.close()
                 return
 

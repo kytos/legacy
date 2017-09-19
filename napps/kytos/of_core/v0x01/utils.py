@@ -3,7 +3,8 @@ from kytos.core.switch import Interface
 
 from napps.kytos.of_core.utils import emit_message_out
 
-from pyof.v0x01.controller2switch.common import FlowStatsRequest
+from pyof.v0x01.controller2switch.common import ConfigFlags, FlowStatsRequest
+from pyof.v0x01.controller2switch.set_config import SetConfig
 from pyof.v0x01.controller2switch.stats_request import StatsRequest, StatsTypes
 from pyof.v0x01.symmetric.echo_request import EchoRequest
 
@@ -62,3 +63,10 @@ def send_echo(controller, switch):
     """
     echo = EchoRequest(data=b'kytosd_10')
     emit_message_out(controller, switch.connection, echo)
+
+def send_set_config(controller, switch):
+    """Send a SetConfig message after the OpenFlow handshake."""
+    set_config = SetConfig()
+    set_config.flags = ConfigFlags.OFPC_FRAG_NORMAL
+    set_config.miss_send_len = 0xffff #Send the whole packet
+    emit_message_out (controller, switch.connection, set_config)
