@@ -58,6 +58,9 @@ class Main(KytosNApp):
                     self.of_core_version_utils[switch.
                                                connection.protocol.version]
                 version_utils.update_flow_list(self.controller, switch)
+                if settings.SEND_ECHO_REQUESTS:
+                    version_utils.send_echo(self.controller, switch)
+
 
     @staticmethod
     @listen_to('kytos/of_core.v0x01.messages.in.ofpt_stats_reply')
@@ -97,6 +100,8 @@ class Main(KytosNApp):
                 connection.protocol.state == 'waiting_features_reply'):
             connection.protocol.state = 'handshake_complete'
             connection.set_established_state()
+            if settings.SEND_SET_CONFIG:
+                version_utils.send_set_config(self.controller, switch)
             log.info('Connection %s, Switch %s: OPENFLOW HANDSHAKE COMPLETE',
                      connection.id, switch.dpid)
             # # event to be generated in near future
@@ -157,7 +162,7 @@ class Main(KytosNApp):
                 log.debug(e)
                 if type(e) == AttributeError:
                     debug_msg = 'connection closed before version negotiation'
-                    log.debug('Connection %s: %s' ,connection.id, debug_msg)
+                    log.debug('Connection %s: %s' , connection.id, debug_msg)
                 connection.close()
                 return
 
@@ -210,32 +215,14 @@ class Main(KytosNApp):
             data=echo_request.data)
         self.emit_message_out(event.source, echo_reply)
 
-    @listen_to('kytos/core.openflow.connection.new')
-    def handle_core_new_connection(self, event):
-        """Method called when a new switch is connected.
-
-        This method will send a hello world message when a new switch is
-        connected.
-        """
-        self._say_hello(event.source)
-
-    def _say_hello(self, connection, xid=None):
-        """Method used to send a hello messages.
-
-        Should be called once a new connection is established.
-        To be able to deal with OF1.3 negotiation, hello should also
-        carry a version_bitmap.
-        """
-        if 0x04 in settings.OPENFLOW_VERSIONS:
-            hello = HelloV0x04()
-        else:
-            hello = HelloV0x01()
-        self.emit_message_out(connection, hello)
 
     def _get_version_from_bitmask(self, message_versions):
         """Get common version from hello message version bitmap."""
-        return max([version for version in message_versions
-                    if version in settings.OPENFLOW_VERSIONS])
+        try:
+            return max([version for version in message_versions
+                        if version in settings.OPENFLOW_VERSIONS])
+        except ValueError:
+            return None
 
     def _get_version_from_header(self, message_version):
         """Get common version from hello message header version."""
@@ -263,6 +250,9 @@ class Main(KytosNApp):
         if version is None:
             self.fail_negotiation(connection, message)
             raise NegotiationException()
+
+        version_utils = self.of_core_version_utils[version]
+        version_utils.say_hello(self.controller, connection)
 
         connection.protocol.name = 'openflow'
         connection.protocol.version = version
