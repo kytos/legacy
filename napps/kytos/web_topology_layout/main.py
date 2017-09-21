@@ -66,7 +66,6 @@ class Main(KytosNApp):
         return json.dumps({'response': 'Saved'}), 201
 
     @staticmethod
-    @rest('layouts/')
     def get_topology(name):
         """Method to read and return a topology from json file.
 
@@ -84,6 +83,7 @@ class Main(KytosNApp):
         return json.dumps(output)
 
     @staticmethod
+    @rest('layouts/')
     def get_topologies():
         """Method used to returns all topologies.
 
