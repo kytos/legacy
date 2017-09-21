@@ -15,7 +15,7 @@ info:
 
 paths:
 
-  /kytos/topology:
+  api/kytos/of_topology/topology:
     get:
       summary: Return a json with topology details.
       description: Sample description
@@ -42,7 +42,7 @@ paths:
                       $ref: '#/definitions/Link'
 
 
-  /kytos/topology/nodes:
+  api/kytos/of_topology/topology/nodes:
     get:
       summary: Return a JSON with all the nodes in the topology.
       tags:
@@ -109,7 +109,7 @@ paths:
                    "mac":"00:15:af:d5:38:98"
                   }
 
-  /kytos/topology/links:
+  api/kytos/of_topology/topology/links:
     get:
       summary: Return a JSON with all the nodes in the topology.
       tags:
@@ -178,7 +178,7 @@ paths:
                    }
                  }
 
-  /kytos/topology/links/extended:
+  api/kytos/of_topology/topology/links/extended:
     get:
       summary: Return a JSON with all the links in the topology.
       tags:
