@@ -5,7 +5,8 @@ from kytos.core.switch import Interface
 from napps.kytos.of_core.utils import emit_message_out
 
 from pyof.v0x04.symmetric.echo_request import EchoRequest
-from pyof.v0x04.controller2switch.common import ConfigFlags
+from pyof.v0x04.controller2switch.common import ConfigFlags, MultipartTypes
+from pyof.v0x04.controller2switch.multipart_request import MultipartRequest
 from pyof.v0x04.controller2switch.set_config import SetConfig
 from pyof.v0x04.common.action import ControllerMaxLen
 from pyof.v0x04.symmetric.hello import Hello
@@ -21,6 +22,12 @@ def update_flow_list(controller, switch):
     """
     log.error("update_flow_list not implemented yet for OF v0x04")
 
+
+def send_port_request(controller, connection):
+    """Send a Port Description Request after the Features Reply."""
+    port_request = MultipartRequest()
+    port_request.multipart_type = MultipartTypes.OFPMP_PORT_DESC
+    emit_message_out(controller, connection, port_request)
 
 def handle_features_reply(controller, event):
     """Handle OF v0x04 features_reply message events.
@@ -38,10 +45,22 @@ def handle_features_reply(controller, event):
 
     switch = controller.get_switch_or_create(dpid=dpid,
                                              connection=connection)
+    send_port_request(controller, connection)
 
     switch.update_features(features_reply)
 
     return switch
+
+def handle_port_desc(switch, port_list):
+    """Update interfaces on switch based on port_list information."""
+    for port in port_list:
+        interface = Interface(name=port.name.value,
+                              address=port.hw_addr.value,
+                              port_number=port.port_no.value,
+                              switch=switch,
+                              state=port.state.value,
+                              features=port.curr)
+        switch.update_interface(interface)
 
 def send_echo(controller, switch):
     """Send echo request to a datapath.
