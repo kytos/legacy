@@ -1,4 +1,4 @@
-"""Settings file for the NApp kytos/of_stats."""
+"""Settings file for the NApp legacy/of_stats."""
 from pathlib import Path
 from threading import Lock
 

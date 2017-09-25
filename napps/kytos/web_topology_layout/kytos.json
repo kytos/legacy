@@ -1,11 +1,11 @@
 {
-  "author": "kytos",
-  "username": "kytos",
+  "author": "legacy",
+  "username": "legacy",
   "name": "web_topology_layout",
   "description": "Manage endpoints related to the web interface settings and layout.",
   "version": "0.1.0",
   "napp_dependencies": [],
   "license": "MIT",
-  "url": "https://github.com/kytos/kyto-napps.git",
+  "url": "https://github.com/kytos/legacy.git",
   "tags": ["topology", "web", "interface", "layout"]
 }

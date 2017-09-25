@@ -42,13 +42,13 @@ class Main(KytosNApp):
         The setup method is automatically called by the run method.
         Users shouldn't call this method directly.
         """
-        self.name = 'kytos/of_core'
+        self.name = 'legacy/of_core'
         self.of_core_version_utils = {0x01: of_core_v0x01_utils,
                                       0x04: of_core_v0x04_utils}
         self.execute_as_loop(settings.STATS_INTERVAL)
 
     def execute(self):
-        """Method to be runned once on app 'start' or in a loop.
+        """Method to be run once on app 'start' or in a loop.
 
         The execute method is called by the run method of KytosNApp class.
         Users shouldn't call this method directly.

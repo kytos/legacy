@@ -1,11 +1,11 @@
 {
-  "author": "kytos",
-  "username": "kytos",
+  "author": "legacy",
+  "username": "legacy",
   "name": "of_topology",
-  "description": "Keeps track of links between hosts and switches. Returns a JSON with network topology using the endpoint /kytos/topology.",
+  "description": "Keeps track of links between hosts and switches. Returns a JSON with network topology using the endpoint /api/legacy/of_topology/topology.",
   "version": "0.1.1",
-  "napp_dependencies": ["kytos/of_core", "kytos/of_lldp"],
+  "napp_dependencies": ["legacy/of_core", "legacy/of_lldp"],
   "license": "MIT",
-  "url": "https://github.com/kytos/kytos-napps.git",
+  "url": "https://github.com/kytos/legacy.git",
   "tags": ["openflow", "topology", "switches", "hosts"]
 }

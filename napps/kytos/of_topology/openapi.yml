@@ -1,11 +1,11 @@
 openapi: 3.0.0
 info:
-  title: kytos/of_topology
+  title: legacy/of_topology
   version: 0.1.1
   description: "**Warning**: *This documentation is experimental and will change soon.*\n
 
   Keeps track of links between hosts and switches. Returns a JSON
-  with network topology using the endpoint /kytos/topology."
+  with network topology using the endpoint /legacy/topology."
 
   tags:
   - name: Current
@@ -15,7 +15,7 @@ info:
 
 paths:
 
-  api/kytos/of_topology/topology:
+  api/topology/of_topology/topology:
     get:
       summary: Return a json with topology details.
       description: Sample description
@@ -42,7 +42,7 @@ paths:
                       $ref: '#/definitions/Link'
 
 
-  api/kytos/of_topology/topology/nodes:
+  api/legacy/of_topology/topology/nodes:
     get:
       summary: Return a JSON with all the nodes in the topology.
       tags:
@@ -109,7 +109,7 @@ paths:
                    "mac":"00:15:af:d5:38:98"
                   }
 
-  api/kytos/of_topology/topology/links:
+  api/legacy/of_topology/topology/links:
     get:
       summary: Return a JSON with all the nodes in the topology.
       tags:
@@ -178,7 +178,7 @@ paths:
                    }
                  }
 
-  api/kytos/of_topology/topology/links/extended:
+  api/legacy/of_topology/topology/links/extended:
     get:
       summary: Return a JSON with all the links in the topology.
       tags:

@@ -4,8 +4,8 @@ Web Topology Layout NApp
 This Network App (NApp) manages the settings and layouts of the **Kytos**
 web interface (kytos-admin-ui).
 
-It is used to store the interface settings (and layouts) and also to
-retrieve this information when requested.
+It is used to store the interface settings (and layouts) and also to retrieve
+this information when requested.
 
 Requirements
 ============
@@ -15,12 +15,12 @@ flask
 Installing
 ==========
 
-All of the Kytos Network Applications are located in the NApps online repository.
-To install this NApp, run:
+All of the Kytos Network Applications are located in the NApps online
+repository. To install this NApp, run:
 
 .. code:: shell
 
-   $ kytos napps install kytos/web_topology_layout
+   $ kytos napps install legacy/web_topology_layout
 
 If you are going to install kytos-napps from source code, all napps will be
 installed by default (just remember you need to enable the ones you want
@@ -40,13 +40,13 @@ The REST endpoints this NApp exposes are:
 
    -  This endpoint accepts both ``GET`` and ``POST`` methods.
 
-      -  The ``GET`` method will return a JSON with the requested layout(),
-         if it exists. Otherwise, it will return a 400 error.
-      -  The ``POST`` method receives a JSON with the data to be saved
-         and save it as a file. These files will be saved at
-         ``TOPOLOGY_DIR``, defined on the ``main.py`` file. **For now,
-         the default value of this folder is
-         ``/tmp/kytos/topologies/``**.
+      -  The ``GET`` method will return a JSON with the requested layout(), if
+         it exists. Otherwise, it will return a 400 error.
+
+      -  The ``POST`` method receives a JSON with the data to be saved and save
+         it as a file. These files will be saved at ``TOPOLOGY_DIR``, defined
+         on the ``main.py`` file. **For now, the default value of this folder
+         is ``/tmp/kytos/topologies/``**.
 
 JSON Format
 ===========

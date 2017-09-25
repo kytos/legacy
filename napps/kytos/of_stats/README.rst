@@ -2,15 +2,14 @@ Overview
 ========
 
 In order to manage a network, an administrator must have updated and reliable
-statistics about it, in several levels of deepness, from a
-switch port inbound and outbound traffic to the traffic of different connected
-networks.
+statistics about it, in several levels of deepness, from a switch port inbound
+and outbound traffic to the traffic of different connected networks.
 
 To achieve that, this Network Application collects statistical data provided by
 the switches connected to the controller. We *do not use SNMP protocol* because
 the OpenFlow protocol already provide this data. The data is stored to be
-provided later through a REST API. This API can supply instant data,
-historical data, and also some calculated information.
+provided later through a REST API. This API can supply instant data, historical
+data, and also some calculated information.
 
 The provided statistics, per switch, are:
 
@@ -22,27 +21,26 @@ The provided statistics, per switch, are:
 Requirements
 ============
 
-Besides Python packages described in *requirements.txt*,
-`rrdtool <http://www.rrdtool.org>`__ is required and must be installed. If you
-are using Ubuntu, you must install, using apt:
+Besides Python packages described in *requirements.txt*, `rrdtool
+<http://www.rrdtool.org>`__ is required and must be installed. If you are using
+Ubuntu, you must install, using apt:
 
 .. code-block:: shell
 
    apt install rrdtool python3.6-dev librrd-dev
 
-.. note:: We currently use rrd to keep persistence in data, but future
-    versions of this napp will allow you to choose what kind of backend you
-    want to use.
+.. note:: We currently use rrd to keep persistence in data, but future versions
+    of this napp will allow you to choose what kind of backend you want to use.
 
 Installing
 ==========
 
-All of the Kytos Network Applications are located in the NApps online repository.
-To install this NApp, run:
+All of the Kytos Network Applications are located in the NApps online
+repository. To install this NApp, run:
 
 .. code:: shell
 
-   $ kytos napps install kytos/of_stats
+   $ kytos napps install legacy/of_stats
 
 If you are going to install kytos-napps from source code, all napps will be
 installed by default (just remember you need to enable the ones you want
@@ -65,8 +63,8 @@ Troubleshooting
 ===============
 
 .. attention:: The filenames below are relative to this NApp's folder.
-   If you run Kytos as root, it is ``/var/lib/kytos/napps/kytos/of_stats`` or,
-   if using virtualenv, ``$VIRTUAL_ENV/var/lib/kytos/napps/kytos/of_stats``.
+   If you run Kytos as root, it is ``/var/lib/kytos/napps/legacy/of_stats`` or,
+   if using virtualenv, ``$VIRTUAL_ENV/var/lib/kytos/napps/legacy/of_stats``.
 
 Wrong link utilization
 ----------------------
@@ -95,9 +93,9 @@ an optional *default* value that specify the speed of any interface that is not
 found in this file. The switch whose dpid is *00:...:00:01* also has an
 optional *default* value of 10 Gbps for all its ports except the number 4 that
 is 1 Gbps. If there is no *default* value and the dpid or port is not
-specified, the speed will be taken following the OpenFlow specifications.
-To make it clear, find below the speed of some interfaces when
-``user_speed.json`` has the content above:
+specified, the speed will be taken following the OpenFlow specifications. To
+make it clear, find below the speed of some interfaces when ``user_speed.json``
+has the content above:
 
 +-------------------------+------+--------------+
 |          DPID 1         | Port | Speed (Gbps) |

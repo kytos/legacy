@@ -1,7 +1,7 @@
 Overview
 ========
 
-The NApp **of.core** is a NApp responsible to handle OpenFlow basic
+The NApp **of_core** is a NApp responsible to handle OpenFlow basic
 operations. The messages covered are:
 
 -  hello messages;
@@ -25,7 +25,7 @@ repository. To install this NApp, run:
 
 .. code:: shell
 
-   $ kytos napps install kytos/of_core
+   $ kytos napps install legacy/of_core
 
 If you are going to install kytos-napps from source code, all napps will be
 installed by default (just remember you need to enable the ones you want

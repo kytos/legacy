@@ -17,13 +17,13 @@ Requesting flows from all the switches in the topology:
 
 .. code:: shell
 
-  curl -X GET 127.0.0.1:8181/kytos/flow-manager/flows
+  curl -X GET 127.0.0.1:8181/api/legacy/of_flow_manager/flows
 
 Requesting flows from a specific switch:
 
 .. code:: shell
 
-  curl -X GET 127.0.0.1:8181/kytos/flow-manager/flows/00:00:00:00:00:00:00:01
+  curl -X GET 127.0.0.1:8181/api/legacy/of_flow_manager/flows/00:00:00:00:00:00:00:01
 
 Output JSON format
 ------------------
@@ -142,13 +142,13 @@ Inserting a flow in all switches in the topology:
 
 .. code:: shell
 
-  curl -X POST -H "Content-Type: application/json" -d '<list of flows>' 127.0.0.1:8181/kytos/flow-manager/flows/
+  curl -X POST -H "Content-Type: application/json" -d '<list of flows>' 127.0.0.1:8181/api/legacy/of_flow_manager/flows/
 
 Inserting a flow in a specific switch:
 
 .. code:: shell
 
-  curl -X POST -H "Content-Type: application/json" -d '<list of flows>' 127.0.0.1:8181/kytos/flow-manager/flows/00:00:00:00:00:00:00:01
+  curl -X POST -H "Content-Type: application/json" -d '<list of flows>' 127.0.0.1:8181/api/legacy/of_flow_manager/flows/00:00:00:00:00:00:00:01
 
 
 Input JSON format
@@ -193,17 +193,17 @@ Removing the very first flow presented in this file:
 
 .. code:: shell
 
-  curl -X DELETE 127.0.0.1:8181/kytos/flow-manager/flows/00:00:00:00:00:00:00:01/e972d1a60d34c249afa6aa929cb6c5a6
+  curl -X DELETE 127.0.0.1:8181/api/legacy/of_flow_manager/flows/00:00:00:00:00:00:00:01/e972d1a60d34c249afa6aa929cb6c5a6
 
 Removing all flows from a specific switch:
 
 .. code:: shell
 
-  curl -X DELETE 127.0.0.1:8181/kytos/flow-manager/flows/00:00:00:00:00:00:00:01
+  curl -X DELETE 127.0.0.1:8181/api/legacy/of_flow_manager/flows/00:00:00:00:00:00:00:01
 
 Removing all flows from all switches in the topology:
 
 .. code:: shell
 
-  curl -X DELETE 127.0.0.1:8181/kytos/flow-manager/flows
+  curl -X DELETE 127.0.0.1:8181/api/legacy/of_flow_manager/flows
 
