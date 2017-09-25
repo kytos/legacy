@@ -20,6 +20,7 @@ import pyof.v0x04.common.utils
 import pyof.v0x04.controller2switch.common
 import pyof.v0x04.controller2switch.features_request
 import pyof.v0x04.symmetric.echo_reply
+from pyof.v0x04.controller2switch.common import MultipartTypes
 from pyof.v0x04.symmetric.hello import Hello as HelloV0x04
 
 from napps.kytos.of_core.v0x01 import utils as of_core_v0x01_utils
@@ -108,6 +109,14 @@ class Main(KytosNApp):
             # event_raw = KytosEvent(name='kytos/of_core.handshake_complete',
             #                        content={'source': connection})
             # self.controller.buffers.app.put(event_raw)
+
+    @listen_to('kytos/of_core.v0x04.messages.in.ofpt_multipart_reply')
+    def handle_port_desc_reply(self, event):
+        """Handles Port Description Reply messages."""
+        switch = event.source.switch
+        reply = event.content['message']
+        if reply.multipart_type == MultipartTypes.OFPMP_PORT_DESC:
+            of_core_v0x04_utils.handle_port_desc(switch, reply.body)
 
     @listen_to('kytos/core.openflow.raw.in')
     def handle_raw_in(self, event):
