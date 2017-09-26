@@ -2,7 +2,7 @@
 from kytos.core import log
 from kytos.core.switch import Interface
 
-from napps.kytos.of_core.utils import emit_message_out
+from napps.legacy.of_core.utils import emit_message_out
 
 from pyof.v0x04.symmetric.echo_request import EchoRequest
 from pyof.v0x04.controller2switch.common import ConfigFlags, MultipartTypes

@@ -23,12 +23,12 @@ import pyof.v0x04.symmetric.echo_reply
 from pyof.v0x04.controller2switch.common import MultipartTypes
 from pyof.v0x04.symmetric.hello import Hello as HelloV0x04
 
-from napps.kytos.of_core.v0x01 import utils as of_core_v0x01_utils
-from napps.kytos.of_core.v0x04 import utils as of_core_v0x04_utils
+from napps.legacy.of_core.v0x01 import utils as of_core_v0x01_utils
+from napps.legacy.of_core.v0x04 import utils as of_core_v0x04_utils
 
-from napps.kytos.of_core import settings
-from napps.kytos.of_core.flow import Flow
-from napps.kytos.of_core.utils import (emit_message_in, emit_message_out,
+from napps.legacy.of_core import settings
+from napps.legacy.of_core.flow import Flow
+from napps.legacy.of_core.utils import (emit_message_in, emit_message_out,
                                        GenericHello, NegotiationException,
                                        of_slicer)
 

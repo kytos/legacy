@@ -10,7 +10,7 @@ from pyof.v0x01.common.phy_port import Port
 from pyof.v0x01.controller2switch.flow_mod import FlowMod, FlowModCommand
 from pyof.v0x01.controller2switch.packet_out import PacketOut
 
-from napps.kytos.of_l2ls import settings
+from napps.legacy.of_l2ls import settings
 
 
 class Main(KytosNApp):

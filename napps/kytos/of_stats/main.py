@@ -4,9 +4,9 @@ from kytos.core import KytosNApp, log, rest
 from kytos.core.helpers import listen_to
 from pyof.v0x01.controller2switch.stats_request import StatsTypes
 
-from napps.kytos.of_stats import settings
-from napps.kytos.of_stats.stats import Description, FlowStats, PortStats
-from napps.kytos.of_stats.stats_api import FlowStatsAPI, PortStatsAPI, StatsAPI
+from napps.legacy.of_stats import settings
+from napps.legacy.of_stats.stats import Description, FlowStats, PortStats
+from napps.legacy.of_stats.stats_api import FlowStatsAPI, PortStatsAPI, StatsAPI
 
 
 class Main(KytosNApp):

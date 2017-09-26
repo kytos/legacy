@@ -7,7 +7,7 @@ from os.path import isfile, join
 from flask import request
 from kytos.core import KytosNApp, log, rest
 
-from napps.kytos.web_topology_layout import settings
+from napps.legacy.web_topology_layout import settings
 
 makedirs(settings.TOPOLOGY_DIR, exist_ok=True)
 

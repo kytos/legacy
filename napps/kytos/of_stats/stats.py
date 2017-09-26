@@ -5,7 +5,7 @@ from pathlib import Path
 
 import rrdtool
 from kytos.core import KytosEvent, log
-from napps.kytos.of_core.flow import Flow
+from napps.legacy.of_core.flow import Flow
 from pyof.v0x01.common.phy_port import Port
 from pyof.v0x01.controller2switch.common import (AggregateStatsRequest,
                                                  FlowStatsRequest,

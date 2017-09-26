@@ -8,7 +8,7 @@ from pyof.foundation.network_types import LLDP, Ethernet
 from pyof.v0x01.common.action import ActionOutput
 from pyof.v0x01.controller2switch.packet_out import PacketOut
 
-from napps.kytos.of_lldp import constants, settings
+from napps.legacy.of_lldp import constants, settings
 
 
 class Main(KytosNApp):

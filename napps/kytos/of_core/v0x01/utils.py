@@ -1,7 +1,7 @@
 """Utilities module for of_core OpenFlow v0x01 operations"""
 from kytos.core.switch import Interface
 
-from napps.kytos.of_core.utils import emit_message_out
+from napps.legacy.of_core.utils import emit_message_out
 
 from pyof.v0x01.controller2switch.common import ConfigFlags, FlowStatsRequest
 from pyof.v0x01.controller2switch.set_config import SetConfig

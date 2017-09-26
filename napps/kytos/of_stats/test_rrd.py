@@ -4,8 +4,8 @@ import unittest
 from tempfile import mkstemp
 from unittest.mock import patch  # noqa (isort conflict)
 
-from napps.kytos.of_stats.settings import STATS_INTERVAL
-from napps.kytos.of_stats.stats import RRD
+from napps.legacy.of_stats.settings import STATS_INTERVAL
+from napps.legacy.of_stats.stats import RRD
 
 
 class TestRRD(unittest.TestCase):
@@ -50,7 +50,7 @@ class TestRRD(unittest.TestCase):
         self.assertEqual(second, list(tstamps)[0])
         self.assertEqual((1.0, 1.0), rows[0])
 
-    @patch('napps.kytos.of_stats.stats.Path')
+    @patch('napps.legacy.of_stats.stats.Path')
     def test_non_existent_rrd(self, path_mock):
         """Test fetch_latest with non existent rrd."""
         obj = path_mock.return_value.exists.return_value = False
