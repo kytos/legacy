@@ -44,7 +44,7 @@ class Main(KytosNApp):
             if switch.connection is not None:
                 stats.request(switch.connection)
 
-    @listen_to('legacy/of_core.v0x01.messages.in.ofpt_stats_reply')
+    @listen_to('kytos/of_core.v0x01.messages.in.ofpt_stats_reply')
     def listener(self, event):
         """Store switch descriptions."""
         msg = event.content['message']
