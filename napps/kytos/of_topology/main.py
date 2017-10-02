@@ -27,7 +27,7 @@ class Main(KytosNApp):
         pass
 
     @staticmethod
-    @listen_to('legacy/of_core.v0x01.messages.in.ofpt_packet_in')
+    @listen_to('kytos/of_core.v0x01.messages.in.ofpt_packet_in')
     def update_links(event):
         """Receive a kytos event and update links interface.
 
@@ -50,7 +50,7 @@ class Main(KytosNApp):
                 interface.update_endpoint(hw_address)
 
     @staticmethod
-    @listen_to('legacy/of_core.v0x01.messages.in.ofpt_port_status')
+    @listen_to('kytos/of_core.v0x01.messages.in.ofpt_port_status')
     def update_port_stats(event):
         """Receive a Kytos event and update port.
 
