@@ -64,7 +64,7 @@ class Main(KytosNApp):
 
 
     @staticmethod
-    @listen_to('kytos/of_core.v0x01.messages.in.ofpt_stats_reply')
+    @listen_to('legacy/of_core.v0x01.messages.in.ofpt_stats_reply')
     def handle_flow_stats_reply(event):
         """Handle flow stats reply message.
 
@@ -84,7 +84,7 @@ class Main(KytosNApp):
                 flows.append(new_flow)
             switch.flows = flows
 
-    @listen_to('kytos/of_core.v0x0[14].messages.in.ofpt_features_reply')
+    @listen_to('legacy/of_core.v0x0[14].messages.in.ofpt_features_reply')
     def handle_features_reply(self, event):
         """Handle kytos/of_core.messages.in.ofpt_features_reply event.
 
@@ -110,7 +110,7 @@ class Main(KytosNApp):
             #                        content={'source': connection})
             # self.controller.buffers.app.put(event_raw)
 
-    @listen_to('kytos/of_core.v0x04.messages.in.ofpt_multipart_reply')
+    @listen_to('legacy/of_core.v0x04.messages.in.ofpt_multipart_reply')
     def handle_port_desc_reply(self, event):
         """Handles Port Description Reply messages."""
         switch = event.source.switch
@@ -205,7 +205,7 @@ class Main(KytosNApp):
         if connection.is_alive():
             emit_message_out(self.controller, connection, message)
 
-    @listen_to('kytos/of_core.v0x0[14].messages.in.ofpt_echo_request')
+    @listen_to('legacy/of_core.v0x0[14].messages.in.ofpt_echo_request')
     def handle_echo_request(self, event):
         """Handle Echo Request Messages.
 
@@ -292,7 +292,7 @@ class Main(KytosNApp):
         self.emit_message_out(connection, error_message)
 
     # May be removed
-    @listen_to('kytos/of_core.v0x0[14].messages.out.ofpt_echo_reply')
+    @listen_to('legacy/of_core.v0x0[14].messages.out.ofpt_echo_reply')
     def handle_queued_openflow_echo_reply(self, event):
         """Method used to handle  echo reply messages.
 
@@ -311,15 +311,15 @@ class Main(KytosNApp):
             features_request.FeaturesRequest()
         self.emit_message_out(destination, features_request)
 
-    @listen_to('kytos/of_core.v0x0[14].messages.out.ofpt_features_request')
+    @listen_to('legacy/of_core.v0x0[14].messages.out.ofpt_features_request')
     def handle_features_request_sent(self, event):
         """Ensure request has actually been sent before changing state."""
         if event.destination.protocol.state == 'sending_features':
             event.destination.protocol.state = 'waiting_features_reply'
 
     @staticmethod
-    @listen_to('kytos/of_core.v0x[0-9a-f]{2}.messages.in.hello_failed',
-               'kytos/of_core.v0x0[14].messages.out.hello_failed')
+    @listen_to('legacy/of_core.v0x[0-9a-f]{2}.messages.in.hello_failed',
+               'legacy/of_core.v0x0[14].messages.out.hello_failed')
     def handle_openflow_in_hello_failed(event):
         """Close the connection upon hello failure."""
         event.destination.close()
