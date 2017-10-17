@@ -5,7 +5,7 @@ The *of_ipv6drop* network application (NApp) installs a flow on all connected
 switches for them to *DROP* all ipv6 incoming packets. Once the NApp is loaded
 on the controller it works by itself, without the need of any interaction.
 
-To do so, the NApp listens to all ``kytos/core.switches.new`` events (which
+To do so, the NApp listens to all ``kytos/core.switch.new`` events (which
 represent a new switch has connected) and send to this switch a FlowMod message
 to install the DROP IPv6 flow (match ``dl_type`` == ``0x86dd``).
 

@@ -25,7 +25,7 @@ class Main(KytosNApp):
         """
         pass
 
-    @listen_to('kytos/core.switches.new')
+    @listen_to('kytos/core.switch.new')
     def ipv6_drop(self, event):
         """Install a flow on the switch that drop all incoming ipv6 packets."""
         switch = event.content['switch']
